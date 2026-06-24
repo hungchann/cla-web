@@ -1,8 +1,7 @@
-import { device, useThemeColors } from "@/lib/theme";
-import { SubtitleSegment } from "@/lib/types/video";
-import pinyinConverter from "chinese-to-pinyin";
 import React from "react";
 import { RubyText } from "../RubyText";
+import { SubtitleSegment } from "@/lib/types/video";
+import { useThemeColors, device } from "@/lib/theme";
 
 interface SubtitleItemProps {
   item: SubtitleSegment;
@@ -28,31 +27,19 @@ export const SubtitleItem = React.memo(
     const isActive = activeIndex === index;
     const textColor = isActive ? colors.text.inverse : colors.text.primary;
 
-    const pinyinText = React.useMemo(() => {
-      if (Array.isArray(item.segmentedWords)) return undefined;
-      return pinyinConverter(item.chinese || "", { toneToNumber: false, removeTone: false });
-    }, [item.chinese, item.segmentedWords]);
-
     return (
-      <div 
-        className="relative w-full flex flex-row items-center justify-between p-2 my-0.5 rounded-2xl overflow-hidden min-h-[60px] transition-colors duration-250 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2"
+      <button
+        type="button"
+        className="relative w-full flex flex-row items-center justify-between p-2.5 my-0.5 rounded-2xl overflow-hidden min-h-[60px] transition-colors duration-250 cursor-pointer text-left items-stretch bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
         style={{
           backgroundColor: isActive ? colors.primary : "transparent",
         }}
         onClick={() => onVocabularyPress(item, index)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onVocabularyPress(item, index);
-          }
-        }}
-        role="button"
-        tabIndex={0}
       >
         <div className="flex-1 flex flex-col items-start pr-10">
           <div className="flex flex-row flex-wrap items-start">
             {Array.isArray(item.segmentedWords) ? (
-              item.segmentedWords.map((w, i) => (
+              item.segmentedWords.map((w, i: number) => (
                 <RubyText
                   key={`${w.word}-${i}`}
                   word={w.word}
@@ -69,7 +56,7 @@ export const SubtitleItem = React.memo(
               <div className="flex flex-col items-start mr-2 mb-1">
                 <RubyText
                   word={item.chinese}
-                  pinyin={isOpenPinyin ? pinyinText : undefined}
+                  pinyin={isOpenPinyin ? item.pinyin : undefined}
                   fontSize={device.isLarge ? 28 : 18}
                   pinyinSize={device.isLarge ? 16 : 13}
                   textColor={textColor}
@@ -80,7 +67,7 @@ export const SubtitleItem = React.memo(
             )}
           </div>
           <p
-            className="text-[15px] leading-snug text-left self-stretch"
+            className="text-[15px] leading-snug text-left self-stretch mt-1"
             style={{ 
               color: textColor,
               fontSize: device.isLarge ? "20px" : "15px",
@@ -92,8 +79,9 @@ export const SubtitleItem = React.memo(
         </div>
 
         <button
+          type="button"
           onClick={(e) => {
-            e.stopPropagation(); // prevent triggering onVocabularyPress
+            e.stopPropagation(); // ngăn chặn trigger onVocabularyPress ở thẻ cha
             onReplayPress(item, index);
           }}
           className="absolute right-2.5 top-2.5 z-10 w-7 h-7 rounded-full border border-solid flex items-center justify-center cursor-pointer transition-colors"
@@ -116,7 +104,7 @@ export const SubtitleItem = React.memo(
             />
           </svg>
         </button>
-      </div>
+      </button>
     );
   },
 );
