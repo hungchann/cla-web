@@ -1,0 +1,172 @@
+{
+  "common": {
+    "app_name": "Chinese Learning App",
+    "next": "Next",
+    "back": "Back",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "level": "Level",
+    "category": "Category",
+    "search": "Search",
+    "results": "Results",
+    "feature_in_development": "Feature in development",
+    "load_detail_error": "Could not load details",
+    "subcategory": "Subcategory",
+    "choose_notebook": "Choose Notebook"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "forgot_password": "Forgot Password?",
+    "sign_in": "Sign In",
+    "sign_up": "Sign Up",
+    "register_success_title": "Registration Successful!",
+    "register_success_message": "Account created. Please login to continue.",
+    "register_error_title": "Registration Error",
+    "register_error_generic": "An error occurred during registration. Please try again.",
+    "login_error": "Invalid email or password. Please try again.",
+    "welcome_back": "Welcome Back!",
+    "welcome_subtitle": "Let's pick up where you left off in your learning adventure.",
+    "remember_me": "Remember me",
+    "no_account": "Don't have an account?",
+    "login_failed": "Login Failed",
+    "try_again": "Try Again"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Chinese Learning App",
+    "get_started": "Get Started",
+    "or": "OR",
+    "already_have_account": "I ALREADY HAVE AN ACCOUNT",
+    "choose_language": "Choose Language",
+    "choose_language_subtitle": "Select the language you want to use within the app",
+    "continue": "CONTINUE",
+    "first_name_question": "First, what should we call you?",
+    "your_name": "Your Name",
+    "name_required": "Name is required",
+    "name_length_error": "Name must be at least 2 characters",
+    "enter_name_help": "Please enter your name to continue",
+    "setup_account": "Set up your account",
+    "confirm_password": "Confirm Password",
+    "min_password_length": "Minimum 8 characters",
+    "re_enter_password": "Re-enter password",
+    "email_required": "Email is required",
+    "email_invalid": "Please enter a valid email address",
+    "email_already_exists": "This account already exists",
+    "checking_email": "Checking email...",
+    "password_required": "Password is required",
+    "password_length_error": "Password must be at least 8 characters",
+    "confirm_password_required": "Please confirm your password",
+    "passwords_mismatch": "Passwords do not match",
+    "fill_all_fields_help": "Please fill in all fields correctly to continue",
+    "all_set": "All Set!",
+    "account_ready_message": "Your account information is ready. Click the button below to create your account and start your Chinese learning journey!",
+    "create_account": "CREATE ACCOUNT",
+    "creating_account": "Creating your account...",
+    "wait_message": "Creating account and logging in automatically. Please wait."
+  },
+  "tabs": {
+    "home": "Home",
+    "hanzi": "Hanzi",
+    "vocabulary": "Vocabulary",
+    "lessons": "Lessons",
+    "profile": "Profile"
+  },
+  "hanzi": {
+    "character_detail": "Character Detail for ID:",
+    "stroke_order": "Stroke Order",
+    "practice": "Practice"
+  },
+  "vocabulary": {
+    "vocabulary_list": "Vocabulary List",
+    "pinyin": "Pinyin",
+    "english": "English",
+    "example": "Example"
+  },
+  "settings": {
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "about": "About"
+  },
+  "screen": {
+    "bilingual": {
+      "title": "Bilingual",
+      "exercise_title": "Reading Exercise",
+      "translate_title": "Translation Exercise",
+      "vocabulary_title": "Reading Vocabulary",
+      "shadowing_title": "Shadowing",
+      "grammar_title": "Grammar",
+      "choose_correct": "Choose the best answer",
+      "no_lessons": "No lessons found",
+      "no_vocabulary": "No vocabulary",
+      "no_grammar": "No grammar data for this section",
+      "vocab_detail": "Vocabulary Detail"
+    },
+    "dictionary": {
+      "title": "Dictionary",
+      "search_placeholder": "Search vocabulary...",
+      "vocab_detail": "Vocabulary Detail"
+    },
+    "exercise": {
+      "title": "Exercise",
+      "reading_result": "Reading Result"
+    },
+    "flashcard": {
+      "title": "Flashcard",
+      "study_title": "Flashcard Review",
+      "study_result": "Study Result",
+      "category_title": "Category",
+      "notebook_name": "Enter notebook name",
+      "hanzi_placeholder": "Enter Chinese character",
+      "pinyin_placeholder": "Enter pinyin",
+      "meaning_placeholder": "Enter meaning",
+      "example_placeholder": "Chinese example sentence",
+      "example_meaning_placeholder": "Meaning of example sentence"
+    },
+    "grammar": {
+      "title": "Grammar",
+      "search_title": "Grammar Search",
+      "search_placeholder": "Search",
+      "no_results": "No grammar found"
+    },
+    "profile": {
+      "account": "Account",
+      "password": "Password",
+      "level": "Level",
+      "support_title": "Support & Hotline",
+      "app_info_title": "App Information",
+      "about": "About",
+      "contact_support": "Contact Support",
+      "notifications": "Notifications",
+      "settings": "Settings",
+      "premium": "Premium",
+      "target": "Target",
+      "topics": "Topics",
+      "topics_subtitle": "Topics you're interested in"
+    },
+    "speaking": {
+      "title": "AI Speaking Practice",
+      "premium_feature": "Premium Feature",
+      "result": "Result"
+    },
+    "stories": {
+      "title": "Books & News",
+      "explore_more": "Explore More",
+      "novels_title": "Novels",
+      "my_library": "My Library",
+      "trending": "Trending"
+    },
+    "video": {
+      "shadowing_title": "Video Shadowing",
+      "loading": "Loading video...",
+      "subtitle_title": "Bilingual Subtitles",
+      "select_word": "Select Word",
+      "no_videos": "No videos",
+      "by_topic": "By Topic",
+      "result": "Result"
+    }
+  }
+}

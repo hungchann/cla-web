@@ -1,0 +1,172 @@
+{
+  "common": {
+    "app_name": "Ứng dụng Học tiếng Trung",
+    "next": "Tiếp theo",
+    "back": "Quay lại",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "loading": "Đang tải...",
+    "level": "Trình độ",
+    "category": "Thể loại",
+    "search": "Tìm kiếm",
+    "results": "Kết quả",
+    "feature_in_development": "Tính năng đang được phát triển",
+    "load_detail_error": "Không thể tải chi tiết",
+    "subcategory": "Phân loại",
+    "choose_notebook": "Chọn sổ tay"
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "forgot_password": "Quên mật khẩu?",
+    "sign_in": "Đăng nhập",
+    "sign_up": "Đăng ký",
+    "register_success_title": "Đăng ký thành công!",
+    "register_success_message": "Tài khoản đã được tạo. Vui lòng đăng nhập để tiếp tục.",
+    "register_error_title": "Lỗi đăng ký",
+    "register_error_generic": "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.",
+    "login_error": "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.",
+    "welcome_back": "Chào mừng quay trở lại!",
+    "welcome_subtitle": "Tiếp tục cuộc phiêu lưu học tập của bạn.",
+    "remember_me": "Ghi nhớ đăng nhập",
+    "no_account": "Chưa có tài khoản?",
+    "login_failed": "Đăng nhập thất bại",
+    "try_again": "Thử lại"
+  },
+  "onboarding": {
+    "welcome": "Chào mừng đến với Ứng dụng Học tiếng Trung",
+    "get_started": "Bắt đầu",
+    "or": "HOẶC",
+    "already_have_account": "TÔI ĐÃ CÓ TÀI KHOẢN",
+    "choose_language": "Chọn Ngôn ngữ",
+    "choose_language_subtitle": "Chọn ngôn ngữ bạn muốn sử dụng trong ứng dụng",
+    "continue": "TIẾP TỤC",
+    "first_name_question": "Đầu tiên, chúng tôi nên gọi bạn là gì?",
+    "your_name": "Tên của bạn",
+    "name_required": "Tên là bắt buộc",
+    "name_length_error": "Tên phải có ít nhất 2 ký tự",
+    "enter_name_help": "Vui lòng nhập tên của bạn để tiếp tục",
+    "setup_account": "Thiết lập tài khoản",
+    "confirm_password": "Xác nhận mật khẩu",
+    "min_password_length": "Tối thiểu 8 ký tự",
+    "re_enter_password": "Nhập lại mật khẩu",
+    "email_required": "Email là bắt buộc",
+    "email_invalid": "Vui lòng nhập địa chỉ email hợp lệ",
+    "email_already_exists": "Tài khoản đã tồn tại",
+    "checking_email": "Đang kiểm tra email...",
+    "password_required": "Mật khẩu là bắt buộc",
+    "password_length_error": "Mật khẩu phải có ít nhất 8 ký tự",
+    "confirm_password_required": "Vui lòng xác nhận mật khẩu của bạn",
+    "passwords_mismatch": "Mật khẩu không khớp",
+    "fill_all_fields_help": "Vui lòng điền đầy đủ thông tin để tiếp tục",
+    "all_set": "Hoàn tất!",
+    "account_ready_message": "Thông tin tài khoản của bạn đã sẵn sàng. Nhấn nút bên dưới để tạo tài khoản và bắt đầu hành trình học tiếng Trung!",
+    "create_account": "TẠO TÀI KHOẢN",
+    "creating_account": "Đang tạo tài khoản...",
+    "wait_message": "Đang tạo tài khoản và đăng nhập tự động. Vui lòng chờ."
+  },
+  "tabs": {
+    "home": "Trang chủ",
+    "hanzi": "Hán tự",
+    "vocabulary": "Từ vựng",
+    "lessons": "Bài học",
+    "profile": "Hồ sơ"
+  },
+  "hanzi": {
+    "character_detail": "Chi tiết ký tự có ID:",
+    "stroke_order": "Thứ tự nét",
+    "practice": "Luyện tập"
+  },
+  "vocabulary": {
+    "vocabulary_list": "Danh sách từ vựng",
+    "pinyin": "Phiên âm",
+    "english": "Tiếng Anh",
+    "example": "Ví dụ"
+  },
+  "settings": {
+    "language": "Ngôn ngữ",
+    "theme": "Chủ đề",
+    "notifications": "Thông báo",
+    "about": "Thông tin"
+  },
+  "screen": {
+    "bilingual": {
+      "title": "Song ngữ",
+      "exercise_title": "Bài tập bài đọc",
+      "translate_title": "Bài tập dịch",
+      "vocabulary_title": "Từ vựng bài đọc",
+      "shadowing_title": "Shadowing",
+      "grammar_title": "Ngữ pháp",
+      "choose_correct": "Chọn đáp án đúng nhất",
+      "no_lessons": "Không tìm thấy bài học",
+      "no_vocabulary": "Không có từ vựng nào",
+      "no_grammar": "Không có dữ liệu ngữ pháp cho phần này",
+      "vocab_detail": "Chi tiết từ vựng"
+    },
+    "dictionary": {
+      "title": "Từ vựng",
+      "search_placeholder": "Tìm kiếm từ vựng...",
+      "vocab_detail": "Chi tiết từ vựng"
+    },
+    "exercise": {
+      "title": "Bài tập",
+      "reading_result": "Kết quả bài đọc"
+    },
+    "flashcard": {
+      "title": "Flashcard",
+      "study_title": "Ôn tập Flashcard",
+      "study_result": "Kết quả học tập",
+      "category_title": "Thể loại",
+      "notebook_name": "Nhập tên sổ tay",
+      "hanzi_placeholder": "Nhập chữ Hán",
+      "pinyin_placeholder": "Nhập phiên âm",
+      "meaning_placeholder": "Nhập nghĩa",
+      "example_placeholder": "Câu ví dụ tiếng Trung",
+      "example_meaning_placeholder": "Nghĩa của câu ví dụ"
+    },
+    "grammar": {
+      "title": "Ngữ pháp",
+      "search_title": "Tìm kiếm ngữ pháp",
+      "search_placeholder": "Tìm kiếm",
+      "no_results": "Không tìm thấy ngữ pháp nào"
+    },
+    "profile": {
+      "account": "Tài khoản",
+      "password": "Mật khẩu",
+      "level": "Trình độ",
+      "support_title": "Hỗ trợ & Hotline",
+      "app_info_title": "Thông tin ứng dụng",
+      "about": "Giới thiệu",
+      "contact_support": "Liên hệ hỗ trợ",
+      "notifications": "Thông báo",
+      "settings": "Settings",
+      "premium": "Premium",
+      "target": "Mục tiêu",
+      "topics": "Chủ đề",
+      "topics_subtitle": "Chủ đề bạn quan tâm"
+    },
+    "speaking": {
+      "title": "AI Luyện Nói",
+      "premium_feature": "Tính năng Premium",
+      "result": "Kết quả"
+    },
+    "stories": {
+      "title": "Sách - Báo",
+      "explore_more": "Khám phá thêm",
+      "novels_title": "Tiểu thuyết",
+      "my_library": "Thư viện của tôi",
+      "trending": "Đang thịnh hành"
+    },
+    "video": {
+      "shadowing_title": "Video Shadowing",
+      "loading": "Đang tải video...",
+      "subtitle_title": "Phụ đề song ngữ",
+      "select_word": "Chọn từ",
+      "no_videos": "Không có video",
+      "by_topic": "Theo chủ đề",
+      "result": "Kết quả"
+    }
+  }
+}

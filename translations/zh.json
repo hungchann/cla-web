@@ -1,0 +1,172 @@
+{
+  "common": {
+    "app_name": "中文学习应用",
+    "next": "下一步",
+    "back": "返回",
+    "cancel": "取消",
+    "save": "保存",
+    "loading": "加载中...",
+    "level": "级别",
+    "category": "类型",
+    "search": "搜索",
+    "results": "结果",
+    "feature_in_development": "功能正在开发中",
+    "load_detail_error": "无法加载详情",
+    "subcategory": "分类",
+    "choose_notebook": "选择笔记本"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "email": "邮箱",
+    "password": "密码",
+    "forgot_password": "忘记密码？",
+    "sign_in": "登录",
+    "sign_up": "注册",
+    "register_success_title": "注册成功！",
+    "register_success_message": "账户已创建。请登录以继续。",
+    "register_error_title": "注册错误",
+    "register_error_generic": "注册过程中发生错误。请重试。",
+    "login_error": "邮箱或密码错误。请重试。",
+    "welcome_back": "欢迎回来！",
+    "welcome_subtitle": "让我们继续你的学习之旅。",
+    "remember_me": "记住我",
+    "no_account": "还没有账号？",
+    "login_failed": "登录失败",
+    "try_again": "重试"
+  },
+  "onboarding": {
+    "welcome": "欢迎使用中文学习应用",
+    "get_started": "开始使用",
+    "or": "或",
+    "already_have_account": "我已有账号",
+    "choose_language": "选择语言",
+    "choose_language_subtitle": "选择您在应用中使用的语言",
+    "continue": "继续",
+    "first_name_question": "首先，我们可以怎么称呼您？",
+    "your_name": "您的名字",
+    "name_required": "必须填写名字",
+    "name_length_error": "名字至少需要2个字符",
+    "enter_name_help": "请输入您的名字以继续",
+    "setup_account": "设置账户",
+    "confirm_password": "确认密码",
+    "min_password_length": "至少8个字符",
+    "re_enter_password": "再次输入密码",
+    "email_required": "必须填写电子邮箱",
+    "email_invalid": "请输入有效的电子邮箱地址",
+    "email_already_exists": "该账户已存在",
+    "checking_email": "正在验证邮箱...",
+    "password_required": "必须填写密码",
+    "password_length_error": "密码至少需要8个字符",
+    "confirm_password_required": "请确认您的密码",
+    "passwords_mismatch": "密码不匹配",
+    "fill_all_fields_help": "请正确填写所有字段以继续",
+    "all_set": "准备就绪！",
+    "account_ready_message": "您的账户信息已准备就绪。点击下方按钮创建账户并开始您的中文学习之旅！",
+    "create_account": "创建账户",
+    "creating_account": "正在创建账户...",
+    "wait_message": "正在创建账户并自动登录。请稍候。"
+  },
+  "tabs": {
+    "home": "首页",
+    "hanzi": "汉字",
+    "vocabulary": "词汇",
+    "lessons": "课程",
+    "profile": "个人资料"
+  },
+  "hanzi": {
+    "character_detail": "字符详情，ID：",
+    "stroke_order": "笔画顺序",
+    "practice": "练习"
+  },
+  "vocabulary": {
+    "vocabulary_list": "词汇列表",
+    "pinyin": "拼音",
+    "english": "英文",
+    "example": "例句"
+  },
+  "settings": {
+    "language": "语言",
+    "theme": "主题",
+    "notifications": "通知",
+    "about": "关于"
+  },
+  "screen": {
+    "bilingual": {
+      "title": "双语",
+      "exercise_title": "阅读练习",
+      "translate_title": "翻译练习",
+      "vocabulary_title": "阅读词汇",
+      "shadowing_title": "跟读",
+      "grammar_title": "语法",
+      "choose_correct": "选择最佳答案",
+      "no_lessons": "未找到课程",
+      "no_vocabulary": "无词汇",
+      "no_grammar": "此部分无语法数据",
+      "vocab_detail": "词汇详情"
+    },
+    "dictionary": {
+      "title": "词典",
+      "search_placeholder": "搜索词汇...",
+      "vocab_detail": "词汇详情"
+    },
+    "exercise": {
+      "title": "练习",
+      "reading_result": "阅读结果"
+    },
+    "flashcard": {
+      "title": "闪卡",
+      "study_title": "闪卡复习",
+      "study_result": "学习结果",
+      "category_title": "类型",
+      "notebook_name": "输入笔记本名称",
+      "hanzi_placeholder": "输入汉字",
+      "pinyin_placeholder": "输入拼音",
+      "meaning_placeholder": "输入释义",
+      "example_placeholder": "中文例句",
+      "example_meaning_placeholder": "例句释义"
+    },
+    "grammar": {
+      "title": "语法",
+      "search_title": "语法搜索",
+      "search_placeholder": "搜索",
+      "no_results": "未找到语法"
+    },
+    "profile": {
+      "account": "账户",
+      "password": "密码",
+      "level": "级别",
+      "support_title": "支持与热线",
+      "app_info_title": "应用信息",
+      "about": "关于",
+      "contact_support": "联系支持",
+      "notifications": "通知",
+      "settings": "设置",
+      "premium": "高级版",
+      "target": "目标",
+      "topics": "主题",
+      "topics_subtitle": "您感兴趣的主题"
+    },
+    "speaking": {
+      "title": "AI口语练习",
+      "premium_feature": "高级功能",
+      "result": "结果"
+    },
+    "stories": {
+      "title": "书籍与新闻",
+      "explore_more": "探索更多",
+      "novels_title": "小说",
+      "my_library": "我的书库",
+      "trending": "热门"
+    },
+    "video": {
+      "shadowing_title": "视频跟读",
+      "loading": "正在加载视频...",
+      "subtitle_title": "双语字幕",
+      "select_word": "选择单词",
+      "no_videos": "无视频",
+      "by_topic": "按主题",
+      "result": "结果"
+    }
+  }
+}
