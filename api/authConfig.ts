@@ -4,8 +4,6 @@ import { REGISTER_FLOW_PATH } from "@/lib/constants";
 import { logger } from "@/services/logger";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import axios from "axios";
-import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
 
 // ─── SSL / Certificate Pinning ────────────────────────────────────────────────
 // SECURITY NOTE: Hiện tại chưa có SSL pinning. Trên thiết bị bị root hoặc môi trường
@@ -21,7 +19,7 @@ import * as SecureStore from "expo-secure-store";
 // Tham khảo: https://docs.expo.dev/guides/custom-native-modules/
 // ─────────────────────────────────────────────────────────────────────────────
 
-const API = Constants.expoConfig?.extra?.API_URL || "https://marutek.space";
+const API = process.env.NEXT_PUBLIC_API_URL || "https://marutek.space";
 
 const apiInstance = axios.create({
   baseURL: API,
@@ -43,7 +41,7 @@ export function refreshAccessToken(): Promise<boolean> {
   if (!refreshInFlight) {
     refreshInFlight = (async (): Promise<boolean> => {
       try {
-        const refreshToken = await SecureStore.getItemAsync("refresh_token");
+        const refreshToken = tokenUtils.getRefreshToken();
         if (!refreshToken) return false;
 
         const response = await graphqlSystemRequest<
@@ -94,7 +92,7 @@ apiInstance.interceptors.request.use(
     const isForgotPassword = config.url?.includes("/auth/forgot-password");
 
     if (!isLogin && !isRegister && !isForgotPassword) {
-      const token = await SecureStore.getItemAsync("access_token");
+      const token = tokenUtils.getAccessToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -131,7 +129,7 @@ apiInstance.interceptors.response.use(
       const refreshed = await refreshAccessToken();
 
       if (refreshed) {
-        const access = await SecureStore.getItemAsync("access_token");
+        const access = tokenUtils.getAccessToken();
         if (access) {
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return apiInstance(originalRequest);

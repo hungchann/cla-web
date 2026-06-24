@@ -1,5 +1,5 @@
 import apiInstance from "@/api/authConfig";
-import * as SecureStore from "expo-secure-store";
+import { tokenUtils } from "@/lib/utils/tokenUtils";
 import { logger } from "@/services/logger";
 import {
   ACCOUNT_TYPE_FLOW_PATH,
@@ -75,16 +75,15 @@ export interface SubscriptionInfo {
 export const getSubscriptionInfo = async (): Promise<SubscriptionInfo | null> => {
   let userId: string | number | null = null;
   try {
-    const userDataStr = await SecureStore.getItemAsync("user_data");
-    if (userDataStr) {
-      const userData = JSON.parse(userDataStr);
-      const candidate = userData?.user_id ?? userData?.userId ?? userData?.id ?? null;
+    const userData = tokenUtils.getUserData();
+    if (userData) {
+      const candidate = userData.user_id ?? userData.userId ?? userData.id ?? null;
       if (candidate !== undefined && candidate !== null) {
         userId = candidate;
       }
     }
   } catch (e) {
-    logger.warn("Không đọc được user_data từ SecureStore:", e);
+    logger.warn("Không đọc được user_data từ tokenUtils:", e);
   }
 
   const url = userId !== null ? `${ACCOUNT_TYPE_FLOW_PATH}?id=${userId}` : ACCOUNT_TYPE_FLOW_PATH;
@@ -102,20 +101,17 @@ export const getAccountType = async () => {
     // Lấy user_id hiện tại từ SecureStore (user_data)
     let userId: string | number | null = null;
     try {
-      const userDataStr = await SecureStore.getItemAsync("user_data");
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr);
+      const userData = tokenUtils.getUserData();
+      if (userData) {
         // Prefer numeric user_id if present (matches DB/user_profiles.user_id in many setups)
         // Fallback to id (often UUID).
-        if (userData) {
-          const candidate = userData.user_id ?? userData.userId ?? userData.id ?? null;
-          if (candidate !== undefined && candidate !== null) {
-            userId = candidate;
-          }
+        const candidate = userData.user_id ?? userData.userId ?? userData.id ?? null;
+        if (candidate !== undefined && candidate !== null) {
+          userId = candidate;
         }
       }
     } catch (e) {
-      logger.warn("Không đọc được user_data từ SecureStore:", e);
+      logger.warn("Không đọc được user_data từ tokenUtils:", e);
     }
     const url = userId !== null ? `${ACCOUNT_TYPE_FLOW_PATH}?id=${userId}` : ACCOUNT_TYPE_FLOW_PATH;
 

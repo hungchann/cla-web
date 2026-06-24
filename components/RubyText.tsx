@@ -1,7 +1,4 @@
 import React from "react";
-import { StyleSheet, View, TextStyle, StyleProp, TouchableOpacity, ViewStyle } from "react-native";
-import { ThemedText } from "./ThemedComponents";
-import { useThemeColors } from "@/lib/theme";
 
 interface RubyTextProps {
   word: React.ReactNode;
@@ -11,77 +8,59 @@ interface RubyTextProps {
   textColor?: string;
   pinyinColor?: string;
   bold?: boolean;
-  style?: StyleProp<TextStyle>;
-  containerStyle?: ViewStyle;
+  className?: string;
+  containerClassName?: string;
   onPress?: () => void;
 }
 
 export const RubyText = ({
   word,
   pinyin,
-  fontSize = 18,
-  pinyinSize = 12,
+  fontSize,
+  pinyinSize,
   textColor,
   pinyinColor,
   bold = false,
-  style,
-  containerStyle,
+  className = "",
+  containerClassName = "",
   onPress,
 }: RubyTextProps) => {
-  const { colors } = useThemeColors();
-
   const content = (
-    <View style={[styles.container, containerStyle]}>
-      {pinyin ? (
-        <ThemedText
-          style={[
-            styles.pinyin,
-            {
-              fontSize: pinyinSize,
-              color: pinyinColor || colors.text.secondary,
-              lineHeight: pinyinSize * 1.2,
-            },
-          ]}
-          numberOfLines={1}
+    <ruby
+      className={`ruby-container select-text ${className}`}
+      style={{
+        color: textColor,
+        fontWeight: bold ? "700" : "500",
+        fontSize: fontSize ? `${fontSize}px` : undefined,
+      }}
+    >
+      {word}
+      {pinyin && (
+        <rt
+          className="ruby-pinyin select-none text-amber-600"
+          style={{
+            color: pinyinColor,
+            fontSize: pinyinSize ? `${pinyinSize}px` : undefined,
+          }}
         >
           {pinyin}
-        </ThemedText>
-      ) : null}
-      <ThemedText
-        style={[
-          {
-            fontSize: fontSize,
-            color: textColor || colors.text.primary,
-            fontWeight: bold ? "700" : "500",
-            lineHeight: fontSize * 1.3,
-          },
-          style,
-        ]}
-      >
-        {word}
-      </ThemedText>
-    </View>
+        </rt>
+      )}
+    </ruby>
   );
 
   if (onPress) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <button
+        onClick={onPress}
+        className={`focus:outline-none hover:opacity-80 active:opacity-60 cursor-pointer bg-transparent border-none p-0 inline-flex align-middle ${containerClassName}`}
+      >
         {content}
-      </TouchableOpacity>
+      </button>
     );
   }
 
-  return content;
+  return <span className={`inline-flex align-middle ${containerClassName}`}>{content}</span>;
 };
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 2,
-  },
-  pinyin: {
-    textAlign: "center",
-    opacity: 0.8,
-  },
-});
+export default RubyText;

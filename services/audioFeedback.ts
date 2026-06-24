@@ -1,94 +1,43 @@
-import { Audio } from "expo-av";
+/**
+ * 🔊 Audio Feedback Service
+ *
+ * - Play sound effects (correct/incorrect answer, translation score) on web
+ * - Browser standard HTMLAudioElement (window.Audio)
+ */
+
 import { logger } from "@/services/logger";
 
-// Audio assets - using require for Metro bundler
-// NOTE: These files must exist in the repository (sound/ directory should NOT be in .gitignore)
-// as require() is evaluated at module load time. Missing files will cause build/runtime errors.
-let SOUNDS: {
-  correct: any;
-  incorrect: any;
-  scoreUnder50: any;
-  score50to70: any;
-  score80to90: any;
-  scoreOver90: any;
+const SOUNDS = {
+  correct: "/sound/correct_TracNghiem.wav",
+  incorrect: "/sound/wrong_TracNghiem.wav",
+  scoreUnder50: "/sound/correct_up_50_.mp3",
+  score50to70: "/sound/correct_50-70_.mp3",
+  score80to90: "/sound/correct_80-90_.mp3",
+  scoreOver90: "/sound/correct_up_90_.mp3",
 };
 
-try {
-  SOUNDS = {
-    correct: require("@/sound/correct_TracNghiem.wav"),
-    incorrect: require("@/sound/wrong_TracNghiem.wav"),
-    scoreUnder50: require("@/sound/correct_up_50_.mp3"),
-    score50to70: require("@/sound/correct_50-70_.mp3"),
-    score80to90: require("@/sound/correct_80-90_.mp3"),
-    scoreOver90: require("@/sound/correct_up_90_.mp3"),
-  };
-} catch (error) {
-  logger.error(
-    "Failed to load sound files. Ensure sound/ directory exists and is not ignored by git.",
-    error,
-  );
-  // Provide fallback empty objects to prevent app crash
-  // In production, this should never happen if sound/ is properly tracked in git
-  SOUNDS = {
-    correct: null,
-    incorrect: null,
-    scoreUnder50: null,
-    score50to70: null,
-    score80to90: null,
-    scoreOver90: null,
-  };
-}
-
-let soundObject: Audio.Sound | null = null;
-
-/**
- * Configure audio mode for playback
- */
-async function configureAudioMode() {
-  try {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-      shouldDuckAndroid: true,
-    });
-  } catch (error) {
-    logger.error("Error configuring audio mode:", error);
-  }
-}
+let currentAudio: HTMLAudioElement | null = null;
 
 /**
  * Play a sound effect
  */
-async function playSound(soundSource: any) {
+async function playSound(soundPath: string) {
+  if (globalThis.window === undefined) {
+    return;
+  }
+
   try {
-    // Skip playback if sound source is null (files missing)
-    if (!soundSource) {
-      logger.warn("Sound file not available, skipping playback");
-      return;
-    }
-
     // Stop any currently playing sound
-    if (soundObject) {
-      await soundObject.unloadAsync();
-      soundObject = null;
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
     }
 
-    await configureAudioMode();
+    const audio = new globalThis.window.Audio(soundPath);
+    currentAudio = audio;
 
-    const { sound } = await Audio.Sound.createAsync(soundSource, {
-      shouldPlay: true,
-      volume: 1.0,
-    });
-
-    soundObject = sound;
-
-    // Clean up when sound finishes
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) {
-        sound.unloadAsync();
-        soundObject = null;
-      }
-    });
+    // Start playing
+    await audio.play();
   } catch (error) {
     logger.error("Error playing sound:", error);
   }
@@ -108,7 +57,6 @@ export async function playAnswerFeedback(isCorrect: boolean) {
  * Used for: Video exercise results, Bilingual exercise results, Bài tập results
  */
 export async function playQuizResultSound(score: number) {
-  // For video/exercise results, use correct_TracNghiem sound
   const sound = SOUNDS.correct;
   await playSound(sound);
 }
@@ -116,11 +64,6 @@ export async function playQuizResultSound(score: number) {
 /**
  * Play result sound based on score percentage for Translation and Speaking
  * Used for: Dịch trung-việt, việt-trung, AI luyện nói
- * Score ranges:
- * - < 50%: correct_up_50_
- * - 50-79%: correct_50-70_
- * - 80-89%: correct_80-90_
- * - >= 90%: correct_up_90_
  */
 export async function playTranslationResultSound(score: number) {
   let sound;
@@ -142,10 +85,10 @@ export async function playTranslationResultSound(score: number) {
  * Cleanup function to unload sounds
  */
 export async function cleanupAudio() {
-  if (soundObject) {
+  if (currentAudio) {
     try {
-      await soundObject.unloadAsync();
-      soundObject = null;
+      currentAudio.pause();
+      currentAudio = null;
     } catch (error) {
       logger.error("Error cleaning up audio:", error);
     }

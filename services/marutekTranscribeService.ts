@@ -16,7 +16,6 @@ import {
   MARUTEK_CONFIG,
   marutekTranscribeBase64Url,
 } from "@/lib/constants";
-import * as FileSystem from "expo-file-system/legacy";
 import { sendAIRequest } from "@/services/aiRequestService";
 import { logger } from "@/services/logger";
 
@@ -169,34 +168,18 @@ export async function transcribeAudioFromUri(
   logger.debug("  - Filename:", name);
   logger.debug("  - Content Type:", type);
 
-  // Check if file exists and get file info
+  let blob: Blob;
   try {
-    const fileInfo = await FileSystem.getInfoAsync(uri);
-    logger.debug("🌐 [MARUTEK] File info:");
-    logger.debug("  - Exists:", fileInfo.exists);
-    logger.debug("  - Is Directory:", fileInfo.isDirectory);
+    const response = await fetch(uri);
+    blob = await response.blob();
+    logger.debug("🌐 [MARUTEK] File size:", blob.size, "bytes");
 
-    if (!fileInfo.exists) {
-      throw new Error("Audio file does not exist");
+    if (blob.size === 0) {
+      throw new Error("Audio file is empty");
     }
 
-    // Check file size if available
-    if ("size" in fileInfo && fileInfo.size !== undefined) {
-      logger.debug("  - Size:", fileInfo.size, "bytes");
-
-      if (fileInfo.size === 0) {
-        throw new Error("Audio file is empty");
-      }
-
-      if (fileInfo.size < 1000) {
-        logger.warn(
-          "🌐 [MARUTEK] Warning: Audio file is very small (",
-          fileInfo.size,
-          "bytes) - might be too short for transcription",
-        );
-      }
-    } else {
-      logger.debug("  - Size: Not available");
+    if (blob.size < 1000) {
+      logger.warn("🌐 [MARUTEK] Warning: Audio file is very small - might be too short");
     }
   } catch (fileError) {
     logger.error("🌐 [MARUTEK] File check failed:", fileError);
@@ -206,8 +189,7 @@ export async function transcribeAudioFromUri(
   }
 
   const form = new FormData();
-  // Server contract: multipart POST /transcribe, field name `audio`
-  form.append("audio" as any, { uri, name, type } as any);
+  form.append("audio", blob, name);
   form.append("language", language);
 
   logger.debug("🌐 [MARUTEK] Sending request to:", endpoint);
@@ -274,7 +256,26 @@ export async function transcribeAudioAsBase64(
   logger.debug("  - URI:", uri);
   logger.debug("  - Endpoint (base64):", endpoint);
 
-  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: "base64" });
+  let blob: Blob;
+  try {
+    const response = await fetch(uri);
+    blob = await response.blob();
+  } catch (error) {
+    logger.error("🌐 [MARUTEK] Failed to fetch blob for base64:", error);
+    throw new Error("Failed to read audio data");
+  }
+
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      const base64Data = result.split(",")[1];
+      resolve(base64Data);
+    };
+    reader.onerror = () => reject(new Error("Failed to read file as base64"));
+    reader.readAsDataURL(blob);
+  });
+
   logger.debug("  - Base64 length:", base64.length);
 
   const res = await fetch(endpoint, {

@@ -18,12 +18,11 @@ import {
 import { BilingualMapper } from "@/lib/mappers/bilingualMapper";
 import { BilingualItem } from "@/lib/types/bilingual";
 
-import { ACCESS_TOKEN_EXPIRES_AT_KEY, tokenUtils } from "@/lib/utils/tokenUtils";
+import { tokenUtils } from "@/lib/utils/tokenUtils";
 import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { sendAIRequest } from "@/services/aiRequestService";
 import { logger } from "@/services/logger";
 import axios, { isAxiosError } from "axios";
-import * as SecureStore from "expo-secure-store";
 
 // ─── Input validation helpers ────────────────────────────────────────────────
 
@@ -379,8 +378,8 @@ export async function refreshTokenMutation(_refreshToken?: string, _mode?: strin
   if (!ok) {
     throw new Error("Invalid refresh response");
   }
-  const access_token = (await SecureStore.getItemAsync("access_token")) ?? "";
-  const refresh_token = await SecureStore.getItemAsync("refresh_token");
+  const access_token = tokenUtils.getAccessToken() ?? "";
+  const refresh_token = tokenUtils.getRefreshToken();
   return {
     access_token,
     refresh_token,
@@ -389,16 +388,16 @@ export async function refreshTokenMutation(_refreshToken?: string, _mode?: strin
 
 export async function checkAndRefreshToken() {
   try {
-    const refreshToken = await SecureStore.getItemAsync("refresh_token");
+    const refreshToken = tokenUtils.getRefreshToken();
     if (!refreshToken) {
       return false;
     }
 
-    const accessToken = await SecureStore.getItemAsync("access_token");
+    const accessToken = tokenUtils.getAccessToken();
     let needsRefresh = !accessToken;
 
     if (accessToken) {
-      const expStr = await SecureStore.getItemAsync(ACCESS_TOKEN_EXPIRES_AT_KEY);
+      const expStr = tokenUtils.getAccessTokenExpiresAt();
       if (expStr) {
         const exp = Number.parseInt(expStr, 10);
         if (!Number.isNaN(exp) && Date.now() > exp - 120_000) {
