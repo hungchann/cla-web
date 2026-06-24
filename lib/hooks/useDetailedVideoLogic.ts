@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { Platform } from "react-native";
 import { bilingualApi } from "@/api/bilingual";
 import { videoDataUsesYoutubePlayer } from "@/lib/utils/youtubeVideo";
 import { parseSRTtoArray } from "@/services/subtitle";
 import { speakChinese } from "@/lib/utils/speech";
 import { playAnswerFeedback } from "@/services/audioFeedback";
-import { router } from "expo-router";
-import { useEvent } from "expo";
-import { useVideoPlayer } from "expo-video";
+import { useRouter } from "next/navigation";
 import { logger } from "@/services/logger";
 
 export interface SubtitleItem {
@@ -40,6 +37,7 @@ const timeToSeconds = (timeStr: string): number => {
 export const useDetailedVideoLogic = (
   videoData: any,
   opts?: {
+    videoRef?: RefObject<HTMLVideoElement | null>;
     /** Auto TTS đọc phụ đề khi không có câu hỏi. */
     enableAutoSpeakSubtitle?: boolean;
     /** YouTube: ref tới `react-native-youtube-iframe` để lấy `currentTime` / pause. */
@@ -47,6 +45,7 @@ export const useDetailedVideoLogic = (
     setYoutubeIsPlaying?: (playing: boolean) => void;
   },
 ) => {
+  const router = useRouter();
   const [exerciseData, setExerciseData] = useState<ExerciseItem[] | null>(null);
   const [answeredIds, setAnsweredIds] = useState<number[]>([]);
   const [activeQuestion, setActiveQuestion] = useState<ExerciseItem | null>(null);
@@ -82,41 +81,60 @@ export const useDetailedVideoLogic = (
 
   const videoSource = useMemo(() => {
     if (!videoData?.video_file?.filename_disk) return "";
-    return Platform.OS === "android"
-      ? {
-          uri: `https://marutek.space/assets/${videoData.video_file.filename_disk}`,
-          headers: { "Accept-Ranges": "bytes" },
-          useCaching: true,
-        }
-      : `https://marutek.space/assets/${videoData.video_file.filename_disk}`;
+    return `https://marutek.space/assets/${videoData.video_file.filename_disk}`;
   }, [videoData?.video_file?.filename_disk]);
 
-  const player = useVideoPlayer(videoSource, (p) => {
-    if (videoSource && isComponentMounted.current) {
-      p.loop = true;
-      p.volume = 1;
-      p.muted = false;
-    }
-  });
+  const player = useMemo(() => {
+    return {
+      play: () => {
+        if (opts?.videoRef?.current) {
+          opts.videoRef.current.play().catch((err: unknown) => {
+            logger.error("Error playing video:", err);
+          });
+        }
+      },
+      pause: () => {
+        if (opts?.videoRef?.current) {
+          opts.videoRef.current.pause();
+        }
+      },
+      get currentTime() {
+        return opts?.videoRef?.current ? opts.videoRef.current.currentTime : 0;
+      },
+      set currentTime(val: number) {
+        if (opts?.videoRef?.current) {
+          opts.videoRef.current.currentTime = val;
+        }
+      }
+    };
+  }, [opts?.videoRef]);
 
-  const { status } = useEvent(player, "statusChange", { status: player.status });
-  useEvent(player, "playingChange", { isPlaying: false });
+  const status = isVideoLoaded ? "readyToPlay" : "loading";
 
   useEffect(() => {
-    if (status === "readyToPlay") {
-      setTimeout(() => {
-        setIsVideoLoaded(true);
-      }, 500);
+    const video = opts?.videoRef?.current;
+    if (!video) return;
+
+    const handleLoaded = () => {
+      setIsVideoLoaded(true);
+    };
+
+    if (video.readyState >= 1) {
+      setIsVideoLoaded(true);
+    } else {
+      video.addEventListener("loadedmetadata", handleLoaded);
     }
-  }, [status]);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", handleLoaded);
+    };
+  }, [opts?.videoRef]);
 
   useEffect(() => {
     if (isYoutubeVideo) return;
     if (status === "readyToPlay") {
       try {
-        if (player && typeof (player as any).play === "function") {
-          (player as any).play();
-        }
+        player.play();
       } catch (error) {
         logger.error("Error starting video:", error);
       }
@@ -615,17 +633,15 @@ export const useDetailedVideoLogic = (
 
   const handleViewResults = useCallback(() => {
     try {
-      router.push({
-        pathname: "/screens/video/ExerciseResults" as any,
-        params: {
-          results: JSON.stringify(answerResults),
-          video: JSON.stringify(videoData || {}),
-        },
+      const searchParams = new URLSearchParams({
+        results: JSON.stringify(answerResults),
+        video: JSON.stringify(videoData || {}),
       });
+      router.push(`/video/results?${searchParams.toString()}`);
     } catch (error) {
       logger.error("[useDetailedVideoLogic] Error in handleViewResults:", error);
     }
-  }, [answerResults, videoData]);
+  }, [answerResults, videoData, router]);
 
   useEffect(() => {
     return () => {

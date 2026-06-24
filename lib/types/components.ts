@@ -1,10 +1,10 @@
-import { TextInputProps, ViewStyle } from "react-native";
+import React from "react";
 
 export interface BaseComponentProps {
   testID?: string;
 }
 
-export interface InputProps extends TextInputProps, BaseComponentProps {
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, BaseComponentProps {
   error?: string;
   label?: string;
 }
@@ -14,5 +14,5 @@ export interface ButtonProps extends BaseComponentProps {
   onPress: () => void;
   variant?: "primary" | "secondary" | "outline";
   disabled?: boolean;
-  style?: ViewStyle;
+  style?: React.CSSProperties;
 }

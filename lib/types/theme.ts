@@ -1,4 +1,4 @@
-import { TextStyle, ViewStyle } from "react-native";
+import React from "react";
 
 export type ThemeMode = "light" | "dark" | "system";
 
@@ -60,7 +60,7 @@ export interface Colors {
   chineseRed: string;
 }
 
-export type FontWeight = TextStyle["fontWeight"];
+export type FontWeight = "normal" | "bold" | "100" | "200" | "300" | "400" | "500" | "600" | "700" | "800" | "900";
 
 export interface TypographyStyle {
   fontSize: number;
@@ -71,13 +71,13 @@ export interface TypographyStyle {
 
 export interface Components {
   button?: {
-    primary: ViewStyle;
-    secondary: ViewStyle;
-    google: ViewStyle;
+    primary: React.CSSProperties;
+    secondary: React.CSSProperties;
+    google: React.CSSProperties;
   };
   input?: {
-    default: ViewStyle;
-    password: ViewStyle;
+    default: React.CSSProperties;
+    password: React.CSSProperties;
   };
 }
 

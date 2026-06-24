@@ -10,14 +10,14 @@ Khi chuyển từ React Native sang Next.js, chúng ta sẽ ánh xạ cấu trú
 
 | Thành Phần Mobile App | Thư Mục Trên Web (Next.js) | Giải Pháp Kỹ Thuật Trên Web |
 | :--- | :--- | :--- |
-| **Routing:** `app/(tabs)/index.tsx` | `src/app/dashboard/page.tsx` | Trang Dashboard học tập dạng Web Grid. |
-| **Routing:** `app/screens/bilingual` | `src/app/bilingual/page.tsx` | Trang danh sách tài liệu đọc song ngữ. |
-| **Routing:** `app/screens/bilingual/detail` | `src/app/bilingual/[id]/page.tsx` | Giao diện đọc song ngữ chia 2 cột. |
-| **Routing:** `app/screens/video` | `src/app/video/page.tsx` | Xem video bài giảng có phụ đề. |
-| **Component:** `RubyText.tsx` | `src/components/RubyText.tsx` | Sử dụng thẻ HTML chuẩn: `<ruby>汉字<rt>hàn zì</rt></ruby>`. |
-| **Component:** `HighlightedText.tsx` | `src/components/HighlightedText.tsx` | Sử dụng HTML/CSS để bôi màu các từ đúng/sai trong phát âm. |
-| **Token Storage:** `SecureStore` | `src/lib/utils/token.ts` | Sử dụng Cookie trình duyệt (`js-cookie`) hoặc `localStorage`. |
-| **State Management:** `Context` & `Zustand` | `src/store/` & React Context | Giữ nguyên `zustand` cho Web, viết lại các Context. |
+| **Routing:** `app/(tabs)/index.tsx` | `app/dashboard/page.tsx` | Trang Dashboard học tập dạng Web Grid. |
+| **Routing:** `app/screens/bilingual` | `app/bilingual/page.tsx` | Trang danh sách tài liệu đọc song ngữ. |
+| **Routing:** `app/screens/bilingual/detail` | `app/bilingual/[id]/page.tsx` | Giao diện đọc song ngữ chia 2 cột. |
+| **Routing:** `app/screens/video` | `app/video/page.tsx` | Xem video bài giảng có phụ đề. |
+| **Component:** `RubyText.tsx` | `components/RubyText.tsx` | Sử dụng thẻ HTML chuẩn: `<ruby>汉字<rt>hàn zì</rt></ruby>`. |
+| **Component:** `HighlightedText.tsx` | `components/HighlightedText.tsx` | Sử dụng HTML/CSS để bôi màu các từ đúng/sai trong phát âm. |
+| **Token Storage:** `SecureStore` | `lib/utils/tokenUtils.ts` | Sử dụng Cookie trình duyệt thuần hoặc `localStorage`. |
+| **State Management:** `Context` & `Zustand` | `store/` & React Context | Giữ nguyên `zustand` cho Web, viết lại các Context. |
 | **Media Player:** `expo-video` & `expo-av` | `HTML5 Video/Audio` | Dùng thẻ `<video>`, `<audio>` hoặc thư viện `react-player`. |
 
 ---
@@ -93,7 +93,7 @@ export default apiInstance;
 Trên web, bạn không cần dùng thư viện phức tạp. Thẻ `<ruby>` của HTML được hỗ trợ gốc trên tất cả trình duyệt hiện đại:
 
 ```tsx
-// src/components/RubyText.tsx
+// components/RubyText.tsx
 export function RubyText({ character, pinyin }: { character: string; pinyin: string }) {
   return (
     <ruby className="text-lg px-0.5">
@@ -220,7 +220,7 @@ Nên sử dụng `@tanstack/react-query` bọc bên ngoài Next.js App Router (q
 
 ```tsx
 import { useQuery } from "@tanstack/react-query";
-import { queryGraphQL } from "@/api/graphqlClient";
+import { queryGraphQL } from "@/api/graphql/client";
 
 const GET_SECTIONS = `
   query GetNewSections {
@@ -249,13 +249,47 @@ export function useBilingualSections() {
 
 ## 🚀 6. Lộ Trình Triển Khai Từng Bước (7 Bước)
 
-1. **Bước 1:** Chạy lệnh `npx create-next-app` để khởi tạo dự án Next.js mới.
-2. **Bước 2:** Cài đặt các thư viện kết nối mạng và quản lý trạng thái (`axios`, `graphql`, `js-cookie`, `zustand`, `@tanstack/react-query`).
-3. **Bước 3:** Sao chép các thư mục dùng chung (`lib/types`, `lib/mappers`, `lib/constants.ts`, `translations`).
-4. **Bước 4:** Di chuyển thư mục `api/` và cấu hình lại file `authConfig.ts` sử dụng Cookie của trình duyệt thay thế cho SecureStore.
-5. **Bước 5:** Viết file GraphQL Client cho Web (`src/api/graphqlClient.ts`) tối ưu hóa dung lượng bundle bằng raw string query hoặc giữ nguyên parser tùy nhu cầu.
-6. **Bước 6:** Tạo các trang UI chính:
+1. **Bước 1:** Chạy lệnh `npx create-next-app` để khởi tạo dự án Next.js mới. (Đã hoàn thành)
+2. **Bước 2:** Cài đặt các thư viện kết nối mạng và quản lý trạng thái (`axios`, `graphql`, `zustand`, `@tanstack/react-query`). (Cần cài đặt bổ sung cho Web app)
+3. **Bước 3:** Sao chép các thư mục dùng chung (`lib/types`, `lib/mappers`, `lib/constants.ts`, `translations`). (Đã hoàn thành)
+4. **Bước 4:** Di chuyển thư mục `api/` và cấu hình lại file `authConfig.ts` sử dụng Cookie của trình duyệt thay thế cho SecureStore. (Đã hoàn thành)
+5. **Bước 5:** Viết file GraphQL Client cho Web (`api/graphql/client.ts` và `api/graphql/documents.ts`). (Đã hoàn thành)
+6. **Bước 6:** Tạo các trang UI chính trong thư mục `/app/` (không phải `src/app/`):
     * Trang chủ Dashboard (`/dashboard`): hiển thị danh sách khóa học, sách và video.
     * Trang đọc song ngữ (`/bilingual/[id]`): giao diện chia làm 2 cột đối sánh, hỗ trợ click xem nghĩa.
     * Trang học từ vựng (`/flashcard`): hỗ trợ lật thẻ bằng phím Space và chọn điểm ghi nhớ.
 7. **Bước 7:** Deploy thử nghiệm lên **Vercel** hoặc **Cloudflare Pages** và cấu hình CORS trên Directus.
+
+---
+
+## 🛠️ 7. Các Phần Đã Chuyển Đổi Thành Công (Cập nhật 24/06/2026)
+
+Chúng ta đã thực hiện cấu hình lại hệ thống và loại bỏ toàn bộ thư viện liên quan đến Expo/React Native để sẵn sàng chạy Next.js. Chi tiết các tệp tin đã xử lý:
+
+### 1. Quản lý Trạng thái & Lưu trữ Token
+* **[tokenUtils.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/utils/tokenUtils.ts):** Hoàn thành triển khai quản lý token thông qua Cookie trình duyệt (`access_token`, `refresh_token`, `access_token_expires_at`) và `localStorage` (`user_data`). Đã loại bỏ hoàn toàn `expo-secure-store`.
+* **[authConfig.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/api/authConfig.ts):** Đã cập nhật logic cấu hình API và interceptor tự làm mới token bằng Cookie, đọc API base URL từ `process.env.NEXT_PUBLIC_API_URL`.
+* **[apiService.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/api/apiService.ts):** Đồng bộ hóa các hàm kiểm tra token và refresh token thông qua `tokenUtils` mới.
+* **[profile.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/api/profile.ts):** Cập nhật phương thức lấy thông tin `user_data` từ localStorage thay cho `SecureStore`.
+* **[constants.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/constants.ts):** Chuyển toàn bộ các Directus Flow UUID và cấu hình API sang sử dụng các biến môi trường `process.env.NEXT_PUBLIC_...`.
+
+### 2. Xử lý Ghi âm & Chuyển giọng nói thành văn bản (STT)
+* **[audioRecordingService.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/services/audioRecordingService.ts):** Loại bỏ hoàn toàn `expo-av`, `expo-file-system`. Viết lại trình điều khiển sử dụng **MediaRecorder API** và **navigator.mediaDevices** tiêu chuẩn của trình duyệt. Dữ liệu âm thanh ghi âm được lưu trực tiếp dưới dạng `Blob` trong bộ nhớ và biểu diễn bằng Blob URL (`URL.createObjectURL`).
+* **[marutekTranscribeService.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/services/marutekTranscribeService.ts):** Loại bỏ `expo-file-system`. Tự động tải lại đối tượng `Blob` từ Blob URL và gửi kèm `FormData` qua `fetch` lên API của Marutek. Sử dụng `FileReader` để convert sang base64 khi có fallback.
+
+### 3. Phản hồi Âm thanh & Giao diện Chữ Hán
+* **[audioFeedback.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/services/audioFeedback.ts):** Loại bỏ `expo-av`. Sử dụng đối tượng `window.Audio` gốc để phát nhạc hiệu ứng từ đường dẫn tĩnh `/sound/`.
+* **[copy_sounds.js](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/copy_sounds.js):** Đã chạy thành công tập lệnh sao chép toàn bộ âm thanh từ dự án gốc sang thư mục tĩnh `/public/sound/`.
+* **[RubyText.tsx](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/components/RubyText.tsx):** Loại bỏ hoàn toàn code React Native. Triển khai cấu trúc hiển thị Pinyin chạy đè bằng cặp thẻ HTML5 `<ruby>` và `<rt>` giúp trình duyệt hiển thị mượt mà trên môi trường Web.
+* **[speech.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/utils/speech.ts):** Triển khai giọng đọc tiếng Trung và dừng nói qua Web SpeechSynthesis API gốc của trình duyệt.
+* **[theme.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/theme.ts):** Tạo bộ gỡ lỗi theme hỗ trợ Light/Dark mode thích ứng, xuất ra các định dạng typography và layout.
+
+### 4. Kiểu Dữ Liệu, Hooks, & Components Giao Diện Web
+* **Khớp nối Types**: Loại bỏ hoàn toàn dependencies React Native trong [types/theme.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/types/theme.ts), [types/components.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/types/components.ts) và [types/svg.d.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/types/svg.d.ts).
+* **Chuyển đổi Hooks nghiệp vụ**: 
+  - [useDetailedVideoLogic.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/hooks/useDetailedVideoLogic.ts): Sử dụng HTML5 Video Element Ref để theo dõi timeline và đồng bộ trạng thái phát.
+  - [useVocabFlashcardData.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/hooks/useVocabFlashcardData.ts) và [usePremium.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/hooks/usePremium.ts): Tích hợp định tuyến Next.js Router để chuyển trang kết quả học tập.
+  - [useConversationDetail.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/lib/hooks/useConversationDetail.ts): Thay thế `expo-speech` và `useFocusEffect` bằng Web SpeechSynthesis.
+* **Tái cấu trúc UI Components**: Chuyển đổi toàn bộ [SubtitleRow.tsx](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/components/bilingual/SubtitleRow.tsx), [HighlightedText.tsx](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/components/HighlightedText.tsx), [FlashcardC.tsx](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/components/flashcard/FlashcardC.tsx) (lật 3D bằng CSS thuần), [FlashcardControls.tsx](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/components/flashcard/FlashcardControls.tsx), [SubtitleItem.tsx](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/components/video/SubtitleItem.tsx), [VideoDetailedVocabExercise.tsx](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/components/video/VideoDetailedVocabExercise.tsx), và [WordInfoModal.tsx](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/components/video/WordInfoModal.tsx) từ các thẻ di động sang HTML5 và Tailwind CSS.
+* **Dịch vụ phụ đề**: Tạo [services/subtitle.ts](file:///c:/Users/ADMIN/Code/CDSL/CLA/cla-web/services/subtitle.ts) triển khai trình phân giải file SRT song ngữ.
+

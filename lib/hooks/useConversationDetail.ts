@@ -1,5 +1,5 @@
 import { speakingApi } from "@/api/speaking";
-import { speakChinese } from "@/lib/utils/speech";
+import { speakChinese, stopSpeech } from "@/lib/utils/speech";
 import { usePremium } from "@/lib/hooks/usePremium";
 import { playTranslationResultSound } from "@/services/audioFeedback";
 import {
@@ -8,9 +8,7 @@ import {
   RecordingState,
 } from "@/services/audioRecordingService";
 import { compareTextsAdvanced, ComparisonResult } from "@/services/textComparisonService";
-import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import * as Speech from "expo-speech";
 import { logger } from "@/services/logger";
 
 export interface ConversationItem {
@@ -93,25 +91,23 @@ export function useConversationDetail(conversationId: string | null) {
 
     return () => {
       unsubscribe();
-      Speech.stop().catch((error) => {
+      stopSpeech().catch((error: unknown) => {
         logger.error("Error stopping speech:", error);
       });
-      audioRecordingService.cleanup().catch((error) => {
+      audioRecordingService.cleanup().catch((error: unknown) => {
         logger.error("Recording cleanup error:", error);
       });
     };
   }, [activeRecordingId]);
 
   // Stop speech audio when screen loses focus (user navigates away)
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        Speech.stop().catch((error) => {
-          logger.error("Error stopping speech on blur:", error);
-        });
-      };
-    }, []),
-  );
+  useEffect(() => {
+    return () => {
+      stopSpeech().catch((error: unknown) => {
+        logger.error("Error stopping speech on unmount:", error);
+      });
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

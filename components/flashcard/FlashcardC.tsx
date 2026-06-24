@@ -1,5 +1,4 @@
-import React, { useRef, useEffect } from "react";
-import { View, StyleSheet, Animated, TouchableOpacity, PanResponder } from "react-native";
+import React from "react";
 import { useTheme, useThemeColors } from "@/lib/theme";
 
 interface FlashcardCardProps {
@@ -11,113 +10,68 @@ interface FlashcardCardProps {
 
 export const FlashcardCard = React.memo<FlashcardCardProps>(
   ({ isFlipped, onFlip, frontContent, backContent }) => {
-    const flipAnimation = useRef(new Animated.Value(0)).current;
-    const isFlippedRef = useRef(isFlipped);
-
-    useEffect(() => {
-      isFlippedRef.current = isFlipped;
-      Animated.timing(flipAnimation, {
-        toValue: isFlipped ? 1 : 0,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    }, [isFlipped, flipAnimation]);
-
-    const frontInterpolate = flipAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: ["0deg", "180deg"],
-    });
-
-    const backInterpolate = flipAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: ["180deg", "360deg"],
-    });
-
-    const panResponder = useRef(
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          Math.abs(gesture.dx) > 20 && Math.abs(gesture.dy) < 20,
-        onPanResponderRelease: (_, gesture) => {
-          if (gesture.dx > 50) {
-            // Swipe Right - Flip to back
-            if (!isFlippedRef.current) onFlip();
-          } else if (gesture.dx < -50) {
-            // Swipe Left - Flip to front
-            if (isFlippedRef.current) onFlip();
-          }
-        },
-      }),
-    ).current;
-
     const { colors } = useThemeColors();
     const { actualTheme } = useTheme();
     const isDark = actualTheme === "dark";
 
-    return (
-      <View style={styles.container} {...panResponder.panHandlers}>
-        {/* Front Side */}
-        <Animated.View
-          style={[
-            styles.card,
-            {
-              backgroundColor: isDark ? colors.background.secondary : colors.secondary,
-              borderColor: isDark ? colors.primary : "transparent",
-              borderWidth: isDark ? 1.5 : 0,
-              transform: [{ rotateY: frontInterpolate }, { perspective: 1000 }],
-              zIndex: isFlipped ? 0 : 1,
-            },
-          ]}
-        >
-          <TouchableOpacity style={styles.touchable} onPress={onFlip} activeOpacity={1}>
-            {frontContent}
-          </TouchableOpacity>
-        </Animated.View>
+    const cardBgColor = isDark ? colors.background.secondary : colors.secondary;
+    const cardBorderColor = isDark ? colors.primary : "transparent";
+    const cardBorderWidth = isDark ? "1.5px" : "0px";
 
-        {/* Back Side */}
-        <Animated.View
-          style={[
-            styles.card,
-            {
-              backgroundColor: isDark ? colors.background.card : colors.background.tertiary,
-              borderColor: isDark ? colors.border.secondary : "transparent",
-              shadowColor: colors.shadow,
-              borderWidth: isDark ? 1 : 0,
-              transform: [{ rotateY: backInterpolate }, { perspective: 1000 }],
-              zIndex: isFlipped ? 1 : 0,
-            },
-          ]}
+    const backBgColor = isDark ? colors.background.card : colors.background.tertiary;
+    const backBorderColor = isDark ? colors.border.secondary : "transparent";
+    const backBorderWidth = isDark ? "1px" : "0px";
+
+    return (
+      <button 
+        className="w-full h-full flex items-center justify-center cursor-pointer select-none focus:outline-none bg-transparent border-none p-0 text-left items-stretch"
+        style={{ perspective: "1000px" }}
+        onClick={onFlip}
+      >
+        <div 
+          className="relative w-full h-full transition-transform duration-500"
+          style={{
+            transformStyle: "preserve-3d",
+            transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          }}
         >
-          <TouchableOpacity style={styles.touchable} onPress={onFlip} activeOpacity={1}>
-            {backContent}
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+          {/* Front Side */}
+          <div
+            className="absolute inset-0 w-full h-full rounded-[24px] shadow-lg flex flex-col overflow-hidden"
+            style={{
+              backfaceVisibility: "hidden",
+              backgroundColor: cardBgColor,
+              borderColor: cardBorderColor,
+              borderWidth: cardBorderWidth,
+              borderStyle: isDark ? "solid" : "none",
+              zIndex: isFlipped ? 0 : 1,
+            }}
+          >
+            <div className="flex-1 w-full h-full">
+              {frontContent}
+            </div>
+          </div>
+
+          {/* Back Side */}
+          <div
+            className="absolute inset-0 w-full h-full rounded-[24px] shadow-lg flex flex-col overflow-hidden"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+              backgroundColor: backBgColor,
+              borderColor: backBorderColor,
+              borderWidth: backBorderWidth,
+              borderStyle: isDark ? "solid" : "none",
+              zIndex: isFlipped ? 1 : 0,
+            }}
+          >
+            <div className="flex-1 w-full h-full">
+              {backContent}
+            </div>
+          </div>
+        </div>
+      </button>
     );
   },
 );
 FlashcardCard.displayName = "FlashcardCard";
-
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  card: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 24,
-    position: "absolute",
-    backfaceVisibility: "hidden",
-    elevation: 8,
-    shadowColor: "transparent",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  touchable: {
-    flex: 1,
-    borderRadius: 24,
-  },
-});

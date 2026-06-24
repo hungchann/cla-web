@@ -1,8 +1,6 @@
 import { SubtitleEntry } from "@/lib/types/subtitle";
-import { Ionicons } from "@expo/vector-icons";
-import React, { memo, useCallback } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, type ViewStyle } from "react-native";
-import { RubyText } from "../common/RubyText";
+import React, { memo, useEffect, useRef } from "react";
+import { RubyText } from "../RubyText";
 
 type SubtitleRowProps = {
   item: SubtitleEntry;
@@ -13,7 +11,7 @@ type SubtitleRowProps = {
   colors: any;
   onReplay: (item: any, index: number) => void;
   onLayout?: (index: number, y: number, height: number) => void;
-  style?: ViewStyle;
+  className?: string;
 };
 
 export const SubtitleRow = memo(function SubtitleRow({
@@ -25,26 +23,31 @@ export const SubtitleRow = memo(function SubtitleRow({
   colors,
   onReplay,
   onLayout,
-  style,
+  className = "",
 }: SubtitleRowProps) {
-  const handleLayout = useCallback(
-    (event: any) => {
-      const { y, height } = event.nativeEvent.layout;
-      onLayout?.(index, y, height);
-    },
-    [index, onLayout],
-  );
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (rowRef.current && onLayout) {
+      const rect = rowRef.current.getBoundingClientRect();
+      const y = rowRef.current.offsetTop || 0;
+      onLayout(index, y, rect.height);
+    }
+  }, [index, onLayout]);
 
   const isActive = activeIndex === index;
   const textColor = isActive ? colors.text.inverse : colors.text.primary;
 
   return (
-    <View
-      style={[styles.subtitleRowContainer, isActive && { backgroundColor: colors.primary }, style]}
-      onLayout={handleLayout}
+    <div
+      ref={rowRef}
+      className={`relative w-full flex flex-row items-center justify-between p-2.5 my-1 rounded-2xl overflow-hidden min-h-[60px] transition-colors duration-200 ${className}`}
+      style={{
+        backgroundColor: isActive ? colors.primary : "transparent",
+      }}
     >
-      <View style={styles.textBlock}>
-        <View style={styles.wordsWrapper}>
+      <div className="flex-1 flex flex-col items-start pr-10">
+        <div className="flex flex-row flex-wrap items-start">
           {Array.isArray(item.segmentedWords) ? (
             item.segmentedWords.map((w: { word: string; pinyin: string }, i: number) => (
               <RubyText
@@ -56,7 +59,7 @@ export const SubtitleRow = memo(function SubtitleRow({
                 textColor={textColor}
                 pinyinColor={textColor}
                 onPress={() => onWordPress(w.word)}
-                containerStyle={styles.rubySpacing}
+                containerClassName="mr-2 mb-1"
               />
             ))
           ) : (
@@ -67,88 +70,43 @@ export const SubtitleRow = memo(function SubtitleRow({
               pinyinSize={14}
               textColor={textColor}
               pinyinColor={textColor}
-              containerStyle={styles.rubyUnsegmented}
+              containerClassName="mr-2 mb-1"
             />
           )}
-        </View>
-        <Text
-          style={[
-            styles.vietnameseText,
-            {
-              color: textColor,
-              opacity: isActive ? 1 : 0.9,
-            },
-          ]}
+        </div>
+        <p
+          className="mt-1 text-[15px] leading-snug text-left self-stretch transition-opacity duration-250"
+          style={{
+            color: textColor,
+            opacity: isActive ? 1 : 0.9,
+          }}
         >
           {item.vietnamese}
-        </Text>
-      </View>
+        </p>
+      </div>
 
-      <TouchableOpacity
-        onPress={() => onReplay(item, index)}
-        style={[
-          styles.replayButton,
-          {
-            borderColor: isActive ? colors.text.inverse : colors.primary,
-            backgroundColor: isActive ? colors.primary : colors.background.primary,
-          },
-        ]}
+      <button
+        onClick={() => onReplay(item, index)}
+        className="absolute right-2.5 top-2.5 z-10 w-7 h-7 rounded-full border border-solid flex items-center justify-center cursor-pointer transition-colors"
+        style={{
+          borderColor: isActive ? colors.text.inverse : colors.primary,
+          backgroundColor: isActive ? colors.primary : colors.background.primary,
+        }}
       >
-        <Ionicons name="play" size={14} color={isActive ? colors.text.inverse : colors.primary} />
-      </TouchableOpacity>
-    </View>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-3.5 h-3.5"
+          style={{ color: isActive ? colors.text.inverse : colors.primary }}
+        >
+          <path
+            fillRule="evenodd"
+            d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
+    </div>
   );
-});
-
-const styles = StyleSheet.create({
-  subtitleRowContainer: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 8,
-    marginVertical: 2,
-    borderRadius: 16,
-    overflow: "hidden",
-    minHeight: 60,
-    position: "relative",
-  },
-  textBlock: {
-    flex: 1,
-    alignItems: "flex-start",
-    paddingRight: 40,
-  },
-  wordsWrapper: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "flex-start",
-  },
-  rubySpacing: {
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  rubyUnsegmented: {
-    alignItems: "flex-start",
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  vietnameseText: {
-    marginTop: 4,
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: "left",
-    alignSelf: "stretch",
-  },
-  replayButton: {
-    position: "absolute",
-    right: 10,
-    top: 10,
-    zIndex: 1,
-    borderWidth: 1,
-    width: 28,
-    height: 28,
-    borderRadius: 100,
-    alignItems: "center",
-    justifyContent: "center",
-  },
 });

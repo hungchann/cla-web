@@ -137,8 +137,8 @@ export const scrollToSubtitle = (
   if (scrollViewRef.current) {
     const yOffset = activeIndex * itemHeight;
     scrollViewRef.current.scrollTo({
-      y: yOffset,
-      animated: true,
+      top: yOffset,
+      behavior: "smooth",
     });
   }
 };

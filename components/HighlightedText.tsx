@@ -1,6 +1,5 @@
 import { useThemeColors } from "@/lib/theme";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
 import { RubyText } from "./RubyText";
 
 interface HighlightedTextProps {
@@ -48,12 +47,17 @@ export default function HighlightedText({
   });
 
   return (
-    <View style={styles.container}>
+    <div className="flex-1 w-full">
       {showPinyin && segmentedWords.length > 0 ? (
         // Show segmented words with pinyin
-        <View style={styles.segmentedContainer}>
+        <div className="flex flex-row flex-wrap justify-start items-start gap-y-1">
           {segmentedWords.map((seg, idx) => {
             const highlight = highlightedMap.get(seg.word);
+            let textColor = colors.text.primary;
+            if (highlight?.isCorrect) textColor = colors.success;
+            else if (highlight?.isMissing) textColor = colors.error;
+            else if (highlight?.isExtra) textColor = colors.warning;
+
             return (
               <RubyText
                 key={`${seg.word}-${idx}`}
@@ -61,94 +65,56 @@ export default function HighlightedText({
                 pinyin={seg.pinyin}
                 fontSize={22}
                 pinyinSize={12}
-                textColor={
-                  highlight?.isCorrect
-                    ? colors.success
-                    : highlight?.isMissing
-                      ? colors.error
-                      : highlight?.isExtra
-                        ? colors.warning
-                        : colors.text.primary
-                }
-                style={highlight?.isSubstitution ? { fontStyle: "italic" } : undefined}
+                textColor={textColor}
+                pinyinColor={textColor}
                 bold={highlight?.isCorrect || highlight?.isSubstitution}
-                containerStyle={{ marginHorizontal: 4, marginVertical: 2 }}
+                className={highlight?.isSubstitution ? "italic" : ""}
+                containerClassName="mx-1 my-0.5"
               />
             );
           })}
-        </View>
+        </div>
       ) : (
         // Show character by character
-        <View style={styles.characterContainer}>
-          {displayItems.map((item, index) => (
-            <Text
-              key={index}
-              style={[
-                styles.character,
-                { color: colors.text.primary },
-                item.isCorrect && { color: colors.success, fontWeight: "bold" },
-                item.isMissing && {
-                  color: colors.error,
-                  backgroundColor: colors.statusSurface.errorSubtle,
-                  borderRadius: 4,
-                  paddingHorizontal: 2,
-                },
-                item.isExtra && {
-                  color: colors.warning,
-                  backgroundColor: colors.statusSurface.warningSubtle,
-                  borderRadius: 4,
-                  paddingHorizontal: 2,
-                },
-                item.isSubstitution && {
-                  color: colors.warning,
-                  backgroundColor: colors.statusSurface.warningEmphasis,
-                  borderRadius: 4,
-                  paddingHorizontal: 2,
-                  fontStyle: "italic",
-                  fontWeight: "bold",
-                },
-              ]}
-            >
-              {item.char}
-            </Text>
-          ))}
-        </View>
+        <div className="flex flex-row flex-wrap justify-start items-start gap-y-1">
+          {displayItems.map((item, index) => {
+            const charStyle: React.CSSProperties = {
+              fontSize: "24px",
+              lineHeight: "28px",
+              margin: "0 2px",
+              color: colors.text.primary,
+            };
+
+            if (item.isCorrect) {
+              charStyle.color = colors.success;
+              charStyle.fontWeight = "bold";
+            } else if (item.isMissing) {
+              charStyle.color = colors.error;
+              charStyle.backgroundColor = colors.statusSurface.errorSubtle;
+              charStyle.borderRadius = "4px";
+              charStyle.padding = "0 4px";
+            } else if (item.isExtra) {
+              charStyle.color = colors.warning;
+              charStyle.backgroundColor = colors.statusSurface.warningSubtle;
+              charStyle.borderRadius = "4px";
+              charStyle.padding = "0 4px";
+            } else if (item.isSubstitution) {
+              charStyle.color = colors.warning;
+              charStyle.backgroundColor = colors.statusSurface.warningEmphasis;
+              charStyle.borderRadius = "4px";
+              charStyle.padding = "0 4px";
+              charStyle.fontStyle = "italic";
+              charStyle.fontWeight = "bold";
+            }
+
+            return (
+              <span key={index} style={charStyle}>
+                {item.char}
+              </span>
+            );
+          })}
+        </div>
       )}
-    </View>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  segmentedContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
-  },
-  segmentedWord: {
-    alignItems: "center",
-    marginHorizontal: 4,
-    marginVertical: 2,
-  },
-  pinyinText: {
-    fontSize: 12,
-    lineHeight: 14,
-  },
-  hanziText: {
-    fontSize: 22,
-    lineHeight: 26,
-  },
-  characterContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
-  },
-  character: {
-    fontSize: 24,
-    lineHeight: 28,
-    marginHorizontal: 1,
-  },
-});

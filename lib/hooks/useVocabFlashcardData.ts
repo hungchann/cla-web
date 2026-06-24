@@ -1,5 +1,5 @@
 import { notebookApi } from "@/api/notebook";
-import { safeNavigation } from "@/lib/utils/safeNavigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { logger } from "@/services/logger";
 
@@ -68,6 +68,7 @@ export function useVocabFlashcardData({
   restart,
   fakeData,
 }: UseVocabFlashcardDataProps) {
+  const router = useRouter();
   // --- State Management ---
   const [dataVocal, setDataVocal] = useState<VocabCardItem[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(true);
@@ -377,16 +378,17 @@ export function useVocabFlashcardData({
 
   const navigateToResult = useCallback(
     (finalKnown: number, finalUnknown: number) => {
-      safeNavigation.replace("/screens/flashcard/StudyResults", {
+      const searchParams = new URLSearchParams({
         known: String(finalKnown),
         unknown: String(finalUnknown),
         total: String(dataVocal.length),
-        notebookId: normalized.notebookId,
-        topicId: normalized.topicId,
-        type: normalized.type,
+        notebookId: normalized.notebookId || "",
+        topicId: normalized.topicId || "",
+        type: normalized.type || "",
       });
+      router.replace(`/flashcard/results?${searchParams.toString()}`);
     },
-    [dataVocal.length, normalized],
+    [dataVocal.length, normalized, router],
   );
 
   const moveToNext = useCallback(

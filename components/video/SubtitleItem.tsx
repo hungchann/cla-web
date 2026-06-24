@@ -1,10 +1,8 @@
 import { device, useThemeColors } from "@/lib/theme";
 import { SubtitleSegment } from "@/lib/types/video";
-import { Ionicons } from "@expo/vector-icons";
 import pinyinConverter from "chinese-to-pinyin";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { RubyText } from "../common/RubyText";
+import { RubyText } from "../RubyText";
 
 interface SubtitleItemProps {
   item: SubtitleSegment;
@@ -36,13 +34,23 @@ export const SubtitleItem = React.memo(
     }, [item.chinese, item.segmentedWords]);
 
     return (
-      <View style={[styles.container, isActive && { backgroundColor: colors.primary }]}>
-        <TouchableOpacity
-          style={styles.content}
-          activeOpacity={1}
-          onPress={() => onVocabularyPress(item, index)}
-        >
-          <View style={styles.wordsWrapper}>
+      <div 
+        className="relative w-full flex flex-row items-center justify-between p-2 my-0.5 rounded-2xl overflow-hidden min-h-[60px] transition-colors duration-250 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2"
+        style={{
+          backgroundColor: isActive ? colors.primary : "transparent",
+        }}
+        onClick={() => onVocabularyPress(item, index)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onVocabularyPress(item, index);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
+        <div className="flex-1 flex flex-col items-start pr-10">
+          <div className="flex flex-row flex-wrap items-start">
             {Array.isArray(item.segmentedWords) ? (
               item.segmentedWords.map((w, i) => (
                 <RubyText
@@ -54,11 +62,11 @@ export const SubtitleItem = React.memo(
                   textColor={textColor}
                   pinyinColor={textColor}
                   onPress={() => onWordPress(w.word)}
-                  containerStyle={{ marginRight: 8, marginBottom: 4 }}
+                  containerClassName="mr-2 mb-1"
                 />
               ))
             ) : (
-              <View style={styles.unsegmentedWrapper}>
+              <div className="flex flex-col items-start mr-2 mb-1">
                 <RubyText
                   word={item.chinese}
                   pinyin={isOpenPinyin ? pinyinText : undefined}
@@ -66,102 +74,51 @@ export const SubtitleItem = React.memo(
                   pinyinSize={device.isLarge ? 16 : 13}
                   textColor={textColor}
                   pinyinColor={textColor}
-                  containerStyle={{ alignItems: "flex-start", marginRight: 8, marginBottom: 4 }}
+                  containerClassName="items-start"
                 />
-              </View>
+              </div>
             )}
-          </View>
-          <Text
-            style={[
-              styles.vietnameseText,
-              { color: textColor },
-              device.isLarge && { fontSize: 20, lineHeight: 28 },
-            ]}
+          </div>
+          <p
+            className="text-[15px] leading-snug text-left self-stretch"
+            style={{ 
+              color: textColor,
+              fontSize: device.isLarge ? "20px" : "15px",
+              lineHeight: device.isLarge ? "28px" : "22px"
+            }}
           >
             {item.vietnamese}
-          </Text>
-        </TouchableOpacity>
+          </p>
+        </div>
 
-        <TouchableOpacity
-          onPress={() => onReplayPress(item, index)}
-          style={[
-            styles.replayButton,
-            {
-              borderColor: isActive ? colors.text.inverse : colors.primary,
-              backgroundColor: isActive ? colors.primary : colors.background.primary,
-            },
-          ]}
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // prevent triggering onVocabularyPress
+            onReplayPress(item, index);
+          }}
+          className="absolute right-2.5 top-2.5 z-10 w-7 h-7 rounded-full border border-solid flex items-center justify-center cursor-pointer transition-colors"
+          style={{
+            borderColor: isActive ? colors.text.inverse : colors.primary,
+            backgroundColor: isActive ? colors.primary : colors.background.primary,
+          }}
         >
-          <Ionicons name="play" size={14} color={isActive ? colors.text.inverse : colors.primary} />
-        </TouchableOpacity>
-      </View>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="w-3.5 h-3.5"
+            style={{ color: isActive ? colors.text.inverse : colors.primary }}
+          >
+            <path
+              fillRule="evenodd"
+              d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
     );
   },
 );
 
 SubtitleItem.displayName = "SubtitleItem";
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "transparent",
-    borderRadius: 16,
-    overflow: "hidden",
-    padding: 8,
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: 60,
-  },
-  content: {
-    flex: 1,
-    alignItems: "flex-start",
-    paddingRight: 40,
-  },
-  wordsWrapper: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "flex-start",
-  },
-  segmentedToken: {
-    marginRight: 8,
-    marginBottom: 4,
-    alignItems: "center",
-    borderRadius: 10,
-  },
-  pinyinText: {
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "left",
-    marginBottom: 2,
-  },
-  chineseText: {
-    fontSize: 18,
-    lineHeight: 24,
-    textAlign: "left",
-  },
-  unsegmentedWrapper: {
-    flexDirection: "column",
-    marginRight: 8,
-    marginBottom: 4,
-    alignItems: "flex-start",
-  },
-  vietnameseText: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: "left",
-    alignSelf: "stretch",
-  },
-  replayButton: {
-    borderWidth: 1,
-    width: 28,
-    height: 28,
-    borderRadius: 100,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "absolute",
-    right: 10,
-    top: 10,
-    zIndex: 1,
-  },
-});
