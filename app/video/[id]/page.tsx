@@ -113,7 +113,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const [isOpenPinyin, setIsOpenPinyin] = useState(true);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
-  
+
   // Custom states hỗ trợ trắc nghiệm video
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
@@ -215,7 +215,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     // Tìm options tương ứng từ mock exercises (hoặc API)
     const exercise = MOCK_EXERCISES.find((ex) => ex.id === activeQuestion.id);
     const option = exercise?.options.find((opt) => opt.id === selectedAnswer);
-    
+
     setIsAnswerChecked(true);
     setIsAnswerCorrect(!!option?.isCorrect);
 
@@ -260,14 +260,12 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
           <span className="text-xs font-bold text-zinc-500">Hiển thị Pinyin:</span>
           <button
             onClick={() => setIsOpenPinyin(!isOpenPinyin)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              isOpenPinyin ? "bg-amber-600" : "bg-zinc-250 dark:bg-zinc-700"
-            }`}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isOpenPinyin ? "bg-amber-600" : "bg-zinc-250 dark:bg-zinc-700"
+              }`}
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                isOpenPinyin ? "translate-x-5" : "translate-x-0"
-              }`}
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isOpenPinyin ? "translate-x-5" : "translate-x-0"
+                }`}
             />
           </button>
         </div>
@@ -295,7 +293,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                   <span className="text-xs font-extrabold uppercase tracking-wider text-amber-500">
                     💡 Trắc Nghiệm Dừng Video
                   </span>
-                  
+
                   <div>
                     <p className="text-md font-bold text-zinc-900 dark:text-white">
                       {activeEx.question}
@@ -311,11 +309,10 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                           key={opt.id}
                           onClick={() => !isAnswerChecked && setSelectedAnswer(opt.id)}
                           disabled={isAnswerChecked}
-                          className={`w-full py-2.5 px-4 rounded-xl border text-left text-sm font-semibold transition-all flex items-center justify-between ${
-                            isSelected
+                          className={`w-full py-2.5 px-4 rounded-xl border text-left text-sm font-semibold transition-all flex items-center justify-between ${isSelected
                               ? "bg-amber-600 border-amber-600 text-white"
                               : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300"
-                          }`}
+                            }`}
                         >
                           <span>
                             {opt.hanzi} {opt.pinyin && `(${opt.pinyin})`}
@@ -330,9 +327,8 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
 
                   {/* Result notification */}
                   {isAnswerChecked && (
-                    <div className={`p-3 rounded-lg text-xs font-semibold ${
-                      isAnswerCorrect ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
-                    }`}>
+                    <div className={`p-3 rounded-lg text-xs font-semibold ${isAnswerCorrect ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                      }`}>
                       {isAnswerCorrect ? "Chính xác! Bạn học rất tốt." : "Chưa đúng rồi! Ôn tập lại nhé."}
                     </div>
                   )}
@@ -377,7 +373,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-100 dark:border-zinc-800 pb-3">
               Phụ đề chạy chữ
             </h2>
-            
+
             <div
               ref={subtitleContainerRef}
               className="flex-1 overflow-y-auto mt-2 pr-1 scrollbar-thin flex flex-col gap-1"
@@ -391,7 +387,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                   isOpenPinyin={isOpenPinyin}
                   onWordPress={handleWordPress}
                   onReplayPress={handleReplayPress}
-                  onVocabularyPress={() => {}}
+                  onVocabularyPress={() => { }}
                 />
               ))}
             </div>
