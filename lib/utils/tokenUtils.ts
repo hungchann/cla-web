@@ -31,12 +31,16 @@ function setCookie(name: string, value: string, days?: number) {
     date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
     expires = `; expires=${date.toUTCString()}`;
   }
-  document.cookie = `${name}=${value || ""}${expires}; path=/; SameSite=Lax; Secure`;
+  const isSecure = globalThis.window?.location?.protocol === "https:";
+  const secureFlag = isSecure ? "; Secure" : "";
+  document.cookie = `${name}=${value || ""}${expires}; path=/; SameSite=Lax${secureFlag}`;
 }
 
 function deleteCookie(name: string) {
   if (typeof document === "undefined") return;
-  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax; Secure`;
+  const isSecure = globalThis.window?.location?.protocol === "https:";
+  const secureFlag = isSecure ? "; Secure" : "";
+  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax${secureFlag}`;
 }
 
 export const tokenUtils = {

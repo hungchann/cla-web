@@ -5,7 +5,26 @@ import {
   ACCOUNT_TYPE_FLOW_PATH,
   GET_TARGETS_FLOW_PATH,
   UPDATE_TARGET_USER_FLOW_PATH,
+  UPDATE_HSK_LEVEL_FLOW_PATH,
 } from "@/lib/constants";
+import { getUser } from "@/api/apiService";
+
+export const updateHskLevel = async (levelId: string) => {
+  try {
+    const user = await getUser(true); // force refresh user data cache
+    const userId = user.profile?.id;
+    if (!userId) throw new Error("Không tìm thấy profile người dùng");
+
+    const response = await apiInstance.post(UPDATE_HSK_LEVEL_FLOW_PATH, {
+      id: userId,
+      self_assessed_hsk_level: levelId,
+    });
+    return response.data;
+  } catch (error) {
+    logger.error("Lỗi cập nhật trình độ HSK:", error);
+    throw error;
+  }
+};
 // export const bilingualApi = {
 
 //API dung de post target

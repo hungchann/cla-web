@@ -2,7 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
+import { fetchVideoGenres } from "@/api/video";
 import Link from "next/link";
+import { useState, useMemo } from "react";
 
 // Mock video data để phục vụ demo khi API rỗng
 const MOCK_VIDEOS = [
@@ -24,7 +26,7 @@ const MOCK_VIDEOS = [
   },
   {
     id: "v3",
-    title: "五分钟学会用汉语点餐",
+    title: "五分钟学会用汉语點餐",
     title_trans: "5 phút học cách gọi món ăn bằng tiếng Trung",
     YouTube_URL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     date_created: "2026-06-16T15:30:00Z",
@@ -33,6 +35,8 @@ const MOCK_VIDEOS = [
 ];
 
 export default function VideoListPage() {
+  const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
+
   const { data: videos, isLoading } = useQuery({
     queryKey: ["video-sections"],
     queryFn: async () => {
@@ -47,7 +51,28 @@ export default function VideoListPage() {
     retry: 1,
   });
 
-  const displayVideos = videos && videos.length > 0 ? videos : MOCK_VIDEOS;
+  const { data: genres } = useQuery({
+    queryKey: ["video-genres"],
+    queryFn: async () => {
+      try {
+        const res = await fetchVideoGenres();
+        return res;
+      } catch (err) {
+        console.warn("Failed to fetch video genres", err);
+        return [];
+      }
+    },
+    retry: 1,
+  });
+
+  const displayVideos = useMemo(() => {
+    const list = videos && videos.length > 0 ? videos : MOCK_VIDEOS;
+    if (!selectedGenreId) return list;
+    return list.filter((video: any) => {
+      const genreId = video.genre_id?.id ?? video.genre_id;
+      return String(genreId) === String(selectedGenreId);
+    });
+  }, [videos, selectedGenreId]);
 
   return (
     <div className="flex-1 flex flex-col gap-6 py-6">
@@ -57,6 +82,33 @@ export default function VideoListPage() {
         <p className="text-zinc-500 dark:text-zinc-400">
           Xem các video bài giảng chất lượng với phụ đề chạy chữ song ngữ. Trả lời câu hỏi trắc nghiệm tương tác để ôn tập từ vựng ngay trong quá trình xem.
         </p>
+      </div>
+
+      {/* Category Filters */}
+      <div className="flex flex-wrap gap-2.5">
+        <button
+          onClick={() => setSelectedGenreId(null)}
+          className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer select-none ${
+            selectedGenreId === null
+              ? "bg-amber-600 text-white shadow-md shadow-amber-600/10"
+              : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          📂 Tất cả
+        </button>
+        {genres?.map((genre) => (
+          <button
+            key={genre.id}
+            onClick={() => setSelectedGenreId(genre.id)}
+            className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer select-none ${
+              selectedGenreId === genre.id
+                ? "bg-amber-600 text-white shadow-md shadow-amber-600/10"
+                : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
+            }`}
+          >
+            🏷️ {genre.title}
+          </button>
+        ))}
       </div>
 
       {/* Loading State */}

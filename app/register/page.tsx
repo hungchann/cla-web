@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { RegisterUser } from "@/api/apiService";
+import { RegisterUser, checkEmailExists } from "@/api/apiService";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,6 +20,13 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
+      // 1. Kiểm tra sớm xem email đã tồn tại chưa
+      const exists = await checkEmailExists(email);
+      if (exists) {
+        throw new Error("Tài khoản đã tồn tại. Vui lòng đăng nhập hoặc sử dụng email khác.");
+      }
+
+      // 2. Tiến hành đăng ký tài khoản
       await RegisterUser(email, password, firstName, lastName);
       setSuccess(true);
       setTimeout(() => {

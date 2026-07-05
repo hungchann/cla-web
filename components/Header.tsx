@@ -7,9 +7,10 @@ interface HeaderProps {
   view?: string;
   setView?: (view: string) => void;
   showLogo?: boolean;
+  title?: string;
 }
 
-export default function Header({ view, setView, showLogo = true }: Readonly<HeaderProps>) {
+export default function Header({ view, setView, showLogo = true, title }: Readonly<HeaderProps>) {
   const pathname = usePathname();
 
   // Hide the global layout header on learn pages

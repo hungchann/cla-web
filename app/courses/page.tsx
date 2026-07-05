@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "@/components/Sidebar";
 
 const featuredCourses = [
   {

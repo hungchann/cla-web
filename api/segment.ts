@@ -48,13 +48,13 @@ export async function segmentChineseText(chineseTexts: string[]): Promise<Segmen
     const fetchedResults = await sendAIRequest(
       async () => {
         const response = await axios.post(
-          "https://marutek.space/api/chinese/segment",
+          "/api/chinese/segment",
           textsToFetch,
           {
             headers: {
               "Content-Type": "application/json",
             },
-            timeout: 15000,
+            timeout: 30000,
           },
         );
         return response.data as SegmentResult[][];

@@ -1,11 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useVocabFlashcardData } from "@/lib/hooks/useVocabFlashcardData";
 import { FlashcardCard } from "@/components/flashcard/FlashcardC";
 import { FlashcardControls } from "@/components/flashcard/FlashcardControls";
 import { speakChinese } from "@/lib/utils/speech";
+import { notebookApi } from "@/api/notebook";
+import { tokenUtils } from "@/lib/utils/tokenUtils";
+import Link from "next/link";
 
 // Mock data từ vựng phong phú làm fallback
 const MOCK_FLASHCARDS = [
@@ -77,27 +80,342 @@ const MOCK_FLASHCARDS = [
   },
 ];
 
-function FlashcardContent() {
-  const searchParams = useSearchParams();
+function FlashcardDashboard() {
+  const [activeTab, setActiveTab] = useState<"suggest" | "personal" | "system">("suggest");
+  const [personalDecks, setPersonalDecks] = useState<any[]>([]);
+  const [hskLevels, setHskLevels] = useState<any[]>([]);
+  const [expandedHskId, setExpandedHskId] = useState<string | null>(null);
+  const [hskTopics, setHskTopics] = useState<Record<string, any[]>>({});
+  const [loadingPersonal, setLoadingPersonal] = useState(false);
+  const [loadingHsk, setLoadingHsk] = useState(false);
+  const [loadingTopics, setLoadingTopics] = useState<Record<string, boolean>>({});
+  const [newDeckTitle, setNewDeckTitle] = useState("");
+  const [isCreatingDeck, setIsCreatingDeck] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const type = searchParams.get("type") || "suggest";
-  const notebookId = searchParams.get("notebookId") || "";
-  const topicId = searchParams.get("topicId") || "";
-  const restart = searchParams.get("restart") || "";
-  
-  // Nén data mock để truyền vào hook nếu cần
-  const defaultMockJson = encodeURIComponent(
-    JSON.stringify(
-      MOCK_FLASHCARDS.map((m) => ({
-        id: m.vocab_items_id.id,
-        word: m.vocab_items_id.name,
-        pinyin: m.vocab_items_id.pinyin,
-        note: m.vocab_items_id.note,
-      }))
-    )
+  useEffect(() => {
+    const checkAuth = async () => {
+      const status = await tokenUtils.checkTokenStatus();
+      setIsAuthenticated(status.accessToken);
+    };
+    checkAuth();
+  }, []);
+
+  // Fetch personal decks
+  useEffect(() => {
+    if (activeTab === "personal" && isAuthenticated) {
+      const fetchPersonal = async () => {
+        setLoadingPersonal(true);
+        try {
+          const decks = await notebookApi.getPersonalNotebooks();
+          setPersonalDecks(decks || []);
+        } catch (e) {
+          console.error("Failed to load personal decks", e);
+        } finally {
+          setLoadingPersonal(false);
+        }
+      };
+      fetchPersonal();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  // Fetch HSK levels
+  useEffect(() => {
+    if (activeTab === "system") {
+      const fetchHsk = async () => {
+        setLoadingHsk(true);
+        try {
+          const levels = await notebookApi.getNoteBooks();
+          setHskLevels(levels || []);
+        } catch (e) {
+          console.error("Failed to load HSK levels", e);
+        } finally {
+          setLoadingHsk(false);
+        }
+      };
+      fetchHsk();
+    }
+  }, [activeTab]);
+
+  // Fetch HSK sub-topics when expanded
+  const handleToggleHsk = async (levelId: string) => {
+    if (expandedHskId === levelId) {
+      setExpandedHskId(null);
+      return;
+    }
+    setExpandedHskId(levelId);
+
+    if (!hskTopics[levelId]) {
+      setLoadingTopics((prev) => ({ ...prev, [levelId]: true }));
+      try {
+        const topics = await notebookApi.getCategoryByNotebookId(levelId);
+        setHskTopics((prev) => ({ ...prev, [levelId]: topics || [] }));
+      } catch (e) {
+        console.error("Failed to load HSK topics", e);
+      } finally {
+        setLoadingTopics((prev) => ({ ...prev, [levelId]: false }));
+      }
+    }
+  };
+
+  // Create personal deck
+  const handleCreateDeck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDeckTitle.trim()) return;
+    setIsCreatingDeck(true);
+    try {
+      await notebookApi.createNoteBooks(newDeckTitle);
+      const decks = await notebookApi.getPersonalNotebooks();
+      setPersonalDecks(decks || []);
+      setNewDeckTitle("");
+    } catch (e) {
+      console.error("Failed to create deck", e);
+    } finally {
+      setIsCreatingDeck(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-4xl mx-auto py-8 px-4 flex flex-col gap-8">
+      {/* Title */}
+      <div className="flex flex-col gap-2 text-center sm:text-left">
+        <h1 className="text-3xl font-black text-zinc-950 dark:text-white tracking-tight">
+          🗂️ Thẻ Ghi Nhớ Flashcard
+        </h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+          Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS).
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+        {(["suggest", "personal", "system"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 sm:flex-none px-6 py-3.5 text-sm font-extrabold border-b-2 transition-all duration-200 cursor-pointer ${
+              activeTab === tab
+                ? "border-amber-500 text-amber-600 dark:text-amber-500"
+                : "border-transparent text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200"
+            }`}
+          >
+            {tab === "suggest" && "💡 Gợi ý học nhanh"}
+            {tab === "personal" && "👤 Sổ tay của tôi"}
+            {tab === "system" && "📚 Trình độ HSK"}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[300px]">
+        {/* Suggest Tab */}
+        {activeTab === "suggest" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Link
+              href="/flashcard?type=suggest"
+              className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-lg transition-all hover:-translate-y-1 group"
+            >
+              <div className="space-y-3">
+                <div className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center text-xl font-bold">
+                  💡
+                </div>
+                <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors">
+                  Bộ từ gợi ý hệ thống
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold leading-relaxed">
+                  Luyện tập nhanh với các từ vựng thiết yếu và phổ biến nhất (học thử demo).
+                </p>
+              </div>
+              <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
+                Bắt đầu học ngay →
+              </span>
+            </Link>
+          </div>
+        )}
+
+        {/* Personal Tab */}
+        {activeTab === "personal" && (
+          <div className="flex flex-col gap-6">
+            {!isAuthenticated ? (
+              <div className="flex flex-col items-center justify-center p-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-zinc-250 dark:border-zinc-800 text-center gap-4">
+                <span className="text-3xl">🔑</span>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200">Yêu cầu đăng nhập</h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">Bạn cần đăng nhập để quản lý và học sổ tay từ vựng cá nhân của mình.</p>
+                </div>
+                <Link
+                  href="/sign-in"
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-6 py-2.5 rounded-full transition-all"
+                >
+                  Đăng nhập ngay
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {/* Create Deck Form */}
+                <form onSubmit={handleCreateDeck} className="flex gap-3 w-full max-w-md">
+                  <input
+                    type="text"
+                    placeholder="Tên sổ tay mới... (vd: Từ vựng giao tiếp)"
+                    value={newDeckTitle}
+                    onChange={(e) => setNewDeckTitle(e.target.value)}
+                    required
+                    className="flex-1 px-4 py-2.5 rounded-2xl border border-zinc-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm text-zinc-800 dark:text-white dark:bg-zinc-950 dark:border-zinc-800 transition-all font-medium"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isCreatingDeck}
+                    className="px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-colors cursor-pointer disabled:opacity-55"
+                  >
+                    {isCreatingDeck ? "Đang tạo..." : "Tạo mới"}
+                  </button>
+                </form>
+
+                {/* Decks list */}
+                {loadingPersonal ? (
+                  <div className="flex justify-center py-10">
+                    <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-600 border-t-transparent"></div>
+                  </div>
+                ) : personalDecks.length === 0 ? (
+                  <p className="text-sm text-zinc-500 italic">Bạn chưa tạo sổ tay từ vựng nào.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {personalDecks.map((deck) => (
+                      <Link
+                        key={deck.id}
+                        href={`/flashcard?type=personal&notebookId=${deck.id}`}
+                        className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-lg transition-all hover:-translate-y-1 group"
+                      >
+                        <div className="space-y-3">
+                          <div className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center text-xl font-bold">
+                            📓
+                          </div>
+                          <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors line-clamp-1">
+                            {deck.title}
+                          </h3>
+                        </div>
+                        <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
+                          Luyện tập sổ tay →
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* System (HSK) Tab */}
+        {activeTab === "system" && (
+          <div className="flex flex-col gap-4">
+            {loadingHsk ? (
+              <div className="flex justify-center py-10">
+                <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-600 border-t-transparent"></div>
+              </div>
+            ) : hskLevels.length === 0 ? (
+              <p className="text-sm text-zinc-500 italic">Không tải được cấp độ HSK.</p>
+            ) : (
+              <div className="flex flex-col gap-4 w-full">
+                {hskLevels.map((level) => {
+                  const isExpanded = expandedHskId === level.id;
+                  const topicsList = hskTopics[level.id] || [];
+                  const topicsLoading = loadingTopics[level.id];
+
+                  return (
+                    <div
+                      key={level.id}
+                      className="border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 transition-all shadow-2xs"
+                    >
+                      {/* Header */}
+                      <button
+                        onClick={() => handleToggleHsk(level.id)}
+                        className="w-full flex items-center justify-between p-5 text-left font-black text-base text-zinc-900 dark:text-white cursor-pointer select-none"
+                      >
+                        <span className="flex items-center gap-3">
+                          <span className="text-xl">🏆</span> {level.name}
+                        </span>
+                        <span className="text-zinc-400 font-bold transition-transform duration-250">
+                          {isExpanded ? "▲" : "▼"}
+                        </span>
+                      </button>
+
+                      {/* Content */}
+                      {isExpanded && (
+                        <div className="border-t border-zinc-100 dark:border-zinc-800/80 p-5 bg-zinc-50/50 dark:bg-zinc-900/30">
+                          {topicsLoading ? (
+                            <div className="flex justify-center py-4">
+                              <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-600 border-t-transparent"></div>
+                            </div>
+                          ) : topicsList.length === 0 ? (
+                            <p className="text-xs text-zinc-500 italic">Không có chủ đề nào.</p>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                              {topicsList.map((item: any) => (
+                                <Link
+                                  key={item.id}
+                                  href={`/flashcard?type=system&notebookId=${level.id}&topicId=${item.topic_id?.id}`}
+                                  className="flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 border border-zinc-200/85 dark:border-zinc-800 rounded-2xl hover:border-amber-500/50 dark:hover:border-amber-500/50 hover:shadow-2xs transition-all text-sm font-bold text-zinc-800 dark:text-zinc-200 group"
+                                >
+                                  <span className="text-amber-500">📁</span>
+                                  <div className="flex flex-col gap-0.5 min-w-0">
+                                    <span className="group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors truncate">
+                                      {item.topic_id?.name}
+                                    </span>
+                                    {item.topic_id?.chinese_name && (
+                                      <span className="text-[10px] text-zinc-400 font-medium">
+                                        {item.topic_id.chinese_name}
+                                      </span>
+                                    )}
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
+}
 
-  const fakeData = searchParams.get("fakeData") || defaultMockJson;
+interface FlashcardStudySessionProps {
+  type: string;
+  notebookId: string;
+  topicId: string;
+  restart: string;
+  paramFakeData: string | null;
+}
+
+function FlashcardStudySession({
+  type,
+  notebookId,
+  topicId,
+  restart,
+  paramFakeData,
+}: Readonly<FlashcardStudySessionProps>) {
+  // Nén data mock để truyền vào hook nếu cần
+  const defaultMockJson = useMemo(() => {
+    return encodeURIComponent(
+      JSON.stringify(
+        MOCK_FLASHCARDS.map((m) => ({
+          id: m.vocab_items_id.id,
+          word: m.vocab_items_id.name,
+          pinyin: m.vocab_items_id.pinyin,
+          note: m.vocab_items_id.note,
+        }))
+      )
+    );
+  }, []);
+
+  const fakeData = paramFakeData || defaultMockJson;
 
   const hookData = useVocabFlashcardData({
     type,
@@ -137,54 +455,7 @@ function FlashcardContent() {
     }
   }, [currentIndex, localIndex, currentWord]);
 
-  // Lắng nghe phím tắt bàn phím
-  useEffect(() => {
-    const handleKeyDown = (e: any) => {
-      if (e.code === "Space") {
-        e.preventDefault();
-        if (fallbackDataActive) {
-          setLocalFlipped((f) => !f);
-        } else {
-          flip();
-        }
-      } else if (e.code === "ArrowRight" || e.code === "Digit1") {
-        // Thuộc từ
-        handleNextAction("mastered");
-      } else if (e.code === "ArrowLeft" || e.code === "Digit2") {
-        // Chưa thuộc
-        handleNextAction("learning");
-      } else if (e.code === "ArrowUp") {
-        // Xem lại
-        handleNextAction("uncertain");
-      } else if (e.code === "ArrowDown") {
-        // Quay lại
-        if (fallbackDataActive) {
-          if (localIndex > 0) {
-            setLocalIndex((prev) => prev - 1);
-            setLocalFlipped(false);
-          }
-        } else {
-          moveToPrevious();
-        }
-      }
-    };
-
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => {
-      globalThis.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [currentIndex, localIndex, dataVocal, fallbackDataActive, flip, moveToPrevious]);
-
-  // Kích hoạt Mock Data khi API rỗng
-  useEffect(() => {
-    if (!isLoadingList && dataVocal.length === 0) {
-      setFallbackDataActive(true);
-    } else {
-      setFallbackDataActive(false);
-    }
-  }, [isLoadingList, dataVocal]);
-
-  const handleNextAction = (status: "mastered" | "uncertain" | "learning") => {
+  const handleNextAction = useCallback((status: "mastered" | "uncertain" | "learning") => {
     if (fallbackDataActive) {
       const isLast = localIndex >= MOCK_FLASHCARDS.length - 1;
       if (isLast) {
@@ -202,9 +473,9 @@ function FlashcardContent() {
     } else {
       moveToNext(status);
     }
-  };
+  }, [fallbackDataActive, localIndex, moveToNext]);
 
-  const handlePrevAction = () => {
+  const handlePrevAction = useCallback(() => {
     if (fallbackDataActive) {
       if (localIndex > 0) {
         setLocalIndex((prev) => prev - 1);
@@ -213,15 +484,51 @@ function FlashcardContent() {
     } else {
       moveToPrevious();
     }
-  };
+  }, [fallbackDataActive, localIndex, moveToPrevious]);
 
-  const handleFlipAction = () => {
+  const handleFlipAction = useCallback(() => {
     if (fallbackDataActive) {
       setLocalFlipped((f) => !f);
     } else {
       flip();
     }
-  };
+  }, [fallbackDataActive, flip]);
+
+  // Lắng nghe phím tắt bàn phím
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        handleFlipAction();
+      } else if (e.code === "ArrowRight" || e.code === "Digit1") {
+        // Thuộc từ
+        handleNextAction("mastered");
+      } else if (e.code === "ArrowLeft" || e.code === "Digit2") {
+        // Chưa thuộc
+        handleNextAction("learning");
+      } else if (e.code === "ArrowUp") {
+        // Xem lại
+        handleNextAction("uncertain");
+      } else if (e.code === "ArrowDown") {
+        // Quay lại
+        handlePrevAction();
+      }
+    };
+
+    globalThis.addEventListener("keydown", handleKeyDown);
+    return () => {
+      globalThis.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleFlipAction, handleNextAction, handlePrevAction]);
+
+  // Kích hoạt Mock Data khi API rỗng
+  useEffect(() => {
+    if (!isLoadingList && dataVocal.length === 0) {
+      setFallbackDataActive(true);
+    } else {
+      setFallbackDataActive(false);
+    }
+  }, [isLoadingList, dataVocal]);
 
   if (isLoadingList) {
     return (
@@ -399,7 +706,7 @@ function FlashcardContent() {
                 </div>
 
                 <div className="text-center text-xs text-zinc-400">
-                  Nhấp để quay lại mặt trước
+                  Nhập để quay lại mặt trước
                 </div>
               </div>
             }
@@ -423,6 +730,30 @@ function FlashcardContent() {
         <span className="font-bold">Phím tắt:</span> <kbd className="px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-800 rounded">Space</kbd> để lật | <kbd className="px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-800 rounded">1</kbd> hoặc <kbd className="px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-800 rounded">←</kbd> (Chưa thuộc) | <kbd className="px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-800 rounded">4</kbd> hoặc <kbd className="px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-800 rounded">→</kbd> (Thuộc)
       </div>
     </div>
+  );
+}
+
+function FlashcardContent() {
+  const searchParams = useSearchParams();
+
+  const type = searchParams.get("type");
+  const notebookId = searchParams.get("notebookId") || "";
+  const topicId = searchParams.get("topicId") || "";
+  const restart = searchParams.get("restart") || "";
+  const fakeData = searchParams.get("fakeData");
+
+  if (!type) {
+    return <FlashcardDashboard />;
+  }
+
+  return (
+    <FlashcardStudySession
+      type={type}
+      notebookId={notebookId}
+      topicId={topicId}
+      restart={restart}
+      paramFakeData={fakeData}
+    />
   );
 }
 

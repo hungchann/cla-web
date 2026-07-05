@@ -14,6 +14,7 @@ import {
   RESET_PASSWORD_FLOW_PATH,
   RESET_PASSWORD_FLOW_URL,
   UPDATE_PROFILE_FLOW_PATH,
+  ONBOARDING_EMAIL_CHECK_FLOW_PATH,
 } from "@/lib/constants";
 import { BilingualMapper } from "@/lib/mappers/bilingualMapper";
 import { BilingualItem } from "@/lib/types/bilingual";
@@ -41,6 +42,27 @@ function validatePassword(password: string): void {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Kiểm tra Email đã tồn tại trong luồng Onboarding
+export async function checkEmailExists(email: string): Promise<boolean> {
+  validateEmail(email);
+  try {
+    const response = await apiInstance.get(ONBOARDING_EMAIL_CHECK_FLOW_PATH, {
+      params: { email: email.trim() },
+    });
+    // Trả về true nếu API trả về trạng thái báo email đã tồn tại, hoặc false nếu không
+    return response.data?.exists ?? false;
+  } catch (error: any) {
+    // 401 + message "Tài khoản đã tồn tại" = email đã có
+    const status = error.response?.status;
+    const msg = error.response?.data?.message || "";
+    if (status === 401 || msg.includes("Tài khoản đã tồn tại")) {
+      return true;
+    }
+    // Nếu lỗi kết nối hoặc lỗi khác, ném ra ngoài
+    throw error;
+  }
+}
 
 export async function RegisterUser(
   email: string,
@@ -434,7 +456,10 @@ export async function translateWord(word: string) {
     return await sendAIRequest(
       async () => {
         const response = await axios.get(
-          `https://marutek.space/api/chinese/translate?word=${encodeURIComponent(word)}`,
+          `/api/chinese/translate?word=${encodeURIComponent(word)}`,
+          {
+            timeout: 30000,
+          }
         );
         return response.data;
       },

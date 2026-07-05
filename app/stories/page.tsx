@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
+import Sidebar from "@/components/Sidebar";
+import Header from "@/components/Header";
 import Link from "next/link";
 import { getLatestBooks, getTrendingBooks, getRandomBooks } from "@/api/stories";
 

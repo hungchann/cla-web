@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { use, useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Sidebar from "../../../components/Sidebar";
-import Header from "../../../components/Header";
+import Sidebar from "@/components/Sidebar";
+import Header from "@/components/Header";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
 import HighlightedText from "@/components/HighlightedText";
 import { grammarApi } from "@/api/grammar";

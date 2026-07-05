@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
+import { bilingualApi } from "@/api/bilingual";
+import { updateHskLevel } from "@/api/profile";
+import { getUser } from "@/api/apiService";
 
 interface UserStats {
   mastered: number;
@@ -12,6 +15,11 @@ interface UserStats {
 
 export default function DashboardPage() {
   const [userData, setUserData] = useState<any>(null);
+  const [levels, setLevels] = useState<any[]>([]);
+  const [currentLevel, setCurrentLevel] = useState<string>("");
+  const [loadingLevel, setLoadingLevel] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const stats: UserStats = {
     mastered: 24,
     learning: 45,
@@ -33,19 +41,74 @@ export default function DashboardPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const loadProfileAndLevels = async () => {
+      const user = tokenUtils.getUserData();
+      if (!user) return;
+      setLoadingLevel(true);
+      try {
+        const fullUser = await getUser();
+        if (fullUser?.profile?.self_assessed_hsk_level) {
+          setCurrentLevel(fullUser.profile.self_assessed_hsk_level);
+        }
+        const allLevels = await bilingualApi.getLevels();
+        setLevels(allLevels || []);
+      } catch (err) {
+        console.error("Lỗi lấy thông tin trình độ", err);
+      } finally {
+        setLoadingLevel(false);
+      }
+    };
+    loadProfileAndLevels();
+  }, []);
+
+  const handleLevelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setIsUpdating(true);
+    try {
+      await updateHskLevel(val);
+      setCurrentLevel(val);
+    } catch (err) {
+      console.error("Lỗi cập nhật HSK", err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col gap-8 py-6">
       {/* Welcome Banner */}
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 p-8 shadow-xl shadow-amber-600/10">
         <div className="absolute right-0 top-0 -mr-6 -mt-6 h-36 w-36 rounded-full bg-white/10 blur-2xl"></div>
         <div className="relative z-10 flex flex-col gap-2 md:max-w-2xl">
-          <span className="text-xs font-semibold uppercase tracking-wider text-amber-100 bg-amber-700/30 w-fit px-2.5 py-1 rounded-full">
-            Học tập mỗi ngày
-          </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-100 bg-amber-700/30 w-fit px-2.5 py-1 rounded-full select-none">
+              Học tập mỗi ngày
+            </span>
+            {userData && userData.email !== "demo@cla-learning.com" && (
+              <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/10 px-3 py-1 rounded-full">
+                <span>🏆 Trình độ:</span>
+                <select
+                  value={currentLevel}
+                  onChange={handleLevelChange}
+                  disabled={isUpdating || loadingLevel}
+                  className="bg-transparent text-amber-200 border-none outline-none font-bold cursor-pointer select-none"
+                >
+                  <option value="" className="bg-amber-600 text-white">Chưa chọn</option>
+                  {levels.map((lvl) => (
+                    <option key={lvl.id} value={lvl.id} className="bg-amber-600 text-white font-semibold">
+                      {lvl.title}
+                    </option>
+                  ))}
+                </select>
+                {isUpdating && <span className="h-3.5 w-3.5 animate-spin rounded-full border border-white border-t-transparent"></span>}
+              </div>
+            )}
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl mt-1">
             Chào mừng quay lại, {userData?.first_name || "Bạn học"}!
           </h1>
-          <p className="text-lg text-amber-50">
+          <p className="text-lg text-amber-50 leading-relaxed">
             Tiếp tục lộ trình chinh phục tiếng Trung của bạn. Hôm nay bạn muốn cải thiện kỹ năng nào?
           </p>
         </div>

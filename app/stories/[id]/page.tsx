@@ -2,8 +2,8 @@
 
 import { use, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Sidebar from "../../components/Sidebar";
-import Header from "../../components/Header";
+import Sidebar from "@/components/Sidebar";
+import Header from "@/components/Header";
 import Link from "next/link";
 import { getBookLibraryById, saveReadingProgress, getReadingProgress } from "@/api/stories";
 import { speakChinese } from "@/lib/utils/speech";
