@@ -8,6 +8,8 @@ import { parseSRTtoArray } from "@/services/subtitle";
 import { useThemeColors } from "@/lib/theme";
 import { speakChinese, stopSpeech } from "@/lib/utils/speech";
 import Link from "next/link";
+import { translateWord } from "@/api/apiService";
+import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
 
 // Mock SRT nội dung chi tiết bài đọc để phục vụ demo khi API rỗng
 const MOCK_SRT_CONTENT: Record<string, string> = {
@@ -84,6 +86,7 @@ export default function BilingualDetailPage({
   const [isOpenPinyin, setIsOpenPinyin] = useState(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [selectedWord, setSelectedWord] = useState<{ word: string; pinyin: string; meaning: string } | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [srtData, setSrtData] = useState<any[]>([]);
 
   // Query gọi Directus API
@@ -103,6 +106,7 @@ export default function BilingualDetailPage({
   // Tải & Parse phụ đề
   useEffect(() => {
     const loadSubtitle = async () => {
+      let parsedSubtitles: any[] = [];
       if (item?.SubRip_Subtitle?.filename_disk) {
         try {
           const srtUrl = `https://marutek.space/assets/${item.SubRip_Subtitle.filename_disk}`;
@@ -110,13 +114,7 @@ export default function BilingualDetailPage({
           const srtText = await res.text();
           const parsed = parseSRTtoArray(srtText);
           if (parsed && parsed.length > 0) {
-            // Segment từ vựng cơ bản phục vụ click
-            const enriched = parsed.map((p) => ({
-              ...p,
-              segmentedWords: segmentChineseText(p.chinese),
-            }));
-            setSrtData(enriched);
-            return;
+            parsedSubtitles = parsed;
           }
         } catch (e) {
           console.error("Error loading remote subtitle:", e);
@@ -124,20 +122,43 @@ export default function BilingualDetailPage({
       }
 
       // Fallback sang Mock SRT
-      const mockSrt = MOCK_SRT_CONTENT[id] || MOCK_SRT_CONTENT["1"];
-      const parsed = parseSRTtoArray(mockSrt);
-      const enriched = parsed.map((p) => ({
-        ...p,
-        segmentedWords: segmentChineseText(p.chinese),
-      }));
-      setSrtData(enriched);
+      if (parsedSubtitles.length === 0) {
+        const mockSrt = MOCK_SRT_CONTENT[id] || MOCK_SRT_CONTENT["1"];
+        parsedSubtitles = parseSRTtoArray(mockSrt);
+      }
+
+      // Phân tách từ Hán ngữ thực thông qua API
+      try {
+        const chineseTexts = parsedSubtitles.map((p) => p.chinese);
+        const segmentResult = await apiSegmentChineseText(chineseTexts);
+        
+        const enriched = parsedSubtitles.map((p, idx) => {
+          const apiWords = segmentResult[idx] || [];
+          const segmentedWords = apiWords.map((w: any) => ({
+            word: w.word,
+            pinyin: w.pinyin,
+          }));
+          return {
+            ...p,
+            segmentedWords: segmentedWords.length > 0 ? segmentedWords : segmentChineseTextFallback(p.chinese),
+          };
+        });
+        setSrtData(enriched);
+      } catch (err) {
+        console.warn("API segment failed, falling back to local segmentation:", err);
+        const enriched = parsedSubtitles.map((p) => ({
+          ...p,
+          segmentedWords: segmentChineseTextFallback(p.chinese),
+        }));
+        setSrtData(enriched);
+      }
     };
 
     loadSubtitle();
   }, [item, id]);
 
   // Phân đoạn chữ Hán giả lập sang các từ rời để click
-  const segmentChineseText = (text: string) => {
+  const segmentChineseTextFallback = (text: string) => {
     // Thuật toán tách từ đơn giản hoặc mock so khớp từ điển
     const words: { word: string; pinyin: string }[] = [];
     let i = 0;
@@ -165,14 +186,38 @@ export default function BilingualDetailPage({
     return words;
   };
 
-  const handleWordPress = (word: string) => {
-    const dict = MOCK_DICTIONARY[word];
-    if (dict) {
-      setSelectedWord({ word, pinyin: dict.pinyin, meaning: dict.meaning });
-      speakChinese(word);
-    } else {
-      setSelectedWord({ word, pinyin: "Chưa cập nhật", meaning: "Nhấp để nghe phát âm" });
-      speakChinese(word);
+  const handleWordPress = async (word: string) => {
+    speakChinese(word);
+
+    setSelectedWord({ word, pinyin: "Đang tải...", meaning: "Đang dịch nghĩa..." });
+    setIsTranslating(true);
+
+    try {
+      const res = await translateWord(word);
+      const translated = res?.[0];
+      if (translated) {
+        setSelectedWord({
+          word: translated.word || word,
+          pinyin: translated.pinyin || "N/A",
+          meaning: translated.meaning || translated.meanings || "Không tìm thấy nghĩa."
+        });
+      } else {
+        setSelectedWord({
+          word,
+          pinyin: "N/A",
+          meaning: "Không tìm thấy nghĩa."
+        });
+      }
+    } catch (err) {
+      console.warn("API translate failed, falling back to local dict:", err);
+      const dict = MOCK_DICTIONARY[word];
+      if (dict) {
+        setSelectedWord({ word, pinyin: dict.pinyin, meaning: dict.meaning });
+      } else {
+        setSelectedWord({ word, pinyin: "Chưa cập nhật", meaning: "Dịch vụ tạm thời không khả dụng." });
+      }
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -324,9 +369,13 @@ export default function BilingualDetailPage({
                   <span className="text-3xl font-extrabold text-amber-600 dark:text-amber-500">
                     {selectedWord.word}
                   </span>
-                  <span className="text-sm font-semibold text-zinc-400">
-                    {selectedWord.pinyin}
-                  </span>
+                  {isTranslating ? (
+                    <span className="inline-block w-4 h-4 border-2 border-zinc-200 border-t-amber-600 rounded-full animate-spin"></span>
+                  ) : (
+                    <span className="text-sm font-semibold text-zinc-400">
+                      {selectedWord.pinyin}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Ý nghĩa:</h4>

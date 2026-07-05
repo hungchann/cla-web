@@ -1,13 +1,14 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
 import { useDetailedVideoLogic } from "@/lib/hooks/useDetailedVideoLogic";
 import { SubtitleItem } from "@/components/video/SubtitleItem";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
-import { parseSRTtoArray } from "@/services/subtitle";
 import Link from "next/link";
+import { translateWord } from "@/api/apiService";
+import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
 
 // Mock video data chi tiết
 const MOCK_VIDEO_DETAIL = {
@@ -115,9 +116,28 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const [currentTime, setCurrentTime] = useState(0);
 
   // Custom states hỗ trợ trắc nghiệm video
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | number | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
+
+  // AI Translation & Segmentation states
+  const [wordInfo, setWordInfo] = useState<any>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [enrichedSubtitles, setEnrichedSubtitles] = useState<any[]>([]);
+
+  // Dynamically map options from backend data or mock data
+  const getOptions = (ex: any) => {
+    if (!ex) return [];
+    if (Array.isArray(ex.options)) return ex.options;
+    
+    // Directus format: answer_A, answer_B, answer_C, answer_D, answer
+    const opts = [];
+    if (ex.answer_A) opts.push({ id: "A", hanzi: ex.answer_A, pinyin: "", isCorrect: ex.answer === "A" });
+    if (ex.answer_B) opts.push({ id: "B", hanzi: ex.answer_B, pinyin: "", isCorrect: ex.answer === "B" });
+    if (ex.answer_C) opts.push({ id: "C", hanzi: ex.answer_C, pinyin: "", isCorrect: ex.answer === "C" });
+    if (ex.answer_D) opts.push({ id: "D", hanzi: ex.answer_D, pinyin: "", isCorrect: ex.answer === "D" });
+    return opts;
+  };
 
   // Fetch thông tin video từ API
   const { data: videoData, isLoading } = useQuery({
@@ -145,19 +165,51 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     subtitles,
     handleOptionPress,
     handleContinueWatching,
+    exerciseData,
   } = hookData;
 
-  // Mock nạp phụ đề nếu hook ko load được file srt thật từ Directus
-  const displaySubtitles = subtitles && subtitles.length > 0 ? subtitles : parseMockSRT();
+  // Phân tách từ Hán ngữ phụ đề tự động bằng API AI
+  useEffect(() => {
+    const enrich = async () => {
+      const baseSubs = subtitles && subtitles.length > 0 ? subtitles : parseMockSRT();
+      if (!baseSubs || baseSubs.length === 0) {
+        setEnrichedSubtitles([]);
+        return;
+      }
+      try {
+        const texts = baseSubs.map((s) => s.chinese);
+        const segments = await apiSegmentChineseText(texts);
+        const enriched = baseSubs.map((s, idx) => {
+          const apiWords = segments[idx] || [];
+          return {
+            ...s,
+            segmentedWords: apiWords.map((w: any) => ({
+              word: w.word,
+              pinyin: w.pinyin,
+            })),
+          };
+        });
+        setEnrichedSubtitles(enriched);
+      } catch (err) {
+        console.warn("API segment for video subtitles failed, falling back to local splits:", err);
+        const enriched = baseSubs.map((s) => ({
+          ...s,
+          segmentedWords: s.chinese ? s.chinese.split("").map((c) => ({ word: c, pinyin: "" })) : [],
+        }));
+        setEnrichedSubtitles(enriched);
+      }
+    };
+    enrich();
+  }, [subtitles]);
 
   // Đồng bộ phụ đề chạy chữ theo timeline
-  const currentSubtitle = displaySubtitles.find((st) => {
+  const currentSubtitle = enrichedSubtitles.find((st) => {
     const s = timeToSeconds(String(st.start));
     const e = timeToSeconds(String(st.end));
     return currentTime >= s && currentTime <= e;
   });
 
-  const activeSubtitleIndex = displaySubtitles.findIndex(
+  const activeSubtitleIndex = enrichedSubtitles.findIndex(
     (sub) => sub.chinese === currentSubtitle?.chinese
   );
 
@@ -197,8 +249,31 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     }
   };
 
-  const handleWordPress = (word: string) => {
+  const handleWordPress = async (word: string) => {
     setSelectedWord(word);
+    setWordInfo(null);
+    setIsTranslating(true);
+    try {
+      const res = await translateWord(word);
+      const translated = res?.[0];
+      if (translated) {
+        setWordInfo({
+          word: translated.word || word,
+          pinyin: translated.pinyin || "N/A",
+          meanings: translated.meaning || translated.meanings || "Không tìm thấy nghĩa.",
+          traditional: translated.traditional || "",
+          simplified: translated.simplified || translated.word || word,
+          classifiers: translated.classifiers || [],
+        });
+      } else {
+        setWordInfo(null);
+      }
+    } catch (err) {
+      console.warn("API translate failed for video word:", err);
+      setWordInfo(null);
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const handleReplayPress = (item: any) => {
@@ -212,15 +287,16 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const handleAnswerSubmit = () => {
     if (selectedAnswer === null || !activeQuestion) return;
 
-    // Tìm options tương ứng từ mock exercises (hoặc API)
-    const exercise = MOCK_EXERCISES.find((ex) => ex.id === activeQuestion.id);
-    const option = exercise?.options.find((opt) => opt.id === selectedAnswer);
+    // Tìm options tương ứng từ backend exercises (hoặc mock)
+    const exercise = (exerciseData && exerciseData.find((ex: any) => ex.id === activeQuestion.id)) || MOCK_EXERCISES.find((ex) => ex.id === activeQuestion.id);
+    const options = getOptions(exercise);
+    const option = options.find((opt: any) => opt.id === selectedAnswer);
 
     setIsAnswerChecked(true);
     setIsAnswerCorrect(!!option?.isCorrect);
 
     // Gọi hook báo cáo kết quả
-    handleOptionPress(selectedAnswer);
+    handleOptionPress(String(selectedAnswer));
   };
 
   const handleContinueVideo = () => {
@@ -240,7 +316,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     );
   }
 
-  const activeEx = MOCK_EXERCISES.find((ex) => ex.id === activeQuestion?.id);
+  const activeEx = (exerciseData && exerciseData.find((ex: any) => ex.id === activeQuestion?.id)) || MOCK_EXERCISES.find((ex) => ex.id === activeQuestion?.id);
 
   return (
     <div className="flex-1 flex flex-col gap-6 py-6 max-w-6xl mx-auto w-full">
@@ -302,7 +378,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
 
                   {/* Options List */}
                   <div className="flex flex-col gap-2">
-                    {activeEx.options.map((opt) => {
+                    {getOptions(activeEx).map((opt: any) => {
                       const isSelected = selectedAnswer === opt.id;
                       return (
                         <button
@@ -378,7 +454,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
               ref={subtitleContainerRef}
               className="flex-1 overflow-y-auto mt-2 pr-1 scrollbar-thin flex flex-col gap-1"
             >
-              {displaySubtitles.map((sub, index) => (
+              {enrichedSubtitles.map((sub, index) => (
                 <SubtitleItem
                   key={sub.id || `sub-${index}`}
                   item={sub}
@@ -399,16 +475,13 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
       {selectedWord && (
         <WordInfoModal
           isVisible={!!selectedWord}
-          onClose={() => setSelectedWord(null)}
-          selectedWord={selectedWord}
-          isLoading={false}
-          wordInfo={{
-            pinyin: "Tra cứu Pinyin...",
-            meanings: "Nghĩa Việt của từ đang tra cứu",
-            traditional: "",
-            simplified: selectedWord,
-            classifiers: [],
+          onClose={() => {
+            setSelectedWord(null);
+            setWordInfo(null);
           }}
+          selectedWord={selectedWord}
+          isLoading={isTranslating}
+          wordInfo={wordInfo}
         />
       )}
     </div>

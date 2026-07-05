@@ -1,18 +1,64 @@
 "use client";
 
 import Image from "next/image";
-import { use, useEffect, useState, Suspense } from "react";
+import { use, useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Sidebar from "../../../components/Sidebar";
 import Header from "../../../components/Header";
+import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
+import HighlightedText from "@/components/HighlightedText";
+import { grammarApi } from "@/api/grammar";
 
 function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const courseId = params.id;
-
-  // Retrieve current step from searchParams (default to 'learn-video-vocab')
   const currentStep = searchParams.get("step") || "learn-video-vocab";
+
+  // Dynamic Grammar Questions state
+  const [grammarQuestions, setGrammarQuestions] = useState<any[]>([]);
+  const [isLoadingGrammar, setIsLoadingGrammar] = useState(false);
+  const [activeGrammarIndex, setActiveGrammarIndex] = useState(0);
+
+  // Dynamic Conversation Shadowing hook
+  const conversationHook = useConversationDetail(courseId || "1");
+  const {
+    items: convMessages,
+    loading: convLoading,
+    visibleMessages: convVisibleMessages,
+    hasMoreMessages: convHasMoreMessages,
+    activeRecordingId,
+    handleContinue: handleConvContinue,
+    handleSpeak: handleConvSpeak,
+    handleToggleRecording: handleConvToggleRecording,
+  } = conversationHook;
+
+  const convEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto scroll conversation to bottom
+  useEffect(() => {
+    if (convEndRef.current) {
+      convEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [convVisibleMessages.length]);
+
+  // Load dynamic grammar items when active
+  useEffect(() => {
+    if (currentStep === "learn-quiz-grammar" && grammarQuestions.length === 0) {
+      const loadGrammar = async () => {
+        setIsLoadingGrammar(true);
+        try {
+          const items = await grammarApi.getRandomGrammarItems();
+          setGrammarQuestions(items || []);
+        } catch (err) {
+          console.warn("Lỗi tải ngữ pháp động:", err);
+        } finally {
+          setIsLoadingGrammar(false);
+        }
+      };
+      loadGrammar();
+    }
+  }, [currentStep, grammarQuestions.length]);
 
   // Browser Text-to-Speech handler
   const speakChinese = (text: string) => {
@@ -507,90 +553,118 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
               <div className="lg:col-span-2 space-y-6">
                 <div className="bg-white rounded-2xl border border-amber-100 p-6 md:p-8 shadow-xs space-y-6">
-                  <div className="flex items-center justify-between border-b border-amber-50 pb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
-                        Q1
-                      </span>
-                      <h3 className="font-extrabold text-gray-900 text-sm md:text-base">
-                        Câu 1: Chọn nghĩa đúng của câu sau:
-                      </h3>
+                  {isLoadingGrammar ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                      <div className="w-8 h-8 rounded-full border-4 border-amber-600 border-t-transparent animate-spin"></div>
+                      <p className="text-xs font-bold text-zinc-500">Đang tải câu hỏi ngữ pháp...</p>
                     </div>
-                    <button
-                      onClick={() => speakChinese("你好")}
-                      className="w-10 h-10 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90 transition-transform animate-bounce-slow"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { key: "A", val: "Tạm biệt" },
-                      { key: "B", val: "Cảm ơn" },
-                      { key: "C", val: "Chào bạn" },
-                      { key: "D", val: "Xin lỗi" },
-                    ].map((opt) => {
-                      const isSelected = grammarSelected === opt.key;
-                      let btnStyle = "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50/20";
-
-                      if (isSelected) {
-                        if (opt.key === "C") {
-                          btnStyle = "border-[#f59e0b] bg-amber-50 text-amber-950 ring-2 ring-[#f59e0b]";
-                        } else {
-                          btnStyle = "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500";
-                        }
-                      } else if (grammarSelected && opt.key === "C") {
-                        btnStyle = "border-[#f59e0b] bg-amber-50 text-amber-950";
-                      }
-
-                      return (
-                        <button
-                          key={opt.key}
-                          onClick={() => handleGrammarSelect(opt.key)}
-                          className={`flex items-center gap-3 p-4 rounded-xl border-2 font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer ${btnStyle}`}
-                        >
-                          <span className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-xs shrink-0 select-none text-gray-600 font-black">
-                            {opt.key}
-                          </span>
-                          <span>{opt.val}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {grammarSelected && (
-                    <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${
-                      grammarSelected === "C"
-                        ? "bg-amber-50 border-[#f59e0b] text-amber-950"
-                        : "bg-rose-50 border-rose-200 text-rose-900"
-                    }`}>
-                      <div className="flex items-center gap-1.5 font-bold text-sm">
-                        {grammarSelected === "C" ? (
-                          <span>🎉 Chính xác!</span>
-                        ) : (
-                          <span>❌ Chọn chưa đúng rồi!</span>
-                        )}
-                      </div>
-                      <p>
-                        <strong>Giải thích:</strong> &quot;你好 (nǐ hǎo)&quot; có nghĩa là &quot;Chào bạn&quot;, đây là lời chào cơ bản và phổ biến nhất trong tiếng Trung.
-                      </p>
-                      <button onClick={resetGrammarQuiz} className="text-[10px] mt-2 block text-gray-500 hover:text-amber-600 underline font-bold">
-                        Thử lại câu này
+                  ) : grammarQuestions.length === 0 ? (
+                    <div className="text-center py-12 space-y-3">
+                      <p className="text-sm font-bold text-zinc-500">Không tìm thấy dữ liệu ngữ pháp động.</p>
+                      <button
+                        onClick={() => handleSetView("learn-dictation")}
+                        className="bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                      >
+                        Bỏ qua phần này
                       </button>
                     </div>
-                  )}
+                  ) : (() => {
+                    const currentGrammar = grammarQuestions[activeGrammarIndex];
+                    const correctKey = ["A", "B", "C", "D"][activeGrammarIndex] || "A";
 
-                  <div className="flex justify-end pt-4 border-t border-gray-50 select-none">
-                    <button
-                      onClick={() => handleSetView("learn-dictation")}
-                      className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      Phần tiếp <span className="text-base font-normal">&rarr;</span>
-                    </button>
-                  </div>
+                    const options = grammarQuestions.map((item, idx) => {
+                      const key = ["A", "B", "C", "D"][idx] || "A";
+                      return {
+                        key,
+                        val: item.description || "Điểm ngữ pháp cần nghiên cứu",
+                        title: item.title,
+                        isCorrect: idx === activeGrammarIndex,
+                      };
+                    });
+
+                    return (
+                      <>
+                        <div className="flex items-center justify-between border-b border-amber-50 pb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                              {activeGrammarIndex + 1}
+                            </span>
+                            <h3 className="font-extrabold text-gray-900 text-sm md:text-base">
+                              Đâu là mô tả định nghĩa đúng của điểm ngữ pháp &quot;{currentGrammar?.title}&quot;?
+                            </h3>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {options.map((opt) => {
+                            const isSelected = grammarSelected === opt.key;
+                            let btnStyle = "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50/20";
+
+                            if (isSelected) {
+                              if (opt.key === correctKey) {
+                                btnStyle = "border-[#f59e0b] bg-amber-50 text-amber-950 ring-2 ring-[#f59e0b]";
+                              } else {
+                                btnStyle = "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500";
+                              }
+                            } else if (grammarSelected && opt.key === correctKey) {
+                              btnStyle = "border-[#f59e0b] bg-amber-50 text-amber-950";
+                            }
+
+                            return (
+                              <button
+                                key={opt.key}
+                                onClick={() => handleGrammarSelect(opt.key)}
+                                className={`flex items-center gap-3 p-4 rounded-xl border-2 font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer ${btnStyle}`}
+                              >
+                                <span className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-xs shrink-0 select-none text-gray-600 font-black">
+                                  {opt.key}
+                                </span>
+                                <span>{opt.val}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {grammarSelected && (
+                          <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${
+                            grammarSelected === correctKey
+                              ? "bg-amber-50 border-[#f59e0b] text-amber-950"
+                              : "bg-rose-50 border-rose-200 text-rose-900"
+                          }`}>
+                            <div className="flex items-center gap-1.5 font-bold text-sm">
+                              {grammarSelected === correctKey ? (
+                                <span>🎉 Chính xác!</span>
+                              ) : (
+                                <span>❌ Chọn chưa đúng rồi!</span>
+                              )}
+                            </div>
+                            <p>
+                              <strong>Chi tiết cấu trúc:</strong> {currentGrammar?.content}
+                            </p>
+                            <button onClick={resetGrammarQuiz} className="text-[10px] mt-2 block text-gray-500 hover:text-amber-600 underline font-bold">
+                              Thử lại câu này
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="flex justify-end pt-4 border-t border-gray-50 select-none">
+                          <button
+                            onClick={() => {
+                              if (activeGrammarIndex < grammarQuestions.length - 1) {
+                                setActiveGrammarIndex((prev) => prev + 1);
+                                setGrammarSelected(null);
+                              } else {
+                                handleSetView("learn-dictation");
+                              }
+                            }}
+                            className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            {activeGrammarIndex < grammarQuestions.length - 1 ? "Câu tiếp" : "Phần tiếp"} <span className="text-base font-normal">&rarr;</span>
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -715,71 +789,155 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
           {/* STEP 6: Thực hành hội thoại (learn-conversation) */}
           {currentStep === "learn-conversation" && (
             <div className="flex flex-col items-center justify-start w-full max-w-2xl mx-auto space-y-6">
-              <div className="w-full flex flex-col items-center space-y-4">
-                <div className="flex items-start gap-4 w-full justify-center">
-                  <div className="max-w-md">
-                    <div className="bg-gradient-to-br from-amber-400 to-orange-400 text-white rounded-2xl rounded-tl-sm p-5 shadow-md space-y-2 relative">
-                      <p className="font-bold text-sm leading-relaxed">
-                        来中国已经一年了，你适应留学的生活了吗?
-                      </p>
-                      <p className="text-[11px] text-white/80 italic leading-relaxed">
-                        Lái Zhōngguó yǐjīng yì nián le, nǐ shìyìng liúxué de shēnghuó le ma?
-                      </p>
-                      <p className="text-xs text-amber-100 font-semibold leading-relaxed">
-                        Đến Trung Quốc đã một năm rồi, bạn đã thích nghi với cuộc sống du học chưa?
-                      </p>
-                      <button
-                        onClick={() => speakChinese("来中国已经一年了，你适应留学的生活了吗")}
-                        className="text-white/80 hover:text-white text-xs mt-1 cursor-pointer"
+              {convLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 space-y-3">
+                  <div className="w-10 h-10 rounded-full border-4 border-amber-600 border-t-transparent animate-spin"></div>
+                  <p className="text-xs font-bold text-zinc-500">Đang tải kịch bản hội thoại AI...</p>
+                </div>
+              ) : (
+                <div className="w-full flex flex-col gap-6 overflow-y-auto max-h-[500px] pr-2 scrollbar-thin">
+                  {convVisibleMessages.map((msg: any) => {
+                    const isSpeakerA = msg.speaker?.toUpperCase() === "A";
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex items-start gap-3 w-full ${isSpeakerA ? "justify-start" : "justify-end"}`}
                       >
-                        🔊
-                      </button>
-                    </div>
-                  </div>
-                  <div className="w-28 h-36 bg-gradient-to-b from-sky-100 to-sky-200 rounded-2xl flex items-end justify-center overflow-hidden shrink-0 shadow-sm">
-                    <div className="text-5xl mb-2">👩‍🎓</div>
-                  </div>
+                        {isSpeakerA && (
+                          <div className="w-12 h-12 bg-sky-100 rounded-full flex items-center justify-center text-2xl shrink-0 shadow-sm">
+                            👩‍🎓
+                          </div>
+                        )}
+
+                        <div className="max-w-md flex flex-col gap-2">
+                          <div
+                            className={`rounded-2xl p-4 shadow-sm relative ${
+                              isSpeakerA
+                                ? "bg-white border border-gray-100 dark:bg-zinc-800 dark:border-zinc-700"
+                                : "bg-gradient-to-br from-amber-500 to-orange-500 text-white"
+                            }`}
+                          >
+                            <p className="font-bold text-sm leading-relaxed">{msg.chinese_text}</p>
+                            <p
+                              className={`text-[11px] leading-relaxed ${
+                                isSpeakerA ? "text-zinc-500" : "text-white/80 italic"
+                              }`}
+                            >
+                              {msg.pinyin}
+                            </p>
+                            <p
+                              className={`text-xs leading-relaxed ${
+                                isSpeakerA ? "text-zinc-400 font-medium" : "text-amber-100 font-semibold"
+                              }`}
+                            >
+                              {msg.vietnamese_text}
+                            </p>
+
+                            <div className="flex items-center gap-2 mt-2">
+                              <button
+                                onClick={() => handleConvSpeak(msg.chinese_text)}
+                                className={`text-xs cursor-pointer ${isSpeakerA ? "text-zinc-400 hover:text-zinc-600" : "text-white/80 hover:text-white"}`}
+                              >
+                                🔊 Phát âm mẫu
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Trình ghi âm và so khớp phát âm của B */}
+                          {!isSpeakerA && (
+                            <div className="flex flex-col gap-2 p-3 bg-white border border-gray-100 dark:bg-zinc-900 dark:border-zinc-800 rounded-xl shadow-2xs">
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-[10px] font-bold text-zinc-400 select-none">
+                                  Luyện nói câu này:
+                                </span>
+                                
+                                <button
+                                  onClick={() => handleConvToggleRecording(msg.id)}
+                                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-all ${
+                                    activeRecordingId === msg.id && msg.recording?.state.isRecording
+                                      ? "bg-rose-500 text-white animate-pulse"
+                                      : msg.recording?.state.isProcessing
+                                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed"
+                                      : "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-500 hover:bg-amber-200 cursor-pointer"
+                                  }`}
+                                  disabled={msg.recording?.state.isProcessing}
+                                >
+                                  {activeRecordingId === msg.id && msg.recording?.state.isRecording ? (
+                                    <>
+                                      <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
+                                      Dừng nói
+                                    </>
+                                  ) : msg.recording?.state.isProcessing ? (
+                                    <>
+                                      <span className="w-3.5 h-3.5 rounded-full border-2 border-zinc-300 border-t-amber-600 animate-spin"></span>
+                                      Đang dịch giọng...
+                                    </>
+                                  ) : (
+                                    <>
+                                      🎙️ Nhấp để nói
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+
+                              {/* Hiển thị so sánh phát âm thực tế nếu có */}
+                              {msg.recording?.comparison && (
+                                <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-zinc-500 select-none">Phân tích giọng nói:</span>
+                                    <span className={`font-black px-1.5 py-0.5 rounded text-[10px] ${
+                                      msg.recording.comparison.accuracy >= 80
+                                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-500"
+                                        : "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-500"
+                                    }`}>
+                                      Độ chính xác: {Math.round(msg.recording.comparison.accuracy)}%
+                                    </span>
+                                  </div>
+
+                                  <div className="py-2 px-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                                    <HighlightedText
+                                      text={msg.chinese_text}
+                                      highlightedWords={msg.recording.comparison.highlightedText}
+                                      showPinyin={true}
+                                      segmentedWords={msg.chinese_text.split("").map((c: any) => ({ word: c, pinyin: "" }))}
+                                    />
+                                  </div>
+
+                                  {msg.recording.result?.text && (
+                                    <p className="text-[10px] text-zinc-400 italic">
+                                      AI nghe được: &quot;{msg.recording.result.text}&quot;
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {!isSpeakerA && (
+                          <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-2xl shrink-0 shadow-sm">
+                            👤
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div ref={convEndRef} />
                 </div>
+              )}
 
-                <div className="w-full max-w-md bg-white rounded-2xl border border-gray-100 p-5 shadow-xs space-y-3">
-                  <div className="text-center space-y-1.5">
-                    <p className="font-bold text-gray-900 text-sm leading-relaxed">
-                      刚来中国的时候不太习惯，不过现在好多了。我还交了一个中国朋友。
-                    </p>
-                    <button
-                      onClick={() =>
-                        speakChinese(
-                          "刚来中国的时候不太习惯，不过现在好多了。我还交了一个中国朋友。"
-                        )
-                      }
-                      className="text-amber-500 hover:text-amber-600 text-sm cursor-pointer inline-block"
-                    >
-                      🔊
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-gray-400 text-center leading-relaxed font-medium">
-                    Gāng lái Zhōngguó de shíhou bù tài xíguàn, búguò xiànzài hǎo duō le. Wǒ hái jiāole yì ge Zhōngguó péngyou.
-                  </p>
-                  <p className="text-xs text-amber-500 text-center italic font-semibold leading-relaxed">
-                    Lúc mới đến Trung Quốc thì tôi vẫn chưa quen lắm, nhưng hiện tại đã tốt hơn nhiều rồi. Tôi còn làm quen được với một người bạn Trung Quốc.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => speakChinese("刚来中国的时候不太習慣")}
-                className="w-16 h-16 bg-[#e11d48] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-rose-600 active:scale-95 transition-all cursor-pointer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
-                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                  <path d="M19 10a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21a1 1 0 0 0 2 0v-4.08A7 7 0 0 0 19 10Z" />
-                </svg>
-              </button>
-
-              <div className="flex justify-end w-full pt-2">
+              <div className="flex justify-between items-center w-full pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                {convHasMoreMessages && !convLoading && (
+                  <button
+                    onClick={handleConvContinue}
+                    className="text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs active:scale-95"
+                  >
+                    Xem câu thoại tiếp theo 💬
+                  </button>
+                )}
                 <button
                   onClick={() => handleSetView("learn-extra")}
-                  className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer ml-auto"
                 >
                   Phần tiếp <span className="text-base font-normal">&rarr;</span>
                 </button>

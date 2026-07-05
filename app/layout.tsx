@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "./query-provider";
 import Header from "./components/Header";
+import AIConsentProvider from "@/components/AIConsentProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,13 +32,15 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans transition-colors duration-300">
         <QueryProvider>
-          {/* Main Navigation Header */}
-          <Header />
+          <AIConsentProvider>
+            {/* Main Navigation Header */}
+            <Header />
 
-          {/* Main Layout Container */}
-          <main className="flex-1 flex flex-col max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-            {children}
-          </main>
+            {/* Main Layout Container */}
+            <main className="flex-1 flex flex-col max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+              {children}
+            </main>
+          </AIConsentProvider>
         </QueryProvider>
       </body>
     </html>

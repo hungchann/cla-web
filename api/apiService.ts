@@ -126,6 +126,15 @@ export async function getUser(forceRefresh = false) {
   if (cachedUser && !forceRefresh) return cachedUser;
   if (userPromise && !forceRefresh) return userPromise;
 
+  const accessToken = tokenUtils.getAccessToken();
+  const refreshToken = tokenUtils.getRefreshToken();
+  if (!accessToken && !refreshToken) {
+    const error = new Error("No tokens available") as any;
+    error.status = 401;
+    error.response = { status: 401, statusText: "Unauthorized", data: {} };
+    throw error;
+  }
+
   userPromise = (async () => {
     try {
       const userData = await getUserMe();

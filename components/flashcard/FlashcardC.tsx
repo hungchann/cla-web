@@ -22,11 +22,22 @@ export const FlashcardCard = React.memo<FlashcardCardProps>(
     const backBorderColor = isDark ? colors.border.secondary : "transparent";
     const backBorderWidth = isDark ? "1px" : "0px";
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.target !== e.currentTarget) return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onFlip();
+      }
+    };
+
     return (
-      <button 
+      <div 
+        role="button"
+        tabIndex={0}
         className="w-full h-full flex items-center justify-center cursor-pointer select-none focus:outline-none bg-transparent border-none p-0 text-left items-stretch"
         style={{ perspective: "1000px" }}
         onClick={onFlip}
+        onKeyDown={handleKeyDown}
       >
         <div 
           className="relative w-full h-full transition-transform duration-500"
@@ -70,7 +81,7 @@ export const FlashcardCard = React.memo<FlashcardCardProps>(
             </div>
           </div>
         </div>
-      </button>
+      </div>
     );
   },
 );

@@ -215,12 +215,25 @@ export const notebookApi = {
   getProgressVocab: async () => {
     try {
       const user = await getUser();
+      if (!user?.profile?.id) {
+        return [];
+      }
       const response = await graphqlRequest<{ UserFlashcard: any[] }, any>(
         GET_USER_FLASHCARD_PROGRESS_QUERY,
         { userId: user.profile.id },
       );
       return response.data.UserFlashcard;
-    } catch (error) {
+    } catch (error: any) {
+      const isUnauthorized =
+        error?.response?.status === 401 ||
+        error?.status === 401 ||
+        (error instanceof Error && error.message.includes("401"));
+
+      if (isUnauthorized) {
+        logger.debug("User is not authenticated, returning empty vocabulary progress.");
+        return [];
+      }
+
       logger.error("Error fetching vocabulary progress:", error);
       throw new Error("Failed to fetch vocabulary progress");
     }
