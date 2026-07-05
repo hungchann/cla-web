@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { tokenUtils } from "@/lib/utils/tokenUtils";
 
 interface HeaderProps {
   view?: string;
@@ -12,6 +14,24 @@ interface HeaderProps {
 
 export default function Header({ view, setView, showLogo = true, title }: Readonly<HeaderProps>) {
   const pathname = usePathname();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [firstName, setFirstName] = useState("");
+
+  useEffect(() => {
+    const user = tokenUtils.getUserData();
+    if (user) {
+      setIsAuthenticated(true);
+      setFirstName(user.first_name || "Bạn học");
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, [pathname]);
+
+  const handleLogout = async () => {
+    await tokenUtils.clearAllTokens();
+    setIsAuthenticated(false);
+    globalThis.location.replace("/sign-in");
+  };
 
   // Hide the global layout header on learn pages
   const isGlobalHeader = !view && !setView;
@@ -104,10 +124,29 @@ export default function Header({ view, setView, showLogo = true, title }: Readon
         })}
       </nav>
 
-      {/* Login Button */}
-      <button className="bg-amber-500 text-white font-bold px-6 py-2.5 rounded-full hover:bg-amber-600 transition-colors duration-200 shadow-sm cursor-pointer active:scale-95 text-sm">
-        Đăng nhập
-      </button>
+      {/* Right Area (Auth State) */}
+      <div className="flex items-center gap-4">
+        {isAuthenticated ? (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-gray-700 hidden sm:inline select-none">
+              Chào, {firstName}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold px-5 py-2 rounded-full transition-colors duration-200 text-xs cursor-pointer active:scale-95"
+            >
+              Đăng xuất
+            </button>
+          </div>
+        ) : (
+          <Link
+            href="/sign-in"
+            className="bg-amber-500 text-white font-bold px-6 py-2.5 rounded-full hover:bg-amber-600 transition-colors duration-200 shadow-sm cursor-pointer active:scale-95 text-sm"
+          >
+            Đăng nhập
+          </Link>
+        )}
+      </div>
     </header>
   );
 }
