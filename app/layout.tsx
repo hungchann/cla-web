@@ -29,7 +29,7 @@ export default function RootLayout({
       lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans transition-colors duration-300">
+      <body className="min-h-full flex flex-col transition-colors duration-300">
         <QueryProvider>
           {/* Main Navigation Header */}
           <Header />

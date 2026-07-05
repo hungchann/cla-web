@@ -697,86 +697,140 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                   </div>
                 </div>
               </div>
-
-              <div className="space-y-6">
-                <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold space-y-4 shadow-2xs">
-                  <div className="text-sm font-bold flex items-center gap-1.5 text-amber-700">
-                    <span>💡</span> Mô tả chấm điểm
-                  </div>
-                  <ul className="list-disc pl-4 space-y-2">
-                    <li>Chọn xong sẽ hiện đáp án luôn.</li>
-                    <li>Giống phần chấm điểm bài tập dịch trong app.</li>
-                  </ul>
-                </div>
-              </div>
             </div>
           )}
 
           {/* STEP 6: Thực hành hội thoại (learn-conversation) */}
           {currentStep === "learn-conversation" && (
             <div className="flex flex-col items-center justify-start w-full max-w-2xl mx-auto space-y-6">
-              <div className="w-full flex flex-col items-center space-y-4">
-                <div className="flex items-start gap-4 w-full justify-center">
-                  <div className="max-w-md">
-                    <div className="bg-gradient-to-br from-amber-400 to-orange-400 text-white rounded-2xl rounded-tl-sm p-5 shadow-md space-y-2 relative">
-                      <p className="font-bold text-sm leading-relaxed">
-                        来中国已经一年了，你适应留学的生活了吗?
-                      </p>
-                      <p className="text-[11px] text-white/80 italic leading-relaxed">
-                        Lái Zhōngguó yǐjīng yì nián le, nǐ shìyìng liúxué de shēnghuó le ma?
-                      </p>
-                      <p className="text-xs text-amber-100 font-semibold leading-relaxed">
-                        Đến Trung Quốc đã một năm rồi, bạn đã thích nghi với cuộc sống du học chưa?
-                      </p>
-                      <button
-                        onClick={() => speakChinese("来中国已经一年了，你适应留学的生活了吗")}
-                        className="text-white/80 hover:text-white text-xs mt-1 cursor-pointer"
-                      >
-                        🔊
-                      </button>
-                    </div>
-                  </div>
-                  <div className="w-28 h-36 bg-gradient-to-b from-sky-100 to-sky-200 rounded-2xl flex items-end justify-center overflow-hidden shrink-0 shadow-sm">
-                    <div className="text-5xl mb-2">👩‍🎓</div>
+              <div className="w-full flex flex-col items-center space-y-6">
+                
+                {/* Bubble 1 (Blue Speech Bubble) */}
+                <div className="w-full max-w-md bg-blue-600 text-white rounded-2xl p-5 shadow-md space-y-2 relative text-center">
+                  <p className="font-extrabold text-base leading-relaxed tracking-wide">
+                    来中国已经一年了，你适应留学的生活了吗？
+                  </p>
+                  <p className="text-[10px] text-blue-100 italic leading-relaxed">
+                    Lái Zhōngguó yǐjīng yīnián le, nǐ shìyìng liúxué de shēnghuó le ma?
+                  </p>
+                  <p className="text-xs text-blue-50 font-semibold leading-relaxed">
+                    Đến Trung Quốc đã một năm rồi, bạn đã thích nghi với cuộc sống du học chưa?
+                  </p>
+                  
+                  <div className="flex justify-center pt-2">
+                    <button
+                      onClick={() => speakChinese("来中国已经一年了，你适应留学的生活了吗？")}
+                      className="w-7 h-7 bg-blue-700/50 hover:bg-blue-700/80 rounded-full flex items-center justify-center text-white cursor-pointer transition-colors"
+                    >
+                      🔊
+                    </button>
                   </div>
                 </div>
 
-                <div className="w-full max-w-md bg-white rounded-2xl border border-gray-100 p-5 shadow-xs space-y-3">
-                  <div className="text-center space-y-1.5">
-                    <p className="font-bold text-gray-900 text-sm leading-relaxed">
-                      刚来中国的时候不太习惯，不过现在好多了。我还交了一个中国朋友。
-                    </p>
+                {/* Conversation Image (2 people talking) */}
+                <div className="relative w-64 h-40 rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                  <Image
+                    src="/images/student_cafe.png"
+                    alt="Students talking in Cafe"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+
+                {/* Bubble 2 (White Speech Bubble with gray border) */}
+                <div className="w-full max-w-md bg-white border border-gray-100 rounded-2xl p-5 shadow-xs space-y-3 relative">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <p className="font-extrabold text-gray-900 text-sm leading-relaxed tracking-wide">
+                        刚来中国的时候不太习惯，不过现在好多了。我还交了一个中国朋友。
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-mono">
+                        Gāng lái Zhōngguó de shíhou bù tài xíguàn, búguò xiànzài hǎo duō le. Wǒ hái jiāole yī gè Zhōngguó péngyou.
+                      </p>
+                      <p className="text-xs text-[#d97706] italic font-semibold leading-relaxed">
+                        Lúc mới đến Trung Quốc thì tôi vẫn chưa quen lắm, nhưng hiện tại đã tốt hơn nhiều rồi. Tôi còn làm quen được với một người bạn Trung Quốc.
+                      </p>
+                    </div>
                     <button
                       onClick={() =>
                         speakChinese(
                           "刚来中国的时候不太习惯，不过现在好多了。我还交了一个中国朋友。"
                         )
                       }
-                      className="text-amber-500 hover:text-amber-600 text-sm cursor-pointer inline-block"
+                      className="w-8 h-8 border border-amber-200 hover:bg-amber-50 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90 transition-transform shrink-0"
                     >
                       🔊
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-400 text-center leading-relaxed font-medium">
-                    Gāng lái Zhōngguó de shíhou bù tài xíguàn, búguò xiànzài hǎo duō le. Wǒ hái jiāole yì ge Zhōngguó péngyou.
-                  </p>
-                  <p className="text-xs text-amber-500 text-center italic font-semibold leading-relaxed">
-                    Lúc mới đến Trung Quốc thì tôi vẫn chưa quen lắm, nhưng hiện tại đã tốt hơn nhiều rồi. Tôi còn làm quen được với một người bạn Trung Quốc.
-                  </p>
                 </div>
               </div>
 
-              <button
-                onClick={() => speakChinese("刚来中国的时候不太習慣")}
-                className="w-16 h-16 bg-[#e11d48] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-rose-600 active:scale-95 transition-all cursor-pointer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
-                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                  <path d="M19 10a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21a1 1 0 0 0 2 0v-4.08A7 7 0 0 0 19 10Z" />
-                </svg>
-              </button>
+              {/* Microphone Recording Section */}
+              <div className="flex flex-col items-center gap-3 pt-4">
+                {recordState === "idle" && (
+                  <button
+                    onClick={() => setRecordState("recording")}
+                    className="w-16 h-16 bg-[#e11d48] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-rose-600 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                      <path d="M19 10a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21a1 1 0 0 0 2 0v-4.08A7 7 0 0 0 19 10Z" />
+                    </svg>
+                  </button>
+                )}
 
-              <div className="flex justify-end w-full pt-2">
+                {recordState === "recording" && (
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      onClick={() => setRecordState("done")}
+                      className="w-16 h-16 bg-[#e11d48] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 animate-ping cursor-pointer"
+                    >
+                      <span className="w-4 h-4 bg-white rounded-xs" />
+                    </button>
+                    <p className="text-xs font-bold text-rose-600 tracking-wider">
+                      ĐANG THU HỘI THOẠI: {recordSeconds}s / 3s
+                    </p>
+                  </div>
+                )}
+
+                {recordState === "done" && (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => {
+                          setPlayBackState(true);
+                          speakChinese("刚来中国的时候不太习惯，不过现在好多了。我还交了一个中国朋友。");
+                          setTimeout(() => setPlayBackState(false), 2000);
+                        }}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer"
+                      >
+                        {playBackState ? "🔊 Đang phát..." : "▶ Nghe lại"}
+                      </button>
+                      <button
+                        onClick={() => setRecordState("idle")}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer"
+                      >
+                        🔄 Thực hành lại
+                      </button>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-lg flex items-center gap-3 text-emerald-800 font-extrabold text-xs">
+                      <span className="text-lg">🎯</span>
+                      <div>
+                        <p>Điểm hội thoại: 95/100 (Xuất sắc)</p>
+                        <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Phát âm trôi chảy, ngữ điệu đối thoại tự nhiên!</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {recordState === "idle" && (
+                  <span className="text-xs text-gray-400 font-bold">
+                    Nhấn nút đỏ để bắt đầu luyện nói theo đoạn hội thoại
+                  </span>
+                )}
+              </div>
+
+              <div className="flex justify-end w-full pt-6 border-t border-gray-100">
                 <button
                   onClick={() => handleSetView("learn-extra")}
                   className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
@@ -789,48 +843,75 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
           {/* STEP 7: Bài tập bổ sung (learn-extra) */}
           {currentStep === "learn-extra" && (
-            <div className="flex flex-col items-center justify-start w-full">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-                <div className="lg:col-span-2 flex items-center justify-center">
-                  <div className="bg-white rounded-2xl border-2 border-dashed border-amber-300 p-10 md:p-14 shadow-xs w-full max-w-lg">
-                    <div className="flex items-center justify-center gap-10 md:gap-14">
-                      {/* PDF 1 */}
-                      <button className="flex flex-col items-center gap-3 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
-                        <div className="w-16 h-20 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center shadow-xs group-hover:shadow-md transition-shadow">
-                          <span className="text-[10px] font-black text-white bg-red-500 px-1.5 py-0.5 rounded-sm tracking-wider">PDF</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-500 mt-1">
-                            <path fillRule="evenodd" d="M5.625 1.5H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875Z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <span className="text-xs font-bold text-gray-700">Bài tập</span>
-                      </button>
+            <div className="flex flex-col items-center justify-start w-full space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-3xl items-center">
+                
+                {/* Left side: Dashed bordered container with 3 download items */}
+                <div className="md:col-span-2 bg-white rounded-2xl border-2 border-dashed border-orange-200 p-8 shadow-xs w-full">
+                  <div className="flex items-center justify-around gap-6">
+                    {/* PDF 1 */}
+                    <button className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
+                      <div className="w-14 h-18 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow relative">
+                        <span className="absolute top-1 text-[8px] font-black text-red-500 tracking-wider">PDF</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-500 mt-2">
+                          <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M3.75 18a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5H4.5A.75.75 0 0 1 3.75 18Z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-bold text-gray-700">Bài tập</span>
+                    </button>
 
-                      {/* PDF 2 */}
-                      <button className="flex flex-col items-center gap-3 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
-                        <div className="w-16 h-20 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center shadow-xs group-hover:shadow-md transition-shadow">
-                          <span className="text-[10px] font-black text-white bg-red-500 px-1.5 py-0.5 rounded-sm tracking-wider">PDF</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-500 mt-1">
-                            <path fillRule="evenodd" d="M5.625 1.5H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875Z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <span className="text-xs font-bold text-gray-700">Đáp án</span>
-                      </button>
+                    {/* PDF 2 */}
+                    <button className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
+                      <div className="w-14 h-18 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow relative">
+                        <span className="absolute top-1 text-[8px] font-black text-red-500 tracking-wider">PDF</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-500 mt-2">
+                          <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M3.75 18a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5H4.5A.75.75 0 0 1 3.75 18Z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-bold text-gray-700">Đáp án</span>
+                    </button>
 
-                      {/* Audio */}
-                      <button className="flex flex-col items-center gap-3 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
-                        <div className="w-16 h-20 bg-amber-50 border border-amber-200 rounded-lg flex flex-col items-center justify-center shadow-xs group-hover:shadow-md transition-shadow">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-amber-500">
-                            <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
-                          </svg>
-                        </div>
-                        <span className="text-xs font-bold text-gray-700">Audio</span>
-                      </button>
-                    </div>
+                    {/* Audio */}
+                    <button className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
+                      <div className="w-14 h-18 bg-orange-50 border border-orange-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-orange-500">
+                          <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-bold text-gray-700">Audio</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold shadow-2xs">
+                {/* Right side: Helper Text "Đây là 3 file để..." */}
+                <div className="md:col-span-1 text-sm font-bold text-gray-700 leading-relaxed space-y-2 p-2">
+                  <div className="flex items-center gap-1.5 text-amber-600 text-lg">
+                    💡
+                  </div>
+                  <p className="font-semibold text-gray-600">
+                    Đây là 3 file để người học tải về để ôn tập thêm
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-between w-full pt-6 border-t border-gray-150 mt-8 max-w-3xl">
+                <button
+                  onClick={() => handleSetView("learn-conversation")}
+                  className="text-xs font-black text-gray-500 hover:text-amber-600 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  &larr; Phần trước
+                </button>
+                <button
+                  onClick={() => router.push(`/courses/${courseId}`)}
+                  className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  Về lộ trình học &rarr;
+                </button>
+              </div>
+            </div>
+          )}00 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold shadow-2xs">
                     <div className="text-sm mb-2 flex items-center gap-1.5 text-amber-700 font-black">
                       <span>💡</span> Note
                     </div>
