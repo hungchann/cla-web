@@ -90,6 +90,8 @@ export default function CoursesPage() {
       router.push("/courses");
     } else if (newView === "bilingual-list") {
       router.push("/bilingual");
+    } else if (newView === "flashcard") {
+      router.push("/flashcard");
     }
   };
 

@@ -4,8 +4,8 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Sidebar from "../../../components/Sidebar";
-import Header from "../../../components/Header";
+import Sidebar from "../../components/Sidebar";
+import Header from "../../components/Header";
 
 // Browser Text-to-Speech handler
 const speakChinese = (text: string) => {
@@ -65,6 +65,8 @@ export default function BilingualDetailPage({
       router.push("/courses");
     } else if (newStep === "bilingual-list") {
       router.push("/bilingual");
+    } else if (newStep === "flashcard") {
+      router.push("/flashcard");
     }
   };
 

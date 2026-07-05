@@ -14,7 +14,7 @@ export default function Header({ view, setView, showLogo = true }: Readonly<Head
 
   // Hide the global layout header on pages that render their own Sidebar/Header layout
   const isGlobalHeader = !view && !setView;
-  if (isGlobalHeader && (pathname?.includes("/learn") || pathname?.includes("/courses") || pathname?.includes("/bilingual"))) {
+  if (isGlobalHeader && (pathname?.includes("/learn") || pathname?.includes("/courses") || pathname?.includes("/bilingual") || pathname?.includes("/flashcard"))) {
     return null;
   }
 
@@ -23,7 +23,7 @@ export default function Header({ view, setView, showLogo = true }: Readonly<Head
     { name: "Song ngữ", href: "/bilingual", target: "bilingual-list" },
     { name: "Sách – Báo", href: "/bilingual", target: "bilingual-list" },
     { name: "AI luyện nói", href: "/courses/living-chinese/learn?step=learn-conversation", target: "learn-conversation" },
-    { name: "Từ vựng", href: "/flashcard", target: "home" },
+    { name: "Từ vựng", href: "/flashcard", target: "flashcard" },
     { name: "Ngữ pháp", href: "/courses/living-chinese/learn?step=learn-video-grammar", target: "learn-video-grammar" },
     { name: "Bài tập", href: "/courses/living-chinese/learn?step=learn-quiz-vocab", target: "learn-quiz-vocab" },
   ];

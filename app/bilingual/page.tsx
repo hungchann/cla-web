@@ -144,6 +144,8 @@ export default function BilingualListPage() {
       router.push("/courses");
     } else if (newView === "bilingual-list") {
       router.push("/bilingual");
+    } else if (newView === "flashcard") {
+      router.push("/flashcard");
     }
   };
 

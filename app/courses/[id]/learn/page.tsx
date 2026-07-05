@@ -47,6 +47,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
       router.push("/courses");
     } else if (newStep === "bilingual-list") {
       router.push("/bilingual");
+    } else if (newStep === "flashcard") {
+      router.push("/flashcard");
     } else if (newStep.startsWith("learn")) {
       router.push(`/courses/${courseId}/learn?step=${newStep}`);
     }
@@ -897,30 +899,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
               </div>
 
               <div className="flex justify-between w-full pt-6 border-t border-gray-150 mt-8 max-w-3xl">
-                <button
-                  onClick={() => handleSetView("learn-conversation")}
-                  className="text-xs font-black text-gray-500 hover:text-amber-600 flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  &larr; Phần trước
-                </button>
-                <button
-                  onClick={() => router.push(`/courses/${courseId}`)}
-                  className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  Về lộ trình học &rarr;
-                </button>
-              </div>
-            </div>
-          )}00 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold shadow-2xs">
-                    <div className="text-sm mb-2 flex items-center gap-1.5 text-amber-700 font-black">
-                      <span>💡</span> Note
-                    </div>
-                    Đây là 3 file để người học tải về để ôn tập thêm
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-between w-full pt-6 border-t border-gray-150 mt-8">
                 <button
                   onClick={() => handleSetView("learn-conversation")}
                   className="text-xs font-black text-gray-500 hover:text-amber-600 flex items-center gap-1 transition-colors cursor-pointer"
