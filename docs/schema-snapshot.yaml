@@ -1,0 +1,453 @@
+version: 1
+collections:
+  - collection: Sections
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: Sections
+  - collection: Sections_genre_of_section
+    meta:
+      hidden: true
+      singleton: false
+    schema:
+      name: Sections_genre_of_section
+  - collection: Sections_vocab_items
+    meta:
+      hidden: true
+      singleton: false
+    schema:
+      name: Sections_vocab_items
+  - collection: Sections_vocabulary
+    meta:
+      hidden: true
+      singleton: false
+    schema:
+      name: Sections_vocabulary
+  - collection: UserFlashcard
+    meta:
+      hidden: false
+      singleton: false
+      group: user_profiles
+    schema:
+      name: UserFlashcard
+  - collection: User_Reading_Progress
+    meta:
+      hidden: false
+      singleton: false
+      group: user_profiles
+    schema:
+      name: User_Reading_Progress
+  - collection: account_types
+    meta:
+      hidden: false
+      singleton: false
+      group: user_profiles
+    schema:
+      name: account_types
+  - collection: author
+    meta:
+      hidden: false
+      singleton: false
+      group: video_section
+    schema:
+      name: author
+  - collection: block_pricing_cards
+    meta:
+      hidden: true
+      singleton: false
+    schema:
+      name: block_pricing_cards
+  - collection: book_chapters
+    meta:
+      hidden: false
+      singleton: false
+      group: book_library
+    schema:
+      name: book_chapters
+  - collection: book_genre
+    meta:
+      hidden: false
+      singleton: false
+      group: book_library
+    schema:
+      name: book_genre
+  - collection: book_library
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: book_library
+  - collection: book_library_book_genre
+    meta:
+      hidden: true
+      singleton: false
+      group: book_library
+    schema:
+      name: book_library_book_genre
+  - collection: dictionary_levels
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: dictionary_levels
+  - collection: dictionary_topics
+    meta:
+      hidden: false
+      singleton: false
+      group: dictionary_levels
+    schema:
+      name: dictionary_topics
+  - collection: exercises
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: exercises
+  - collection: flashcard_deck
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: flashcard_deck
+  - collection: flashcard_item
+    meta:
+      hidden: false
+      singleton: false
+      group: flashcard_deck
+    schema:
+      name: flashcard_item
+  - collection: genre_of_section
+    meta:
+      hidden: false
+      singleton: false
+      group: Sections
+    schema:
+      name: genre_of_section
+  - collection: grammar_item
+    meta:
+      hidden: false
+      singleton: false
+      group: topic_of_grammarModule
+    schema:
+      name: grammar_item
+  - collection: grammar_modules
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: grammar_modules
+  - collection: grammar_of_section
+    meta:
+      hidden: false
+      singleton: false
+      group: Sections
+    schema:
+      name: grammar_of_section
+  - collection: hsk_level
+    meta:
+      hidden: false
+      singleton: false
+      group: user_profiles
+    schema:
+      name: hsk_level
+  - collection: lesson_of_Exercise_module
+    meta:
+      hidden: false
+      singleton: false
+      group: exercises
+    schema:
+      name: lesson_of_Exercise_module
+  - collection: link_exercise
+    meta:
+      hidden: false
+      singleton: false
+      group: exercises
+    schema:
+      name: link_exercise
+  - collection: module_Exercise
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: module_Exercise
+  - collection: module_Exercise_exercises
+    meta:
+      hidden: true
+      singleton: false
+      group: module_Exercise
+    schema:
+      name: module_Exercise_exercises
+  - collection: module_Exercise_related
+    meta:
+      hidden: false
+      singleton: false
+      group: lesson_of_Exercise_module
+    schema:
+      name: module_Exercise_related
+  - collection: notebooks
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: notebooks
+  - collection: notebook_word_sets
+    meta:
+      hidden: false
+      singleton: false
+      group: notebooks
+    schema:
+      name: notebook_word_sets
+  - collection: sectionExercise_exercises
+    meta:
+      hidden: true
+      singleton: false
+      group: module_Exercise
+    schema:
+      name: sectionExercise_exercises
+  - collection: speaking_dialogues
+    meta:
+      hidden: false
+      singleton: false
+      group: speaking_scenarios
+    schema:
+      name: speaking_dialogues
+  - collection: speaking_scenarios
+    meta:
+      hidden: false
+      singleton: false
+      group: speaking_topics
+    schema:
+      name: speaking_scenarios
+  - collection: speaking_topics
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: speaking_topics
+  - collection: target_user
+    meta:
+      hidden: false
+      singleton: false
+      group: user_profiles
+    schema:
+      name: target_user
+  - collection: topic_of_exercise
+    meta:
+      hidden: false
+      singleton: false
+      group: exercises
+    schema:
+      name: topic_of_exercise
+  - collection: topic_of_exercise_lesson_of_Exercise_module
+    meta:
+      hidden: true
+      singleton: false
+      group: lesson_of_Exercise_module
+    schema:
+      name: topic_of_exercise_lesson_of_Exercise_module
+  - collection: topic_of_grammarModule
+    meta:
+      hidden: false
+      singleton: false
+      group: grammar_modules
+    schema:
+      name: topic_of_grammarModule
+  - collection: user_exercise_progress
+    meta:
+      hidden: false
+      singleton: false
+      group: user_profiles
+    schema:
+      name: user_exercise_progress
+  - collection: user_favorites
+    meta:
+      hidden: false
+      singleton: false
+      group: user_profiles
+    schema:
+      name: user_favorites
+  - collection: user_favorites_book_library
+    meta:
+      hidden: true
+      singleton: false
+      group: user_profiles
+    schema:
+      name: user_favorites_book_library
+  - collection: user_favorites_user_profiles
+    meta:
+      hidden: true
+      singleton: false
+      group: user_profiles
+    schema:
+      name: user_favorites_user_profiles
+  - collection: user_learning_log
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: user_learning_log
+  - collection: user_profiles
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: user_profiles
+  - collection: user_vocab_notes
+    meta:
+      hidden: false
+      singleton: false
+      group: user_profiles
+    schema:
+      name: user_vocab_notes
+  - collection: video_genre
+    meta:
+      hidden: false
+      singleton: false
+      group: video_section
+    schema:
+      name: video_genre
+  - collection: video_section
+    meta:
+      hidden: false
+      singleton: false
+    schema:
+      name: video_section
+  - collection: vocab_display_map
+    meta:
+      hidden: false
+      singleton: false
+      group: dictionary_levels
+    schema:
+      name: vocab_display_map
+  - collection: vocab_display_map_vocab_items
+    meta:
+      hidden: true
+      singleton: false
+    schema:
+      name: vocab_display_map_vocab_items
+  - collection: vocab_examples
+    meta:
+      hidden: false
+      singleton: false
+      group: dictionary_levels
+    schema:
+      name: vocab_examples
+  - collection: vocab_items
+    meta:
+      hidden: false
+      singleton: false
+      group: dictionary_levels
+    schema:
+      name: vocab_items
+  - collection: vocab_meanings
+    meta:
+      hidden: false
+      singleton: false
+      group: dictionary_levels
+    schema:
+      name: vocab_meanings
+  - collection: vocab_parts_of_speech
+    meta:
+      hidden: false
+      singleton: false
+      group: dictionary_levels
+    schema:
+      name: vocab_parts_of_speech
+fields:
+  - collection: Sections
+    field: id
+    type: char
+    meta:
+      nullable: false
+  - collection: Sections
+    field: title
+    type: varchar
+    meta:
+      nullable: true
+  - collection: Sections
+    field: title_trans
+    type: varchar
+    meta:
+      nullable: true
+  - collection: Sections
+    field: level
+    type: varchar
+    meta:
+      nullable: true
+  - collection: vocab_items
+    field: id
+    type: integer
+    meta:
+      nullable: false
+  - collection: vocab_items
+    field: name
+    type: varchar
+    meta:
+      nullable: true
+  - collection: vocab_items
+    field: pinyin
+    type: varchar
+    meta:
+      nullable: true
+  - collection: vocab_meanings
+    field: id
+    type: integer
+    meta:
+      nullable: false
+  - collection: vocab_meanings
+    field: meaning_vi
+    type: varchar
+    meta:
+      nullable: true
+  - collection: vocab_examples
+    field: id
+    type: integer
+    meta:
+      nullable: false
+  - collection: vocab_examples
+    field: chinese
+    type: varchar
+    meta:
+      nullable: true
+  - collection: vocab_examples
+    field: pinyin
+    type: varchar
+    meta:
+      nullable: true
+  - collection: vocab_examples
+    field: p_vi
+    type: varchar
+    meta:
+      nullable: true
+relations:
+  - collection: Sections
+    field: image
+    related_collection: directus_files
+  - collection: Sections
+    field: file_script
+    related_collection: directus_files
+  - collection: Sections
+    field: SubRip_Subtitle
+    related_collection: directus_files
+  - collection: Sections_genre_of_section
+    field: Sections_id
+    related_collection: Sections
+  - collection: Sections_genre_of_section
+    field: genre_of_section_id
+    related_collection: genre_of_section
+  - collection: Sections_vocab_items
+    field: Sections_id
+    related_collection: Sections
+  - collection: Sections_vocab_items
+    field: vocab_items_id
+    related_collection: vocab_items
+  - collection: vocab_meanings
+    field: item_id
+    related_collection: vocab_items
+  - collection: vocab_meanings
+    field: pos_id
+    related_collection: vocab_parts_of_speech
+  - collection: vocab_examples
+    field: meaning_id
+    related_collection: vocab_meanings

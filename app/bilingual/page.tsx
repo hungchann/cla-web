@@ -198,7 +198,7 @@ export default function BilingualListPage() {
               className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 transition-all duration-300 hover:-translate-y-1"
             >
               {/* Image Thumbnail */}
-              <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+              <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                 {/* Fallback image using CSS gradient block for premium UI if image loading fails */}
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-red-500/20 flex items-center justify-center font-bold text-4xl text-zinc-300 select-none group-hover:scale-105 transition-transform duration-500">
                   📖

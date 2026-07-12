@@ -20,6 +20,49 @@ export default function DashboardPage() {
   const [loadingLevel, setLoadingLevel] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Gói Premium & Voucher Seeding states
+  const [isPremium, setIsPremium] = useState(false);
+  const [voucherCode, setVoucherCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [voucherStatus, setVoucherStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    const checkPremium = () => {
+      const user = tokenUtils.getUserData();
+      if (user && (user.role === "Premium" || user.is_premium || localStorage.getItem("cla_premium_active") === "true")) {
+        setIsPremium(true);
+      }
+    };
+    checkPremium();
+  }, []);
+
+  const handleStripeCheckout = () => {
+    alert("Đang kết nối tới Stripe Checkout...");
+    localStorage.setItem("cla_premium_active", "true");
+    setIsPremium(true);
+    alert("Thanh toán giả lập Stripe thành công! Gói Premium đã được kích hoạt.");
+  };
+
+  const handleRedeemVoucher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!voucherCode.trim()) return;
+    setRedeeming(true);
+    setVoucherStatus(null);
+    
+    // Giả lập kiểm tra voucher
+    setTimeout(() => {
+      const code = voucherCode.trim().toUpperCase();
+      if (code === "CLA-SEED-2026" || code === "PREMIUM99") {
+        setVoucherStatus({ type: "success", text: "🎉 Áp dụng mã thành công! Bạn nhận được 30 ngày Premium." });
+        localStorage.setItem("cla_premium_active", "true");
+        setIsPremium(true);
+      } else {
+        setVoucherStatus({ type: "error", text: "❌ Mã voucher không hợp lệ hoặc đã được sử dụng." });
+      }
+      setRedeeming(false);
+    }, 1000);
+  };
+
   const stats: UserStats = {
     mastered: 24,
     learning: 45,
@@ -150,6 +193,86 @@ export default function DashboardPage() {
             <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Cần ôn tập</p>
             <p className="text-2xl font-bold">{stats.review} từ</p>
           </div>
+        </div>
+      </section>
+
+      {/* VIP/Premium & Voucher Seeding Section */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Premium Status Card */}
+        <div className="md:col-span-2 relative overflow-hidden rounded-2xl bg-zinc-900 text-white p-6 shadow-lg border border-zinc-850 flex flex-col justify-between min-h-[160px]">
+          <div className="absolute right-4 bottom-4 opacity-10 text-8xl select-none pointer-events-none">
+            👑
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold tracking-tight text-white">Gói Tài Khoản của Bạn</h3>
+              <span className={`text-xs font-black uppercase px-2.5 py-1 rounded-full ${
+                isPremium ? "bg-amber-500 text-zinc-950 animate-pulse" : "bg-zinc-800 text-zinc-400"
+              }`}>
+                {isPremium ? "👑 Premium" : "Free"}
+              </span>
+            </div>
+            <p className="text-zinc-400 text-xs leading-relaxed max-w-md">
+              {isPremium 
+                ? "Xin chúc mừng! Bạn đã sở hữu tài khoản Premium. Mở khóa toàn bộ kho sách, video bài học và flashcard không giới hạn." 
+                : "Nâng cấp lên gói Premium để học không giới hạn, xem đầy đủ video giải thích ngữ pháp, tra từ nhanh và nhận nhiều ưu đãi hơn."
+              }
+            </p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center justify-between flex-wrap gap-3">
+            {isPremium ? (
+              <span className="text-[11px] font-bold text-amber-500">Hạn dùng: Vô thời hạn (Vip Lifetime)</span>
+            ) : (
+              <>
+                <span className="text-[11px] font-bold text-zinc-500">Gói 399k / Năm</span>
+                <button
+                  onClick={handleStripeCheckout}
+                  className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-black px-4.5 py-2.5 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer border-none"
+                >
+                  Nâng cấp Premium
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Voucher Seeding Card */}
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-black text-gray-900 dark:text-white mb-1.5 flex items-center gap-1.5">
+              <span>🎟️</span> Nhập mã giới thiệu
+            </h3>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed mb-4">
+              Nhập mã Voucher từ người seeding để nhận ngay 30 ngày Premium trải nghiệm miễn phí.
+            </p>
+          </div>
+          
+          <form onSubmit={handleRedeemVoucher} className="space-y-3">
+            <input
+              type="text"
+              value={voucherCode}
+              onChange={(e) => setVoucherCode(e.target.value)}
+              placeholder="Ví dụ: CLA-SEED-2026"
+              disabled={redeeming}
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-zinc-250 dark:border-zinc-800 bg-transparent focus:border-amber-500 focus:outline-none dark:text-white font-bold"
+            />
+            {voucherStatus && (
+              <div className={`p-2 rounded-lg text-[10px] font-bold text-center ${
+                voucherStatus.type === "success" 
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+              }`}>
+                {voucherStatus.text}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={redeeming || !voucherCode.trim()}
+              className="w-full bg-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 hover:bg-zinc-800 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer border-none disabled:opacity-50"
+            >
+              {redeeming ? "Đang xử lý..." : "Áp dụng"}
+            </button>
+          </form>
         </div>
       </section>
 
