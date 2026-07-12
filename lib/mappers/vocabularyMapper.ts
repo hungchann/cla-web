@@ -1,4 +1,4 @@
-import { StandardVocabulary, StandardSense } from "../interfaces/vocabulary";
+import { StandardVocabulary, StandardSense } from "../types/vocabulary";
 
 export class VocabularyMapper {
   /**

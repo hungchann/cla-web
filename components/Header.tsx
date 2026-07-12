@@ -33,18 +33,20 @@ export default function Header({ view, setView, showLogo = true, title }: Readon
     globalThis.location.replace("/sign-in");
   };
 
-  // Hide the global layout header on learn pages
+  // Hide the global layout header on pages that render their own Sidebar/Header layout
   const isGlobalHeader = !view && !setView;
-  if (isGlobalHeader && pathname?.includes("/learn")) {
+  if (isGlobalHeader && (pathname?.includes("/learn") || pathname?.includes("/courses") || pathname?.includes("/bilingual") || pathname?.includes("/flashcard"))) {
     return null;
   }
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", target: "home" },
     { name: "Khóa học", href: "/courses", target: "courses" },
     { name: "Song ngữ", href: "/bilingual", target: "bilingual-list" },
-    { name: "Video học", href: "/video", target: "home" },
-    { name: "Flashcards", href: "/flashcard", target: "home" },
+    { name: "Sách – Báo", href: "/bilingual", target: "bilingual-list" },
+    { name: "AI luyện nói", href: "/courses/living-chinese/learn?step=learn-conversation", target: "learn-conversation" },
+    { name: "Từ vựng", href: "/flashcard", target: "flashcard" },
+    { name: "Ngữ pháp", href: "/courses/living-chinese/learn?step=learn-video-grammar", target: "learn-video-grammar" },
+    { name: "Bài tập", href: "/courses/living-chinese/learn?step=learn-quiz-vocab", target: "learn-quiz-vocab" },
   ];
 
   const currentPath = pathname || "";
@@ -86,11 +88,13 @@ export default function Header({ view, setView, showLogo = true, title }: Readon
       <nav className="hidden md:flex items-center gap-6 lg:gap-8">
         {navItems.map((item) => {
           let isActive = false;
-          if (item.href === "/courses") isActive = isCoursesActive;
-          else if (item.href === "/bilingual") isActive = isBilingualActive;
-          else if (item.href === "/video") isActive = isVideoActive;
-          else if (item.href === "/flashcard") isActive = isFlashcardActive;
-          else if (item.href === "/dashboard") isActive = isDashboardActive;
+          if (item.name === "Khóa học") isActive = isCoursesActive;
+          else if (item.name === "Song ngữ") isActive = isBilingualActive;
+          else if (item.name === "Sách – Báo") isActive = false;
+          else if (item.name === "AI luyện nói") isActive = view === "learn-conversation";
+          else if (item.name === "Từ vựng") isActive = isFlashcardActive;
+          else if (item.name === "Ngữ pháp") isActive = view === "learn-video-grammar" || view === "learn-quiz-grammar";
+          else if (item.name === "Bài tập") isActive = view === "learn-quiz-vocab";
 
           if (setView && item.target) {
             return (

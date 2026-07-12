@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import Header from "@/components/Header";
 
 const featuredCourses = [
   {
@@ -74,6 +75,10 @@ export default function CoursesPage() {
   const router = useRouter();
 
   const handleCourseClick = (courseId: string) => {
+    if (courseId === "bilingual-pressure") {
+      router.push("/bilingual/bilingual-pressure");
+      return;
+    }
     // Navigate to dynamic course detail page
     router.push(`/courses/${courseId}`);
   };
@@ -85,6 +90,8 @@ export default function CoursesPage() {
       router.push("/courses");
     } else if (newView === "bilingual-list") {
       router.push("/bilingual");
+    } else if (newView === "flashcard") {
+      router.push("/flashcard");
     }
   };
 
@@ -93,6 +100,7 @@ export default function CoursesPage() {
       <Sidebar view={view} setView={handleSetView} />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
+        <Header view={view} setView={handleSetView} showLogo={false} />
         <div className="p-6 md:p-8 space-y-12 max-w-6xl w-full mx-auto">
           <section className="space-y-6">
             <h2 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">

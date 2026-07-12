@@ -1,6 +1,6 @@
 type LogArgs = unknown[];
 
-const isProd = typeof __DEV__ !== "undefined" ? !__DEV__ : false;
+const isProd = process.env.NODE_ENV === "production";
 
 function safeConsole(method: "log" | "info" | "warn" | "error", args: LogArgs) {
   try {
