@@ -35,26 +35,21 @@ export default function Header({ view, setView, showLogo = true, title }: Readon
 
   // Hide the global layout header on pages that render their own Sidebar/Header layout
   const isGlobalHeader = !view && !setView;
-  if (isGlobalHeader && (pathname?.includes("/learn") || pathname?.includes("/courses") || pathname?.includes("/bilingual") || pathname?.includes("/flashcard"))) {
+  if (isGlobalHeader && (pathname?.includes("/learn") || pathname?.includes("/courses") || pathname?.includes("/bilingual") || pathname?.includes("/flashcard") || pathname?.includes("/stories") || pathname?.includes("/speaking") || pathname?.includes("/grammar"))) {
     return null;
   }
 
   const navItems = [
     { name: "Khóa học", href: "/courses", target: "courses" },
     { name: "Song ngữ", href: "/bilingual", target: "bilingual-list" },
-    { name: "Sách – Báo", href: "/bilingual", target: "bilingual-list" },
-    { name: "AI luyện nói", href: "/courses/living-chinese/learn?step=learn-conversation", target: "learn-conversation" },
+    { name: "Sách – Báo", href: "/stories", target: "stories" },
+    { name: "AI luyện nói", href: "/speaking", target: "speaking" },
     { name: "Từ vựng", href: "/flashcard", target: "flashcard" },
-    { name: "Ngữ pháp", href: "/courses/living-chinese/learn?step=learn-video-grammar", target: "learn-video-grammar" },
+    { name: "Ngữ pháp", href: "/grammar", target: "grammar" },
     { name: "Bài tập", href: "/courses/living-chinese/learn?step=learn-quiz-vocab", target: "learn-quiz-vocab" },
   ];
 
   const currentPath = pathname || "";
-  const isCoursesActive = view ? view.startsWith("course") : currentPath.startsWith("/courses");
-  const isBilingualActive = view ? view.startsWith("bilingual") : currentPath.startsWith("/bilingual");
-  const isVideoActive = view ? view === "video" : currentPath.startsWith("/video");
-  const isFlashcardActive = view ? view === "flashcard" : currentPath.startsWith("/flashcard");
-  const isDashboardActive = view ? view === "home" : currentPath === "/dashboard";
 
   let logoButton = <div />;
   if (showLogo) {
@@ -88,13 +83,21 @@ export default function Header({ view, setView, showLogo = true, title }: Readon
       <nav className="hidden md:flex items-center gap-6 lg:gap-8">
         {navItems.map((item) => {
           let isActive = false;
-          if (item.name === "Khóa học") isActive = isCoursesActive;
-          else if (item.name === "Song ngữ") isActive = isBilingualActive;
-          else if (item.name === "Sách – Báo") isActive = false;
-          else if (item.name === "AI luyện nói") isActive = view === "learn-conversation";
-          else if (item.name === "Từ vựng") isActive = isFlashcardActive;
-          else if (item.name === "Ngữ pháp") isActive = view === "learn-video-grammar" || view === "learn-quiz-grammar";
-          else if (item.name === "Bài tập") isActive = view === "learn-quiz-vocab";
+          if (item.name === "Khóa học") {
+            isActive = view ? view.startsWith("course") : currentPath.startsWith("/courses");
+          } else if (item.name === "Song ngữ") {
+            isActive = view ? view.startsWith("bilingual") : currentPath.startsWith("/bilingual");
+          } else if (item.name === "Sách – Báo") {
+            isActive = view ? view === "stories" : currentPath.startsWith("/stories");
+          } else if (item.name === "AI luyện nói") {
+            isActive = view ? view === "speaking" : currentPath.startsWith("/speaking");
+          } else if (item.name === "Từ vựng") {
+            isActive = view ? view === "flashcard" : currentPath.startsWith("/flashcard");
+          } else if (item.name === "Ngữ pháp") {
+            isActive = view ? view === "grammar" : currentPath.startsWith("/grammar");
+          } else if (item.name === "Bài tập") {
+            isActive = view === "learn-quiz-vocab";
+          }
 
           if (setView && item.target) {
             return (
@@ -103,7 +106,7 @@ export default function Header({ view, setView, showLogo = true, title }: Readon
                 onClick={() => setView(item.target)}
                 className={`text-sm font-semibold transition-colors duration-200 cursor-pointer pb-1 ${
                   isActive
-                    ? "text-amber-505 border-b-2 border-amber-500"
+                    ? "text-amber-500 border-b-2 border-amber-500"
                     : "text-gray-600 hover:text-amber-500"
                 }`}
               >

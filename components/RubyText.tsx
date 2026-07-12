@@ -10,7 +10,7 @@ interface RubyTextProps {
   bold?: boolean;
   className?: string;
   containerClassName?: string;
-  onPress?: () => void;
+  onPress?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const RubyText = ({

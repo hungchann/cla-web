@@ -279,7 +279,7 @@ export default function DashboardPage() {
       {/* Main Learning Hub */}
       <section className="flex flex-col gap-6">
         <h2 className="text-xl font-bold tracking-tight">Khu Vực Học Tập</h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Card 1: Bilingual */}
           <div className="group relative flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900 hover:-translate-y-1 hover:scale-[1.01] transition-all duration-300">
             <div className="flex flex-col gap-3">
@@ -345,6 +345,69 @@ export default function DashboardPage() {
                 className="flex w-full items-center justify-center rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
               >
                 Ôn tập từ vựng
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 4: Sách – Báo */}
+          <div className="group relative flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900 hover:-translate-y-1 hover:scale-[1.01] transition-all duration-300">
+            <div className="flex flex-col gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20 text-2xl">
+                📖
+              </div>
+              <h3 className="text-lg font-bold">Sách – Báo</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Khám phá thế giới truyện, sách báo song ngữ phong phú. Cải thiện khả năng đọc trôi chảy theo ngữ cảnh.
+              </p>
+            </div>
+            <div className="mt-6">
+              <Link
+                href="/stories"
+                className="flex w-full items-center justify-center rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
+              >
+                Đọc tủ sách
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 5: Ngữ Pháp */}
+          <div className="group relative flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900 hover:-translate-y-1 hover:scale-[1.01] transition-all duration-300">
+            <div className="flex flex-col gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 text-white shadow-md shadow-violet-600/20 text-2xl">
+                📝
+              </div>
+              <h3 className="text-lg font-bold">Cấu Trúc Ngữ Pháp</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Hệ thống các cấu trúc ngữ pháp từ sơ cấp đến cao cấp. Rõ ràng, dễ học kèm nhiều ví dụ thực tế.
+              </p>
+            </div>
+            <div className="mt-6">
+              <Link
+                href="/grammar"
+                className="flex w-full items-center justify-center rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
+              >
+                Học ngữ pháp
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 6: AI Luyện Nói */}
+          <div className="group relative flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900 hover:-translate-y-1 hover:scale-[1.01] transition-all duration-300">
+            <div className="flex flex-col gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500 text-white shadow-md shadow-rose-500/20 text-2xl">
+                🎙️
+              </div>
+              <h3 className="text-lg font-bold">AI Luyện Nói</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Luyện nói giao tiếp phản xạ với AI, nhận phân tích phát âm và chấm điểm độ chính xác chi tiết.
+              </p>
+            </div>
+            <div className="mt-6">
+              <Link
+                href="/speaking"
+                className="flex w-full items-center justify-center rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
+              >
+                Luyện nói ngay
               </Link>
             </div>
           </div>

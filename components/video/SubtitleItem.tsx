@@ -28,16 +28,20 @@ export const SubtitleItem = React.memo(
     const textColor = isActive ? colors.text.inverse : colors.text.primary;
 
     return (
-      <button
-        type="button"
-        className="relative w-full flex flex-row items-center justify-between p-2.5 my-0.5 rounded-2xl overflow-hidden min-h-[60px] transition-colors duration-250 cursor-pointer text-left items-stretch bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+      <div
+        className="relative w-full flex flex-row items-center justify-between p-2.5 my-0.5 rounded-2xl overflow-hidden min-h-[60px] transition-colors duration-250 items-stretch"
         style={{
           backgroundColor: isActive ? colors.primary : "transparent",
         }}
-        onClick={() => onVocabularyPress(item, index)}
       >
-        <div className="flex-1 flex flex-col items-start pr-10">
-          <div className="flex flex-row flex-wrap items-start">
+        <button
+          type="button"
+          className="absolute inset-0 w-full h-full cursor-pointer bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 rounded-2xl z-0"
+          onClick={() => onVocabularyPress(item, index)}
+          aria-label={item.chinese}
+        />
+        <div className="relative z-10 flex-1 flex flex-col items-start pr-10 pointer-events-none">
+          <div className="flex flex-row flex-wrap items-start pointer-events-auto">
             {Array.isArray(item.segmentedWords) ? (
               item.segmentedWords.map((w, i: number) => (
                 <RubyText
@@ -48,12 +52,15 @@ export const SubtitleItem = React.memo(
                   pinyinSize={13}
                   textColor={textColor}
                   pinyinColor={textColor}
-                  onPress={() => onWordPress(w.word)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onWordPress(w.word);
+                  }}
                   containerClassName="mr-2 mb-1"
                 />
               ))
             ) : (
-              <div className="flex flex-col items-start mr-2 mb-1">
+              <div className="flex flex-col items-start mr-2 mb-1 pointer-events-auto">
                 <RubyText
                   word={item.chinese}
                   pinyin={isOpenPinyin ? item.pinyin : undefined}
@@ -84,7 +91,7 @@ export const SubtitleItem = React.memo(
             e.stopPropagation(); // ngăn chặn trigger onVocabularyPress ở thẻ cha
             onReplayPress(item, index);
           }}
-          className="absolute right-2.5 top-2.5 z-10 w-7 h-7 rounded-full border border-solid flex items-center justify-center cursor-pointer transition-colors"
+          className="absolute right-2.5 top-2.5 z-20 w-7 h-7 rounded-full border border-solid flex items-center justify-center cursor-pointer transition-colors"
           style={{
             borderColor: isActive ? colors.text.inverse : colors.primary,
             backgroundColor: isActive ? colors.primary : colors.background.primary,
@@ -104,7 +111,7 @@ export const SubtitleItem = React.memo(
             />
           </svg>
         </button>
-      </button>
+      </div>
     );
   },
 );

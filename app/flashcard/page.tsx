@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useVocabFlashcardData } from "@/lib/hooks/useVocabFlashcardData";
 import { FlashcardCard } from "@/components/flashcard/FlashcardC";
 import { FlashcardControls } from "@/components/flashcard/FlashcardControls";
@@ -83,7 +83,20 @@ const MOCK_FLASHCARDS = [
 ];
 
 function FlashcardDashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"suggest" | "personal" | "system">("suggest");
+
+  const handleSetView = (newView: string) => {
+    if (newView === "home") {
+      router.push("/dashboard");
+    } else if (newView === "courses") {
+      router.push("/courses");
+    } else if (newView === "bilingual-list") {
+      router.push("/bilingual");
+    } else if (newView === "flashcard") {
+      router.push("/flashcard");
+    }
+  };
   const [personalDecks, setPersonalDecks] = useState<any[]>([]);
   const [hskLevels, setHskLevels] = useState<any[]>([]);
   const [expandedHskId, setExpandedHskId] = useState<string | null>(null);
@@ -178,211 +191,217 @@ function FlashcardDashboard() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-8 px-4 flex flex-col gap-8">
-      {/* Title */}
-      <div className="flex flex-col gap-2 text-center sm:text-left">
-        <h1 className="text-3xl font-black text-zinc-950 dark:text-white tracking-tight">
-          🗂️ Thẻ Ghi Nhớ Flashcard
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-          Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS).
-        </p>
-      </div>
+    <div className="flex min-h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
+      <Sidebar view="flashcard" setView={handleSetView} />
 
-      {/* Tabs */}
-      <div className="flex border-b border-zinc-200 dark:border-zinc-800">
-        {(["suggest", "personal", "system"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 sm:flex-none px-6 py-3.5 text-sm font-extrabold border-b-2 transition-all duration-200 cursor-pointer ${
-              activeTab === tab
-                ? "border-amber-500 text-amber-600 dark:text-amber-500"
-                : "border-transparent text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200"
-            }`}
-          >
-            {tab === "suggest" && "💡 Gợi ý học nhanh"}
-            {tab === "personal" && "👤 Sổ tay của tôi"}
-            {tab === "system" && "📚 Trình độ HSK"}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      <div className="min-h-[300px]">
-        {/* Suggest Tab */}
-        {activeTab === "suggest" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Link
-              href="/flashcard?type=suggest"
-              className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-lg transition-all hover:-translate-y-1 group"
-            >
-              <div className="space-y-3">
-                <div className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center text-xl font-bold">
-                  💡
-                </div>
-                <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors">
-                  Bộ từ gợi ý hệ thống
-                </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold leading-relaxed">
-                  Luyện tập nhanh với các từ vựng thiết yếu và phổ biến nhất (học thử demo).
-                </p>
-              </div>
-              <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
-                Bắt đầu học ngay →
-              </span>
-            </Link>
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        <Header view="flashcard" setView={handleSetView} showLogo={false} />
+        <div className="w-full max-w-4xl mx-auto py-8 px-6 flex flex-col gap-8 flex-1">
+          {/* Title */}
+          <div className="flex flex-col gap-2 text-center sm:text-left">
+            <h1 className="text-3xl font-black text-zinc-950 dark:text-white tracking-tight">
+              🗂️ Thẻ Ghi Nhớ Flashcard
+            </h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+              Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS).
+            </p>
           </div>
-        )}
 
-        {/* Personal Tab */}
-        {activeTab === "personal" && (
-          <div className="flex flex-col gap-6">
-            {!isAuthenticated ? (
-              <div className="flex flex-col items-center justify-center p-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-zinc-250 dark:border-zinc-800 text-center gap-4">
-                <span className="text-3xl">🔑</span>
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200">Yêu cầu đăng nhập</h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">Bạn cần đăng nhập để quản lý và học sổ tay từ vựng cá nhân của mình.</p>
-                </div>
+          {/* Tabs */}
+          <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+            {(["suggest", "personal", "system"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 sm:flex-none px-6 py-3.5 text-sm font-extrabold border-b-2 transition-all duration-200 cursor-pointer ${activeTab === tab
+                    ? "border-amber-500 text-amber-600 dark:text-amber-500"
+                    : "border-transparent text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200"
+                  }`}
+              >
+                {tab === "suggest" && "💡 Gợi ý học nhanh"}
+                {tab === "personal" && "👤 Sổ tay của tôi"}
+                {tab === "system" && "📚 Trình độ HSK"}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="min-h-[300px]">
+            {/* Suggest Tab */}
+            {activeTab === "suggest" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Link
-                  href="/sign-in"
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-6 py-2.5 rounded-full transition-all"
+                  href="/flashcard?type=suggest"
+                  className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-lg transition-all hover:-translate-y-1 group"
                 >
-                  Đăng nhập ngay
+                  <div className="space-y-3">
+                    <div className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center text-xl font-bold">
+                      💡
+                    </div>
+                    <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors">
+                      Bộ từ gợi ý hệ thống
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold leading-relaxed">
+                      Luyện tập nhanh với các từ vựng thiết yếu và phổ biến nhất (học thử demo).
+                    </p>
+                  </div>
+                  <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
+                    Bắt đầu học ngay →
+                  </span>
                 </Link>
               </div>
-            ) : (
-              <div className="flex flex-col gap-6">
-                {/* Create Deck Form */}
-                <form onSubmit={handleCreateDeck} className="flex gap-3 w-full max-w-md">
-                  <input
-                    type="text"
-                    placeholder="Tên sổ tay mới... (vd: Từ vựng giao tiếp)"
-                    value={newDeckTitle}
-                    onChange={(e) => setNewDeckTitle(e.target.value)}
-                    required
-                    className="flex-1 px-4 py-2.5 rounded-2xl border border-zinc-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm text-zinc-800 dark:text-white dark:bg-zinc-950 dark:border-zinc-800 transition-all font-medium"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isCreatingDeck}
-                    className="px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-colors cursor-pointer disabled:opacity-55"
-                  >
-                    {isCreatingDeck ? "Đang tạo..." : "Tạo mới"}
-                  </button>
-                </form>
+            )}
 
-                {/* Decks list */}
-                {loadingPersonal ? (
+            {/* Personal Tab */}
+            {activeTab === "personal" && (
+              <div className="flex flex-col gap-6">
+                {!isAuthenticated ? (
+                  <div className="flex flex-col items-center justify-center p-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-zinc-250 dark:border-zinc-800 text-center gap-4">
+                    <span className="text-3xl">🔑</span>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200">Yêu cầu đăng nhập</h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">Bạn cần đăng nhập để quản lý và học sổ tay từ vựng cá nhân của mình.</p>
+                    </div>
+                    <Link
+                      href="/sign-in"
+                      className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-6 py-2.5 rounded-full transition-all"
+                    >
+                      Đăng nhập ngay
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-6">
+                    {/* Create Deck Form */}
+                    <form onSubmit={handleCreateDeck} className="flex gap-3 w-full max-w-md">
+                      <input
+                        type="text"
+                        placeholder="Tên sổ tay mới... (vd: Từ vựng giao tiếp)"
+                        value={newDeckTitle}
+                        onChange={(e) => setNewDeckTitle(e.target.value)}
+                        required
+                        className="flex-1 px-4 py-2.5 rounded-2xl border border-zinc-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm text-zinc-800 dark:text-white dark:bg-zinc-950 dark:border-zinc-800 transition-all font-medium"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isCreatingDeck}
+                        className="px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-colors cursor-pointer disabled:opacity-55"
+                      >
+                        {isCreatingDeck ? "Đang tạo..." : "Tạo mới"}
+                      </button>
+                    </form>
+
+                    {/* Decks list */}
+                    {loadingPersonal ? (
+                      <div className="flex justify-center py-10">
+                        <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-600 border-t-transparent"></div>
+                      </div>
+                    ) : personalDecks.length === 0 ? (
+                      <p className="text-sm text-zinc-500 italic">Bạn chưa tạo sổ tay từ vựng nào.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {personalDecks.map((deck) => (
+                          <Link
+                            key={deck.id}
+                            href={`/flashcard?type=personal&notebookId=${deck.id}`}
+                            className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-lg transition-all hover:-translate-y-1 group"
+                          >
+                            <div className="space-y-3">
+                              <div className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center text-xl font-bold">
+                                📓
+                              </div>
+                              <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors line-clamp-1">
+                                {deck.title}
+                              </h3>
+                            </div>
+                            <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
+                              Luyện tập sổ tay →
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* System (HSK) Tab */}
+            {activeTab === "system" && (
+              <div className="flex flex-col gap-4">
+                {loadingHsk ? (
                   <div className="flex justify-center py-10">
                     <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-600 border-t-transparent"></div>
                   </div>
-                ) : personalDecks.length === 0 ? (
-                  <p className="text-sm text-zinc-500 italic">Bạn chưa tạo sổ tay từ vựng nào.</p>
+                ) : hskLevels.length === 0 ? (
+                  <p className="text-sm text-zinc-500 italic">Không tải được cấp độ HSK.</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {personalDecks.map((deck) => (
-                      <Link
-                        key={deck.id}
-                        href={`/flashcard?type=personal&notebookId=${deck.id}`}
-                        className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-lg transition-all hover:-translate-y-1 group"
-                      >
-                        <div className="space-y-3">
-                          <div className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center text-xl font-bold">
-                            📓
-                          </div>
-                          <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors line-clamp-1">
-                            {deck.title}
-                          </h3>
+                  <div className="flex flex-col gap-4 w-full">
+                    {hskLevels.map((level) => {
+                      const isExpanded = expandedHskId === level.id;
+                      const topicsList = hskTopics[level.id] || [];
+                      const topicsLoading = loadingTopics[level.id];
+
+                      return (
+                        <div
+                          key={level.id}
+                          className="border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 transition-all shadow-2xs"
+                        >
+                          {/* Header */}
+                          <button
+                            onClick={() => handleToggleHsk(level.id)}
+                            className="w-full flex items-center justify-between p-5 text-left font-black text-base text-zinc-900 dark:text-white cursor-pointer select-none"
+                          >
+                            <span className="flex items-center gap-3">
+                              <span className="text-xl">🏆</span> {level.name}
+                            </span>
+                            <span className="text-zinc-400 font-bold transition-transform duration-250">
+                              {isExpanded ? "▲" : "▼"}
+                            </span>
+                          </button>
+
+                          {/* Content */}
+                          {isExpanded && (
+                            <div className="border-t border-zinc-100 dark:border-zinc-800/80 p-5 bg-zinc-50/50 dark:bg-zinc-900/30">
+                              {topicsLoading ? (
+                                <div className="flex justify-center py-4">
+                                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-600 border-t-transparent"></div>
+                                </div>
+                              ) : topicsList.length === 0 ? (
+                                <p className="text-xs text-zinc-500 italic">Không có chủ đề nào.</p>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                  {topicsList.map((item: any) => (
+                                    <Link
+                                      key={item.id}
+                                      href={`/flashcard?type=system&notebookId=${level.id}&topicId=${item.topic_id?.id}`}
+                                      className="flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 border border-zinc-200/85 dark:border-zinc-800 rounded-2xl hover:border-amber-500/50 dark:hover:border-amber-500/50 hover:shadow-2xs transition-all text-sm font-bold text-zinc-800 dark:text-zinc-200 group"
+                                    >
+                                      <span className="text-amber-500">📁</span>
+                                      <div className="flex flex-col gap-0.5 min-w-0">
+                                        <span className="group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors truncate">
+                                          {item.topic_id?.name}
+                                        </span>
+                                        {item.topic_id?.chinese_name && (
+                                          <span className="text-[10px] text-zinc-400 font-medium">
+                                            {item.topic_id.chinese_name}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
-                          Luyện tập sổ tay →
-                        </span>
-                      </Link>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
             )}
           </div>
-        )}
-
-        {/* System (HSK) Tab */}
-        {activeTab === "system" && (
-          <div className="flex flex-col gap-4">
-            {loadingHsk ? (
-              <div className="flex justify-center py-10">
-                <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-600 border-t-transparent"></div>
-              </div>
-            ) : hskLevels.length === 0 ? (
-              <p className="text-sm text-zinc-500 italic">Không tải được cấp độ HSK.</p>
-            ) : (
-              <div className="flex flex-col gap-4 w-full">
-                {hskLevels.map((level) => {
-                  const isExpanded = expandedHskId === level.id;
-                  const topicsList = hskTopics[level.id] || [];
-                  const topicsLoading = loadingTopics[level.id];
-
-                  return (
-                    <div
-                      key={level.id}
-                      className="border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 transition-all shadow-2xs"
-                    >
-                      {/* Header */}
-                      <button
-                        onClick={() => handleToggleHsk(level.id)}
-                        className="w-full flex items-center justify-between p-5 text-left font-black text-base text-zinc-900 dark:text-white cursor-pointer select-none"
-                      >
-                        <span className="flex items-center gap-3">
-                          <span className="text-xl">🏆</span> {level.name}
-                        </span>
-                        <span className="text-zinc-400 font-bold transition-transform duration-250">
-                          {isExpanded ? "▲" : "▼"}
-                        </span>
-                      </button>
-
-                      {/* Content */}
-                      {isExpanded && (
-                        <div className="border-t border-zinc-100 dark:border-zinc-800/80 p-5 bg-zinc-50/50 dark:bg-zinc-900/30">
-                          {topicsLoading ? (
-                            <div className="flex justify-center py-4">
-                              <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-600 border-t-transparent"></div>
-                            </div>
-                          ) : topicsList.length === 0 ? (
-                            <p className="text-xs text-zinc-500 italic">Không có chủ đề nào.</p>
-                          ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                              {topicsList.map((item: any) => (
-                                <Link
-                                  key={item.id}
-                                  href={`/flashcard?type=system&notebookId=${level.id}&topicId=${item.topic_id?.id}`}
-                                  className="flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 border border-zinc-200/85 dark:border-zinc-800 rounded-2xl hover:border-amber-500/50 dark:hover:border-amber-500/50 hover:shadow-2xs transition-all text-sm font-bold text-zinc-800 dark:text-zinc-200 group"
-                                >
-                                  <span className="text-amber-500">📁</span>
-                                  <div className="flex flex-col gap-0.5 min-w-0">
-                                    <span className="group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors truncate">
-                                      {item.topic_id?.name}
-                                    </span>
-                                    {item.topic_id?.chinese_name && (
-                                      <span className="text-[10px] text-zinc-400 font-medium">
-                                        {item.topic_id.chinese_name}
-                                      </span>
-                                    )}
-                                  </div>
-                                </Link>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -403,6 +422,19 @@ function FlashcardStudySession({
   restart,
   paramFakeData,
 }: Readonly<FlashcardStudySessionProps>) {
+  const router = useRouter();
+
+  const handleSetView = (newView: string) => {
+    if (newView === "home") {
+      router.push("/dashboard");
+    } else if (newView === "courses") {
+      router.push("/courses");
+    } else if (newView === "bilingual-list") {
+      router.push("/bilingual");
+    } else if (newView === "flashcard") {
+      router.push("/flashcard");
+    }
+  };
   // Nén data mock để truyền vào hook nếu cần
   const defaultMockJson = useMemo(() => {
     return encodeURIComponent(
@@ -539,14 +571,14 @@ function FlashcardStudySession({
   const activeVocab = fallbackDataActive ? MOCK_FLASHCARDS[localIndex]?.vocab_items_id : currentCard?.vocab_items_id;
   const activeDetail = fallbackDataActive
     ? {
-        word: activeVocab?.name || "",
-        pinyin: activeVocab?.pinyin || "",
-        meaning: activeVocab?.senses?.[0]?.meaning_vi || "",
-        note: activeVocab?.note || "",
-        groupedSenses: {
-          [activeVocab?.senses?.[0]?.pos_label || "Từ loại"]: activeVocab?.senses || [],
-        },
-      }
+      word: activeVocab?.name || "",
+      pinyin: activeVocab?.pinyin || "",
+      meaning: activeVocab?.senses?.[0]?.meaning_vi || "",
+      note: activeVocab?.note || "",
+      groupedSenses: {
+        [activeVocab?.senses?.[0]?.pos_label || "Từ loại"]: activeVocab?.senses || [],
+      },
+    }
     : currentVocabDetail;
 
   const isCardFlipped = fallbackDataActive ? localFlipped : isFlipped;
@@ -571,7 +603,7 @@ function FlashcardStudySession({
             <p className="font-semibold text-zinc-900 dark:text-zinc-150">
               {idx + 1}. {sense.meaning_vi}
             </p>
-            
+
             {sense.examples?.map((ex: any) => (
               <div key={ex.chinese} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2.5 flex flex-col gap-0.5 border border-zinc-100 dark:border-zinc-850">
                 <p className="font-medium text-amber-600 dark:text-amber-500">{ex.chinese}</p>
@@ -587,10 +619,10 @@ function FlashcardStudySession({
 
   return (
     <div className="flex min-h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      <Sidebar view="flashcard" setView={() => globalThis.location.replace("/flashcard")} />
+      <Sidebar view="flashcard" setView={handleSetView} />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <Header view="flashcard" setView={() => globalThis.location.replace("/flashcard")} showLogo={false} />
+        <Header view="flashcard" setView={handleSetView} showLogo={false} />
 
         <div className="p-6 md:p-8 space-y-8 max-w-xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
           <div className="bg-[#f59e0b] text-gray-950 font-black py-3 px-6 rounded-xl text-center shadow-xs text-sm uppercase tracking-wide">
