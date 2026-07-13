@@ -178,6 +178,14 @@ export const CREATE_VOCAB_ITEM_MUTATION = gqlTag`
   }
 `;
 
+export const GET_VOCAB_BY_NAME_QUERY = gqlTag`
+  query GetVocabByName($name: String!) {
+    vocab_items(filter: { name: { _eq: $name } }, limit: 1) {
+      id
+    }
+  }
+`;
+
 export const USER_READING_PROGRESS_EXIST_QUERY = gqlTag`
   query UserReadingProgressExist($userId: GraphQLStringOrFloat!, $bookId: GraphQLStringOrFloat!) {
     User_Reading_Progress(

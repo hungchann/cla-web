@@ -108,15 +108,21 @@ export async function loginUser(email: string, password: string) {
 
   try {
     const response = await apiInstance.post("/auth/login", { email: email.trim(), password });
-    const { access_token, refresh_token, user, expires } = response.data.data;
+    const { access_token, refresh_token, expires } = response.data.data;
 
-    // Sử dụng tokenUtils để lưu tokens
+    // Lưu tokens tạm thời để getUserMe có thể gọi API được bằng token mới
+    await tokenUtils.saveTokens(access_token, refresh_token, undefined, expires);
+
+    // Lấy thông tin user đầy đủ
+    const user = await getUserMe();
+
+    // Lưu tokens cùng thông tin user đầy đủ vào localStorage
     await tokenUtils.saveTokens(access_token, refresh_token, user, expires);
 
     // Verify tokens were saved
     await tokenUtils.checkTokenStatus();
 
-    return response.data.data;
+    return { ...response.data.data, user };
   } catch (error) {
     logger.warn(
       "Lỗi đăng nhập:",

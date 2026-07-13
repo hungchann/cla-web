@@ -13,7 +13,9 @@ export default function AppShell({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname() ?? "";
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+  const isAuthRoute = AUTH_ROUTES.some((route) =>
+    route === "/" ? pathname === "/" : pathname.startsWith(route)
+  );
 
   if (isAuthRoute) {
     return <>{children}</>;

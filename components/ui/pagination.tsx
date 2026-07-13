@@ -15,7 +15,7 @@ function getPaginationRange(
   currentPage: number,
   totalPages: number,
   siblingCount: number
-): (number | "ellipsis")[] {
+): (number | "left-ellipsis" | "right-ellipsis")[] {
   const totalPageNumbers = siblingCount * 2 + 5; // siblings + first + last + current + 2 ellipsis
 
   if (totalPages <= totalPageNumbers) {
@@ -27,23 +27,26 @@ function getPaginationRange(
   const showLeftEllipsis = leftSiblingIndex > 2;
   const showRightEllipsis = rightSiblingIndex < totalPages - 1;
 
-  const range: (number | "ellipsis")[] = [];
+  const range: (number | "left-ellipsis" | "right-ellipsis")[] = [];
 
   // Always show first page
   range.push(1);
 
   if (showLeftEllipsis) {
-    range.push("ellipsis");
+    range.push("left-ellipsis");
   } else {
     for (let i = 2; i < leftSiblingIndex; i++) range.push(i);
   }
 
-  for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
+  // Push middle range (excluding first and last page to prevent duplication)
+  const start = Math.max(leftSiblingIndex, 2);
+  const end = Math.min(rightSiblingIndex, totalPages - 1);
+  for (let i = start; i <= end; i++) {
     range.push(i);
   }
 
   if (showRightEllipsis) {
-    range.push("ellipsis");
+    range.push("right-ellipsis");
   } else {
     for (let i = rightSiblingIndex + 1; i < totalPages; i++) range.push(i);
   }
@@ -84,10 +87,10 @@ export function Pagination({
       </Button>
 
       {/* Page numbers */}
-      {pages.map((page, idx) =>
-        page === "ellipsis" ? (
+      {pages.map((page) =>
+        page === "left-ellipsis" || page === "right-ellipsis" ? (
           <span
-            key={`ellipsis-left-${idx}`}
+            key={page}
             className="flex h-9 w-9 items-center justify-center text-zinc-400"
             aria-hidden
           >

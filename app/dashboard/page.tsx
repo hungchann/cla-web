@@ -90,11 +90,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const loadProfileAndLevels = async () => {
-      const user = tokenUtils.getUserData();
-      if (!user) return;
+      const hasToken = !!tokenUtils.getAccessToken() || !!tokenUtils.getRefreshToken();
+      if (!hasToken) return;
       setLoadingLevel(true);
       try {
         const fullUser = await getUser();
+        if (fullUser?.user) {
+          setUserData(fullUser.user);
+        }
         if (fullUser?.profile?.self_assessed_hsk_level) {
           setCurrentLevel(fullUser.profile.self_assessed_hsk_level);
         }

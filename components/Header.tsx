@@ -7,6 +7,15 @@ import { tokenUtils } from "@/lib/utils/tokenUtils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const NAV_ITEMS = [
   { name: "Khóa học", href: "/courses" },
@@ -21,16 +30,42 @@ export default function Header() {
   const pathname = usePathname() ?? "";
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [email, setEmail] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const user = tokenUtils.getUserData();
-    if (user) {
-      setIsAuthenticated(true);
-      setFirstName(user.first_name || "Bạn học");
-    } else {
-      setIsAuthenticated(false);
-    }
+    const checkAuth = async () => {
+      const hasToken = !!tokenUtils.getAccessToken() || !!tokenUtils.getRefreshToken();
+      if (hasToken) {
+        setIsAuthenticated(true);
+        let user = tokenUtils.getUserData();
+        if (!user) {
+          try {
+            const { getUserMe } = await import("@/api/apiService");
+            user = await getUserMe();
+            if (user) {
+              await tokenUtils.saveTokens(
+                tokenUtils.getAccessToken() || "",
+                tokenUtils.getRefreshToken() || undefined,
+                user
+              );
+            }
+          } catch (e) {
+            console.error("Failed to load user info in Header", e);
+          }
+        }
+        if (user) {
+          setFirstName(user.first_name || "Bạn học");
+          setEmail(user.email || "");
+        } else {
+          setFirstName("Bạn học");
+          setEmail("");
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
   }, [pathname]);
 
   // Close mobile menu on route change
@@ -90,19 +125,40 @@ export default function Header() {
       {/* Right Area */}
       <div className="flex items-center gap-2">
         {isAuthenticated ? (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-zinc-600 hidden sm:inline select-none">
-              Chào, {firstName}
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleLogout}
-              className="font-bold rounded-full text-xs active:scale-95"
-            >
-              Đăng xuất
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full select-none cursor-pointer p-0 focus-visible:ring-0">
+                <Avatar className="h-9 w-9 border border-amber-100/50 hover:border-amber-400/50 transition-colors">
+                  <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black text-xs uppercase">
+                    {firstName.slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 mt-1">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-extrabold text-zinc-800 dark:text-white leading-none">Chào, {firstName}</p>
+                  {email && <p className="text-[10px] font-bold text-zinc-400 leading-none truncate mt-0.5">{email}</p>}
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard" className="w-full flex items-center gap-2 font-semibold">
+                  <span>📊</span> Dashboard học tập
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/bilingual" className="w-full flex items-center gap-2 font-semibold">
+                  <span>📚</span> Đọc song ngữ
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-rose-600 dark:text-rose-400 font-semibold focus:bg-rose-50 dark:focus:bg-rose-950/30 flex items-center gap-2">
+                <span>🚪</span> Đăng xuất
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <Button
             asChild

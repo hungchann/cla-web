@@ -21,6 +21,7 @@ export async function graphqlRequest<TData, TVariables = any>(
   });
 
   if (hasErrors(response.data)) {
+    console.error("GraphQL request errors:", JSON.stringify(response.data.errors, null, 2));
     throw new Error("GraphQL request failed");
   }
 
@@ -38,6 +39,7 @@ export async function graphqlRequestSystem<TData, TVariables = any>(
   });
 
   if (hasErrors(response.data)) {
+    console.error("GraphQL system request errors:", JSON.stringify(response.data.errors, null, 2));
     throw new Error("GraphQL system request failed");
   }
 
@@ -55,6 +57,7 @@ export async function graphqlRequestRaw<TData, TVariables = any>(
   });
 
   if (hasErrors(response.data)) {
+    console.error("GraphQL raw request errors:", JSON.stringify(response.data.errors, null, 2));
     throw new Error("GraphQL request failed");
   }
 
@@ -76,6 +79,7 @@ export async function graphqlSystemRequest<TData, TVariables = any>(
   );
 
   if (hasErrors(response.data)) {
+    console.error("GraphQL system request errors:", JSON.stringify(response.data.errors, null, 2));
     throw new Error("GraphQL system request failed");
   }
 

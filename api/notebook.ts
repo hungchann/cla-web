@@ -12,6 +12,7 @@ import {
   GET_VOCABS_BY_TOPIC_AND_LEVEL_QUERY,
   UPDATE_USER_FLASHCARD_STATUS_MUTATION,
   USER_FLASHCARD_EXIST_QUERY,
+  GET_VOCAB_BY_NAME_QUERY,
 } from "@/api/graphql/documents";
 import { FLASHCARD_DECK_VOCABS_FLOW_PATH, VOCAB_DETAIL_FLOW_PATH } from "@/lib/constants";
 import { getUser } from "./apiService";
@@ -254,28 +255,42 @@ export const notebookApi = {
       void exampleSentence;
       void exampleTranslation;
 
-      const vocabItemRes = await graphqlRequest<{ create_vocab_items_item: { id: string } }, any>(
-        CREATE_VOCAB_ITEM_MUTATION,
-        {
-          name: safeChinese,
-          pinyin: safePinyin,
-          note: safeVietnamese,
-        },
-      );
-      const vocabItemId = vocabItemRes.data?.create_vocab_items_item?.id;
+      // 1. Kiểm tra xem từ vựng đã tồn tại trong hệ thống chưa
+      let vocabItemId: string | null = null;
+      try {
+        const searchRes = await graphqlRequest<{ vocab_items: { id: string }[] }, any>(
+          GET_VOCAB_BY_NAME_QUERY,
+          { name: safeChinese }
+        );
+        vocabItemId = searchRes.data?.vocab_items?.[0]?.id || null;
+      } catch (err) {
+        logger.warn("Không thể kiểm tra sự tồn tại của từ vựng:", err);
+      }
+
+      // 2. Nếu chưa tồn tại, thử tạo mới
+      if (!vocabItemId) {
+        const vocabItemRes = await graphqlRequest<{ create_vocab_items_item: { id: string } }, any>(
+          CREATE_VOCAB_ITEM_MUTATION,
+          {
+            name: safeChinese,
+            pinyin: safePinyin,
+            note: safeVietnamese,
+          },
+        );
+        vocabItemId = vocabItemRes.data?.create_vocab_items_item?.id || null;
+      }
 
       if (!vocabItemId) {
-        throw new Error("Failed to create vocab item");
+        throw new Error("Failed to create or find vocab item");
       }
 
       // Validate IDs to prevent GraphQL injection
-      // UUIDs should only contain alphanumeric characters and hyphens
-      const uuidPattern =
-        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-      if (!uuidPattern.test(vocabItemId)) {
+      // Hỗ trợ cả định dạng UUID (chuỗi) và tự tăng (số nguyên)
+      const idPattern = /^[a-zA-Z0-9-]+$/;
+      if (!idPattern.test(String(vocabItemId))) {
         throw new Error("Invalid vocab item ID format");
       }
-      if (!uuidPattern.test(deckId)) {
+      if (!idPattern.test(String(deckId))) {
         throw new Error("Invalid deck ID format");
       }
 
