@@ -9,19 +9,7 @@ import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
 import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
 import { parseSRTtoArray } from "@/services/subtitle";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
-
-// Browser Text-to-Speech handler
-const speakChinese = (text: string) => {
-  if (typeof window !== "undefined" && window.speechSynthesis !== undefined) {
-    window.speechSynthesis.cancel();
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = "zh-CN";
-    utterance.rate = 0.85;
-    window.speechSynthesis.speak(utterance);
-  }
-};
+import { speakChinese } from "@/lib/utils/speech";
 
 const MOCK_DICTIONARY: Record<string, { pinyin: string; meaning: string }> = {
   "面对": { pinyin: "miànduì", meaning: "Đối mặt, đối diện" },
@@ -216,17 +204,6 @@ export default function BilingualDetailPage({
     }
   };
 
-  const handleSetView = (newStep: string) => {
-    if (newStep === "home") {
-      router.push("/dashboard");
-    } else if (newStep === "courses") {
-      router.push("/courses");
-    } else if (newStep === "bilingual-list") {
-      router.push("/bilingual");
-    } else if (newStep === "flashcard") {
-      router.push("/flashcard");
-    }
-  };
 
   const vocabData = [
     { word: "同辈", type: "Danh từ", pinyin: "tóngbèi", meaning: "Bạn đồng trang lứa", example: "他是我的同辈 (Anh ấy là bạn đồng trang lứa của tôi)" },
@@ -237,15 +214,8 @@ export default function BilingualDetailPage({
   ];
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      {/* Sidebar */}
-      <Sidebar view="bilingual" setView={handleSetView} />
-
-      {/* Main content body */}
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        <Header view="bilingual" setView={handleSetView} showLogo={false} />
-
-        <div className="p-6 md:p-8 space-y-6 max-w-3xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
+    <div className="flex-1 flex flex-col gap-6">
+      <div className="p-6 md:p-8 space-y-6 max-w-3xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
           
           {/* Header titles */}
           <div className="text-center space-y-2">
@@ -755,6 +725,5 @@ export default function BilingualDetailPage({
 
         </div>
       </div>
-    </div>
   );
 }

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "./query-provider";
-import Header from "@/components/Header";
 import AIConsentProvider from "@/components/AIConsentProvider";
+import AppShell from "@/components/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,18 +29,12 @@ export default function RootLayout({
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col transition-colors duration-300">
+      <body className="min-h-full flex flex-col">
         <QueryProvider>
           <AIConsentProvider>
-            {/* Main Navigation Header */}
-            <Header />
-
-            {/* Main Layout Container */}
-            <main className="flex-1 flex flex-col max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-              {children}
-            </main>
+            <AppShell>{children}</AppShell>
           </AIConsentProvider>
         </QueryProvider>
       </body>

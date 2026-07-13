@@ -3,14 +3,13 @@
 import Image from "next/image";
 import { use, useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
 import HighlightedText from "@/components/HighlightedText";
 import { grammarApi } from "@/api/grammar";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
+import { speakChinese } from "@/lib/utils/speech";
 
 const MOCK_GRAMMAR_SRT = `1
 00:00:01,000 --> 00:00:05,000
@@ -82,16 +81,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     }
   }, [currentStep, grammarQuestions.length]);
 
-  // Browser Text-to-Speech handler
-  const speakChinese = (text: string) => {
-    if (globalThis.window !== undefined && globalThis.speechSynthesis !== undefined) {
-      globalThis.speechSynthesis.cancel();
-      const utterance = new globalThis.SpeechSynthesisUtterance(text);
-      utterance.lang = "zh-CN";
-      utterance.rate = 0.85;
-      globalThis.speechSynthesis.speak(utterance);
-    }
-  };
+
 
   const getVocabSelectedLabel = (selected: string | null) => {
     if (selected === "A") return "zhi";
@@ -404,11 +394,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8 animate-fade-in">
-      <Sidebar view={currentStep} setView={handleSetView} />
-
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        <Header view={currentStep} setView={handleSetView} showLogo={false} />
+    <div className="flex-1 flex flex-col gap-6 animate-fade-in">
 
         {/* Study breadcrumbs */}
         <div className="bg-amber-50/40 border-b border-gray-100 px-6 py-3.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 select-none">
@@ -1366,7 +1352,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
           )}
 
         </div>
-      </div>
     </div>
   );
 }

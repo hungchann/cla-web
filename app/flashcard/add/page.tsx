@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
 
 // Mock Dictionary for autocomplete
 const DICTIONARY_DB: Record<string, {
@@ -84,24 +82,10 @@ export default function AddWordPage() {
     router.push("/flashcard/study?notebook=Thanh Hà");
   };
 
-  const handleSetView = (newStep: string) => {
-    if (newStep === "home") {
-      router.push("/dashboard");
-    } else if (newStep === "courses") {
-      router.push("/courses");
-    } else if (newStep === "bilingual-list") {
-      router.push("/bilingual");
-    }
-  };
+
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      {/* Sidebar wrapper */}
-      <Sidebar view="flashcard" setView={handleSetView} />
-
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        <Header view="flashcard" setView={handleSetView} showLogo={false} />
-
+    <div className="flex-1 flex flex-col gap-6">
         <div className="p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto flex-1 grid grid-cols-1 md:grid-cols-4 gap-8">
           
           {/* Note sidebar in the layout */}
@@ -251,7 +235,6 @@ export default function AddWordPage() {
             </div>
           </div>
 
-        </div>
       </div>
     </div>
   );

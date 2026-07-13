@@ -3,8 +3,6 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
 
 function FlashcardResultsContent() {
   const searchParams = useSearchParams();
@@ -30,24 +28,10 @@ function FlashcardResultsContent() {
     router.replace(`/flashcard?${params.toString()}`);
   };
 
-  const handleSetView = (newView: string) => {
-    if (newView === "home") {
-      router.push("/dashboard");
-    } else if (newView === "courses") {
-      router.push("/courses");
-    } else if (newView === "bilingual-list") {
-      router.push("/bilingual");
-    } else if (newView === "flashcard") {
-      router.push("/flashcard");
-    }
-  };
+
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      <Sidebar view="flashcard" setView={handleSetView} />
-
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        <Header view="flashcard" setView={handleSetView} showLogo={false} />
+    <div className="flex-1 flex flex-col gap-6">
         <div className="flex-1 flex flex-col gap-8 py-10 max-w-md mx-auto w-full items-center text-center px-6">
           {/* Title */}
           <div className="flex flex-col gap-2">
@@ -117,7 +101,6 @@ function FlashcardResultsContent() {
               Quay lại Dashboard
             </Link>
           </div>
-        </div>
       </div>
     </div>
   );

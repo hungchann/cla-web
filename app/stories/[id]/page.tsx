@@ -2,8 +2,6 @@
 
 import { use, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
 import Link from "next/link";
 import { getBookLibraryById, saveReadingProgress, getReadingProgress } from "@/api/stories";
 import { speakChinese } from "@/lib/utils/speech";
@@ -56,31 +54,23 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
-        <Sidebar activeView="stories" />
-        <div className="flex-1 flex flex-col">
-          <Header title="Đang tải sách..." />
+      <div className="flex-1 flex flex-col gap-6">
           <div className="flex-1 flex items-center justify-center py-20">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-600 border-t-transparent"></div>
           </div>
-        </div>
       </div>
     );
   }
 
   if (!book) {
     return (
-      <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
-        <Sidebar activeView="stories" />
-        <div className="flex-1 flex flex-col">
-          <Header title="Không tìm thấy sách" />
+      <div className="flex-1 flex flex-col gap-6">
           <div className="flex-1 flex flex-col items-center justify-center py-20 space-y-4">
             <p className="text-zinc-500 font-bold">Không tìm thấy tác phẩm yêu cầu.</p>
             <Link href="/stories" className="bg-amber-500 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-amber-600">
               Quay lại thư viện
             </Link>
           </div>
-        </div>
       </div>
     );
   }
@@ -110,12 +100,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <Sidebar activeView="stories" />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header title={book.title} />
-        
+    <div className="flex-1 flex flex-col gap-6">
         <main className="flex-1 overflow-y-auto p-6 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Cột trái: Nội dung chương đang đọc */}
           <div className="lg:col-span-3 space-y-6">
@@ -252,7 +237,6 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
         </main>
-      </div>
     </div>
   );
 }

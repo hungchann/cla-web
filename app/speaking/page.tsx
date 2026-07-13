@@ -4,10 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { speakingApi } from "@/api/speaking";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { getAssetUrl } from "@/lib/utils/assets";
 
 interface SpeakingTopic {
   id: string;
@@ -117,37 +116,10 @@ export default function SpeakingPage() {
     setTimeout(() => setSelectedCategory(cat), 50);
   };
 
-  const getImageUrl = (filename: string | null | undefined) => {
-    if (filename) return `https://marutek.space/assets/${filename}`;
-    return "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=400&h=300&fit=crop";
-  };
 
-  const handleSetView = (newStep: string) => {
-    if (newStep === "home") {
-      router.push("/dashboard");
-    } else if (newStep === "courses") {
-      router.push("/courses");
-    } else if (newStep === "bilingual-list") {
-      router.push("/bilingual");
-    } else if (newStep === "flashcard") {
-      router.push("/flashcard");
-    } else if (newStep === "stories") {
-      router.push("/stories");
-    } else if (newStep === "grammar") {
-      router.push("/grammar");
-    }
-  };
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      {/* Left Sidebar */}
-      <Sidebar view="speaking" setView={handleSetView} />
-
-      {/* Main Container */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <Header view="speaking" setView={handleSetView} showLogo={false} />
-
-        <div className="p-6 md:p-8 space-y-6 max-w-5xl w-full mx-auto flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col gap-6">
           {/* Active Title Banner */}
           <div className="bg-gradient-to-r from-rose-500/10 via-pink-500/5 to-transparent p-6 rounded-3xl border border-rose-200/20 shadow-2xs space-y-1.5 shrink-0">
             <h1 className="text-2xl font-extrabold text-rose-850 dark:text-rose-500">🎙️ AI Luyện Nói Phản Xạ</h1>
@@ -179,7 +151,7 @@ export default function SpeakingPage() {
                       <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={getImageUrl(topic.image_cover?.filename_disk)}
+                          src={getAssetUrl(topic.image_cover?.filename_disk)}
                           alt={topic.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
@@ -239,7 +211,7 @@ export default function SpeakingPage() {
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-zinc-100">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={getImageUrl(category.image_cover?.filename_disk)}
+                          src={getAssetUrl(category.image_cover?.filename_disk)}
                           alt={category.title}
                           className="w-full h-full object-cover"
                         />
@@ -571,9 +543,6 @@ export default function SpeakingPage() {
 
             </div>
           )}
-
-        </div>
-      </div>
 
       {/* Premium gate modal fallback for web UI */}
       {premiumModalVisible && (

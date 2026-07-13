@@ -3,12 +3,8 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { grammarApi } from "@/api/grammar";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
-import { useRouter } from "next/navigation";
 
 export default function GrammarPage() {
-  const router = useRouter();
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [selectedTopicTitle, setSelectedTopicTitle] = useState<string | null>(null);
@@ -77,32 +73,8 @@ export default function GrammarPage() {
     enabled: !!selectedModuleId && !!selectedTopicId,
   });
 
-  const handleSetView = (newStep: string) => {
-    if (newStep === "home") {
-      router.push("/dashboard");
-    } else if (newStep === "courses") {
-      router.push("/courses");
-    } else if (newStep === "bilingual-list") {
-      router.push("/bilingual");
-    } else if (newStep === "flashcard") {
-      router.push("/flashcard");
-    } else if (newStep === "stories") {
-      router.push("/stories");
-    } else if (newStep === "speaking") {
-      router.push("/speaking");
-    }
-  };
-
   return (
-    <div className="flex min-h-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      {/* Left Sidebar */}
-      <Sidebar view="grammar" setView={handleSetView} />
-
-      {/* Main Workspace */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <Header view="grammar" setView={handleSetView} showLogo={false} />
-
-        <div className="p-6 md:p-8 space-y-6 max-w-6xl w-full mx-auto flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col gap-6">
           {/* Header intro */}
           <div className="bg-gradient-to-r from-violet-500/10 via-fuchsia-500/5 to-transparent p-6 rounded-3xl border border-violet-200/20 shadow-2xs space-y-1.5 shrink-0">
             <h1 className="text-2xl font-extrabold text-violet-850 dark:text-violet-500">📝 Cấu trúc Ngữ pháp Tiếng Trung</h1>
@@ -242,10 +214,8 @@ export default function GrammarPage() {
                   <p className="mt-2 text-xs font-bold text-zinc-400">Vui lòng chọn một chủ đề bên trái để xem nội dung.</p>
                 </div>
               )}
-            </div>
           </div>
         </div>
-      </div>
 
       {/* Embedded styles for rendered HTML */}
       <style jsx global>{`

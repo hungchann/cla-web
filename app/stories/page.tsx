@@ -1,10 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
 import Link from "next/link";
 import { getLatestBooks, getTrendingBooks, getRandomBooks } from "@/api/stories";
+import { getAssetUrl } from "@/lib/utils/assets";
 
 export default function StoriesPage() {
   // Query books data
@@ -23,24 +22,13 @@ export default function StoriesPage() {
     queryFn: getRandomBooks,
   });
 
-  const getCoverUrl = (book: any) => {
-    if (book?.image_cover?.filename_disk) {
-      return `https://marutek.space/assets/${book.image_cover.filename_disk}`;
-    }
-    return null;
-  };
+
 
   const isLoading = latestLoading || trendingLoading || recommendedLoading;
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <Sidebar activeView="stories" />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header title="Thư Viện Sách Song Ngữ" />
-        
-        <main className="flex-1 overflow-y-auto p-6 space-y-8 max-w-6xl mx-auto w-full">
-          {/* Header Description */}
+    <div className="flex-1 flex flex-col gap-6">
+      {/* Header Description */}
           <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent p-6 rounded-3xl border border-amber-200/20 shadow-2xs space-y-1.5">
             <h2 className="text-xl font-extrabold text-amber-800 dark:text-amber-500">📚 Đọc Truyện & Sách Song Ngữ</h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium max-w-xl">
@@ -64,7 +52,7 @@ export default function StoriesPage() {
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {trendingBooks.map((book: any) => {
-                      const cover = getCoverUrl(book);
+                      const cover = getAssetUrl(book?.image_cover?.filename_disk, null);
                       return (
                         <Link
                           key={book.id}
@@ -115,7 +103,7 @@ export default function StoriesPage() {
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {latestBooks.slice(0, 10).map((book: any) => {
-                      const cover = getCoverUrl(book);
+                      const cover = getAssetUrl(book?.image_cover?.filename_disk, null);
                       return (
                         <Link
                           key={book.id}
@@ -163,7 +151,7 @@ export default function StoriesPage() {
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {recommendedBooks.map((book: any) => {
-                      const cover = getCoverUrl(book);
+                      const cover = getAssetUrl(book?.image_cover?.filename_disk, null);
                       return (
                         <Link
                           key={book.id}
@@ -203,8 +191,6 @@ export default function StoriesPage() {
               )}
             </>
           )}
-        </main>
-      </div>
     </div>
   );
 }

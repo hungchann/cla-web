@@ -2,19 +2,7 @@
 
 import { use, useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
-
-// Browser Speech Synthesis
-const speakChinese = (text: string) => {
-  if (typeof window !== "undefined" && window.speechSynthesis !== undefined) {
-    window.speechSynthesis.cancel();
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = "zh-CN";
-    utterance.rate = 0.85;
-    window.speechSynthesis.speak(utterance);
-  }
-};
+import { speakChinese } from "@/lib/utils/speech";
 
 function StudyContent() {
   const router = useRouter();
@@ -52,27 +40,12 @@ function StudyContent() {
     setCurrentIndex((i) => i + 1);
   };
 
-  const handleSetView = (newStep: string) => {
-    if (newStep === "home") {
-      router.push("/dashboard");
-    } else if (newStep === "courses") {
-      router.push("/courses");
-    } else if (newStep === "bilingual-list") {
-      router.push("/bilingual");
-    }
-  };
+
 
   const isSystemDeck = title.includes("HSK") || title.includes("TOCFL") || title === "Địa điểm" || title === "Thói quen";
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      {/* Sidebar */}
-      <Sidebar view="flashcard" setView={handleSetView} />
-
-      {/* Content wrapper */}
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        <Header view="flashcard" setView={handleSetView} showLogo={false} />
-
+    <div className="flex-1 flex flex-col gap-6">
         <div className="p-6 md:p-8 space-y-6 max-w-xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
           
           {/* Header Title block (orange bar) */}
@@ -262,7 +235,6 @@ function StudyContent() {
 
         </div>
       </div>
-    </div>
   );
 }
 

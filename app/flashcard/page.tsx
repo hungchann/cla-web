@@ -9,8 +9,6 @@ import { speakChinese } from "@/lib/utils/speech";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
 
 // Mock data từ vựng phong phú làm fallback
 const MOCK_FLASHCARDS = [
@@ -83,20 +81,7 @@ const MOCK_FLASHCARDS = [
 ];
 
 function FlashcardDashboard() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"suggest" | "personal" | "system">("suggest");
-
-  const handleSetView = (newView: string) => {
-    if (newView === "home") {
-      router.push("/dashboard");
-    } else if (newView === "courses") {
-      router.push("/courses");
-    } else if (newView === "bilingual-list") {
-      router.push("/bilingual");
-    } else if (newView === "flashcard") {
-      router.push("/flashcard");
-    }
-  };
   const [personalDecks, setPersonalDecks] = useState<any[]>([]);
   const [hskLevels, setHskLevels] = useState<any[]>([]);
   const [expandedHskId, setExpandedHskId] = useState<string | null>(null);
@@ -191,12 +176,8 @@ function FlashcardDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      <Sidebar view="flashcard" setView={handleSetView} />
-
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        <Header view="flashcard" setView={handleSetView} showLogo={false} />
-        <div className="w-full max-w-4xl mx-auto py-8 px-6 flex flex-col gap-8 flex-1">
+    <div className="flex-1 flex flex-col">
+      <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 flex-1">
           {/* Title */}
           <div className="flex flex-col gap-2 text-center sm:text-left">
             <h1 className="text-3xl font-black text-zinc-950 dark:text-white tracking-tight">
@@ -403,7 +384,6 @@ function FlashcardDashboard() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
@@ -423,18 +403,6 @@ function FlashcardStudySession({
   paramFakeData,
 }: Readonly<FlashcardStudySessionProps>) {
   const router = useRouter();
-
-  const handleSetView = (newView: string) => {
-    if (newView === "home") {
-      router.push("/dashboard");
-    } else if (newView === "courses") {
-      router.push("/courses");
-    } else if (newView === "bilingual-list") {
-      router.push("/bilingual");
-    } else if (newView === "flashcard") {
-      router.push("/flashcard");
-    }
-  };
   // Nén data mock để truyền vào hook nếu cần
   const defaultMockJson = useMemo(() => {
     return encodeURIComponent(
@@ -618,13 +586,8 @@ function FlashcardStudySession({
   }
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-white text-gray-800 flex-1 -m-4 sm:-m-6 lg:-m-8">
-      <Sidebar view="flashcard" setView={handleSetView} />
-
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        <Header view="flashcard" setView={handleSetView} showLogo={false} />
-
-        <div className="p-6 md:p-8 space-y-8 max-w-xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
+    <div className="flex-1 flex flex-col">
+      <div className="space-y-8 max-w-xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
           <div className="bg-[#f59e0b] text-gray-950 font-black py-3 px-6 rounded-xl text-center shadow-xs text-sm uppercase tracking-wide">
             {fallbackDataActive ? "Thử thách Flashcard" : "Học tập Flashcard"}
           </div>
@@ -710,7 +673,6 @@ function FlashcardStudySession({
               &larr; Về sổ tay cá nhân
             </Link>
           </div>
-        </div>
       </div>
     </div>
   );
