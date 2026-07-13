@@ -12,13 +12,14 @@ const DropdownMenuContext = React.createContext<{
 export function DropdownMenu({ children }: Readonly<{ children: React.ReactNode }>) {
   const [open, setOpen] = React.useState(false)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
+  const containerRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     if (!open) return
     const handleOutsideClick = (event: MouseEvent) => {
       if (
-        triggerRef.current &&
-        !triggerRef.current.contains(event.target as Node)
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
       ) {
         setOpen(false)
       }
@@ -31,7 +32,7 @@ export function DropdownMenu({ children }: Readonly<{ children: React.ReactNode 
 
   return (
     <DropdownMenuContext.Provider value={value}>
-      <div className="relative inline-block text-left">{children}</div>
+      <div ref={containerRef} className="relative inline-block text-left">{children}</div>
     </DropdownMenuContext.Provider>
   )
 }
@@ -139,12 +140,12 @@ export const DropdownMenuItem = React.forwardRef<
     <button
       ref={ref}
       type="button"
+      {...props}
       className={cn(
         "flex w-full items-center rounded-xl px-3 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 transition-colors select-none outline-hidden dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 cursor-pointer text-left",
         className
       )}
       onClick={handleClick}
-      {...props}
     >
       {children}
     </button>

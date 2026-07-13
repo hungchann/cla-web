@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { ClipboardList, FolderOpen, Globe, FileText, User, LogOut, Phone } from "lucide-react";
+import { tokenUtils } from "@/lib/utils/tokenUtils";
 
 interface SidebarProps {
   view?: string;
@@ -16,6 +18,16 @@ export default function Sidebar({
   setView = () => {},
   activeView,
 }: Readonly<SidebarProps>) {
+  const handleLogout = async () => {
+    try {
+      const { logoutUser } = await import("@/api/apiService");
+      await logoutUser();
+    } catch (e) {
+      console.error("Failed to call logoutUser in Sidebar", e);
+      await tokenUtils.clearAllTokens();
+    }
+    window.location.replace("/sign-in");
+  };
   // Filter states for "courses" view
   const [levels, setLevels] = useState({
     beginner: true,
@@ -65,7 +77,7 @@ export default function Sidebar({
           {/* Trình độ (HSK Levels) */}
           <div>
             <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-zinc-900 dark:text-zinc-100">
-              <span className="text-base">📋</span> Trình độ
+              <ClipboardList className="w-4 h-4 text-zinc-550" /> Trình độ
             </h3>
             <ul className="space-y-3.5 text-sm pl-1">
               {[
@@ -95,7 +107,7 @@ export default function Sidebar({
           {/* Chủ đề (Topics) */}
           <div>
             <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-zinc-900 dark:text-zinc-100">
-              <span className="text-base">📂</span> Chủ đề
+              <FolderOpen className="w-4 h-4 text-zinc-550" /> Chủ đề
             </h3>
             <ul className="space-y-3.5 text-sm pl-1">
               {[
@@ -157,7 +169,7 @@ export default function Sidebar({
         {/* Cấp độ */}
         <div>
           <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-zinc-900 dark:text-zinc-100">
-            <span className="text-base">🌐</span> Cấp độ
+            <Globe className="w-4 h-4 text-zinc-550" /> Cấp độ
           </h3>
           <ul className="space-y-3.5 text-sm pl-1">
             <li className="flex items-center gap-3">
@@ -190,7 +202,7 @@ export default function Sidebar({
         {/* Thể loại */}
         <div>
           <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-zinc-900 dark:text-zinc-100">
-            <span className="text-base">📄</span> Thể loại
+            <FileText className="w-4 h-4 text-zinc-550" /> Thể loại
           </h3>
           <ul className="space-y-3.5 text-sm pl-1">
             <li className="flex items-center gap-3">
@@ -267,21 +279,21 @@ export default function Sidebar({
           onClick={() => setView("home")}
           className="flex items-center gap-2.5 hover:text-amber-600 justify-start w-full text-left h-auto py-1.5"
         >
-          <span className="text-base">👤</span> Tài khoản
+          <User className="w-4 h-4 text-zinc-500" /> Tài khoản
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="flex items-center gap-2.5 hover:text-amber-600 justify-start w-full text-left h-auto py-1.5"
+        >
+          <LogOut className="w-4 h-4 text-zinc-500" /> Đăng xuất
         </Button>
         <Button
           variant="ghost"
           onClick={() => setView("home")}
           className="flex items-center gap-2.5 hover:text-amber-600 justify-start w-full text-left h-auto py-1.5"
         >
-          <span className="text-base">🚪</span> Đăng xuất
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => setView("home")}
-          className="flex items-center gap-2.5 hover:text-amber-600 justify-start w-full text-left h-auto py-1.5"
-        >
-          <span className="text-base">📞</span> Liên hệ
+          <Phone className="w-4 h-4 text-zinc-500" /> Liên hệ
         </Button>
       </div>
     </aside>

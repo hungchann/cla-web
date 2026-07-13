@@ -4,6 +4,7 @@ export interface StoryChapterContent {
 }
 
 export interface StoryChapter {
+  id: string;
   title: string;
   book_content: StoryChapterContent[];
   sort_id: string;

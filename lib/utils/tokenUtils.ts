@@ -36,11 +36,40 @@ function setCookie(name: string, value: string, days?: number) {
   document.cookie = `${name}=${value || ""}${expires}; path=/; SameSite=Lax${secureFlag}`;
 }
 
+function clearCookieWithAttributes(name: string, domain: string | undefined, path: string) {
+  const tryDelete = (secure: string, sameSite: string) => {
+    let cookieStr = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    if (path) cookieStr += `; path=${path}`;
+    if (domain) cookieStr += `; domain=${domain}`;
+    if (sameSite) cookieStr += sameSite;
+    if (secure) cookieStr += secure;
+    try {
+      document.cookie = cookieStr;
+    } catch {
+      // ignore
+    }
+  };
+
+  tryDelete("", "");
+  tryDelete("", "; SameSite=Lax");
+  tryDelete("", "; SameSite=None");
+  tryDelete("; Secure", "");
+  tryDelete("; Secure", "; SameSite=Lax");
+  tryDelete("; Secure", "; SameSite=None");
+}
+
 function deleteCookie(name: string) {
   if (typeof document === "undefined") return;
-  const isSecure = globalThis.window?.location?.protocol === "https:";
-  const secureFlag = isSecure ? "; Secure" : "";
-  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax${secureFlag}`;
+  
+  const host = globalThis.window?.location?.hostname;
+  const domains = [undefined, host, host ? `.${host}` : undefined];
+  const paths = ["/", ""];
+
+  for (const path of paths) {
+    for (const domain of domains) {
+      clearCookieWithAttributes(name, domain, path);
+    }
+  }
 }
 
 export const tokenUtils = {

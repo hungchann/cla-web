@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, LayoutDashboard, BookOpen, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -74,9 +74,15 @@ export default function Header() {
   }, [pathname]);
 
   const handleLogout = async () => {
-    await tokenUtils.clearAllTokens();
+    try {
+      const { logoutUser } = await import("@/api/apiService");
+      await logoutUser();
+    } catch (e) {
+      console.error("Failed to call logoutUser in Header", e);
+      await tokenUtils.clearAllTokens();
+    }
     setIsAuthenticated(false);
-    globalThis.location.replace("/sign-in");
+    window.location.replace("/sign-in");
   };
 
   return (
@@ -145,17 +151,17 @@ export default function Header() {
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href="/dashboard" className="w-full flex items-center gap-2 font-semibold">
-                  <span>📊</span> Dashboard học tập
+                  <LayoutDashboard className="w-4 h-4 text-zinc-500" /> Dashboard học tập
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/bilingual" className="w-full flex items-center gap-2 font-semibold">
-                  <span>📚</span> Đọc song ngữ
+                  <BookOpen className="w-4 h-4 text-zinc-500" /> Đọc song ngữ
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-rose-600 dark:text-rose-400 font-semibold focus:bg-rose-50 dark:focus:bg-rose-950/30 flex items-center gap-2">
-                <span>🚪</span> Đăng xuất
+                <LogOut className="w-4 h-4 text-rose-550" /> Đăng xuất
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

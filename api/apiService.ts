@@ -309,6 +309,14 @@ async function getUserProfile(userId: string) {
 // Đăng xuất
 export async function logoutUser() {
   try {
+    const refreshToken = tokenUtils.getRefreshToken();
+    if (refreshToken) {
+      try {
+        await apiInstance.post("/auth/logout", { refresh_token: refreshToken });
+      } catch (err) {
+        logger.warn("Call backend /auth/logout failed", err);
+      }
+    }
     clearUserCache();
     await tokenUtils.clearAllTokens();
   } catch (error) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Auth-protected routes: yêu cầu access_token cookie.
- * Middleware chỉ kiểm tra sự tồn tại của token (không gọi Directus).
+ * Proxy chỉ kiểm tra sự tồn tại của token (không gọi Directus).
  * Validation thực sự do API interceptor xử lý (401 → refresh).
  */
 const PROTECTED_ROUTES = [
@@ -30,7 +30,7 @@ function isAuthRoute(pathname: string): boolean {
   return AUTH_ONLY_ROUTES.some((route) => pathname.startsWith(route));
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const accessToken = request.cookies.get("access_token")?.value;
   const hasToken = Boolean(accessToken);
@@ -38,7 +38,9 @@ export function middleware(request: NextRequest) {
   // Root "/" — landing page nếu chưa login, dashboard nếu đã login
   if (pathname === "/") {
     if (hasToken) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      const response = NextResponse.redirect(new URL("/dashboard", request.url));
+      response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+      return response;
     }
     return NextResponse.next();
   }
@@ -47,7 +49,9 @@ export function middleware(request: NextRequest) {
   if (isAuthRoute(pathname)) {
     if (hasToken) {
       const redirectTo = searchParams.get("redirect") ?? "/dashboard";
-      return NextResponse.redirect(new URL(redirectTo, request.url));
+      const response = NextResponse.redirect(new URL(redirectTo, request.url));
+      response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+      return response;
     }
     return NextResponse.next();
   }
@@ -57,7 +61,9 @@ export function middleware(request: NextRequest) {
     if (!hasToken) {
       const signInUrl = new URL("/sign-in", request.url);
       signInUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(signInUrl);
+      const response = NextResponse.redirect(signInUrl);
+      response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+      return response;
     }
     return NextResponse.next();
   }

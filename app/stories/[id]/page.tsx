@@ -40,7 +40,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
       return text.split(/\n+/).map((line) => line.trim()).filter((line) => line.length > 0);
     }
     if (Array.isArray(text)) {
-      return text.map((t) => String(t)).filter((t) => t.trim().length > 0);
+      return text.map(String).filter((t) => t.trim().length > 0);
     }
     if (typeof text === "object" && text.blocks && Array.isArray(text.blocks)) {
       // Handle rich text blocks if applicable
@@ -272,7 +272,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                   const isActive = selectedChapterIndex === idx;
                   return (
                     <button
-                      key={chap.sort_id || idx}
+                      key={chap.id}
                       onClick={() => handleSelectChapter(idx)}
                       className={`w-full text-left text-xs font-bold p-3 rounded-xl border transition-all cursor-pointer ${
                         isActive

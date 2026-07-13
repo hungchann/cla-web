@@ -257,6 +257,7 @@ export const GET_BOOK_LIBRARY_BY_ID_QUERY = gqlTag`
         }
       }
       chapters_id {
+        id
         title
         content
         book_content
