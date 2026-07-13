@@ -9,6 +9,7 @@ import { speakChinese } from "@/lib/utils/speech";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 
 // Mock data từ vựng phong phú làm fallback
 const MOCK_FLASHCARDS = [
@@ -178,15 +179,11 @@ function FlashcardDashboard() {
   return (
     <div className="flex-1 flex flex-col">
       <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 flex-1">
-          {/* Title */}
-          <div className="flex flex-col gap-2 text-center sm:text-left">
-            <h1 className="text-3xl font-black text-zinc-950 dark:text-white tracking-tight">
-              🗂️ Thẻ Ghi Nhớ Flashcard
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-              Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS).
-            </p>
-          </div>
+          <PageHeader
+            title="Thẻ Ghi Nhớ Flashcard"
+            description="Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS)."
+            icon="🗂️"
+          />
 
           {/* Tabs */}
           <div className="flex border-b border-zinc-200 dark:border-zinc-800">

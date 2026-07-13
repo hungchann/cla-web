@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { PageHeader } from "@/components/PageHeader";
 import { grammarApi } from "@/api/grammar";
 
 export default function GrammarPage() {
@@ -75,13 +76,11 @@ export default function GrammarPage() {
 
   return (
     <div className="flex-1 flex flex-col gap-6">
-          {/* Header intro */}
-          <div className="bg-gradient-to-r from-violet-500/10 via-fuchsia-500/5 to-transparent p-6 rounded-3xl border border-violet-200/20 shadow-2xs space-y-1.5 shrink-0">
-            <h1 className="text-2xl font-extrabold text-violet-850 dark:text-violet-500">📝 Cấu trúc Ngữ pháp Tiếng Trung</h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium max-w-xl">
-              Tổng hợp đầy đủ cấu trúc ngữ pháp quan trọng theo hệ thống bài giảng và chủ đề của Sun Chinese. Có ví dụ kèm Pinyin & nghĩa Việt rõ ràng.
-            </p>
-          </div>
+      <PageHeader
+        title="Cấu Trúc Ngữ Pháp Tiếng Trung"
+        description="Tổng hợp đầy đủ cấu trúc ngữ pháp quan trọng theo hệ thống bài giảng và chủ đề của Sun Chinese. Có ví dụ kèm Pinyin & nghĩa Việt rõ ràng."
+        icon="📝"
+      />
 
           {/* Module Selector Pill Tabs */}
           <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 pb-4 shrink-0">

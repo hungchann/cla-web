@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BackButton } from "@/components/BackButton";
 
 const syllabusLessons = [
   {
@@ -53,10 +54,11 @@ export default function CourseDetailPage({
   return (
     <div className="flex flex-col flex-1 pb-16 bg-[#fafafa] -m-4 sm:-m-6 lg:-m-8">
       <main className="max-w-5xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
+        <BackButton href="/courses" label="Danh sách khóa học" />
         {/* Info Banner */}
         <section className="bg-white rounded-2xl border-2 border-[#f59e0b] overflow-hidden flex flex-col md:flex-row shadow-xs">
           <div className="p-6 md:p-8 flex-1 space-y-4">
-            <h1 className="text-xl md:text-2xl font-black text-gray-900 leading-snug">
+            <h1 className="text-xl md:text-2xl font-black text-zinc-900 leading-snug">
               {courseTitle}
             </h1>
             <ul className="space-y-3.5 pl-5 list-disc text-sm md:text-base text-gray-700 font-medium">

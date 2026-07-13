@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { PageHeader } from "@/components/PageHeader";
+import { PremiumGate } from "@/components/PremiumGate";
 import { useQuery } from "@tanstack/react-query";
 import { speakingApi } from "@/api/speaking";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
@@ -120,13 +122,16 @@ export default function SpeakingPage() {
 
   return (
     <div className="flex-1 flex flex-col gap-6">
-          {/* Active Title Banner */}
-          <div className="bg-gradient-to-r from-rose-500/10 via-pink-500/5 to-transparent p-6 rounded-3xl border border-rose-200/20 shadow-2xs space-y-1.5 shrink-0">
-            <h1 className="text-2xl font-extrabold text-rose-850 dark:text-rose-500">🎙️ AI Luyện Nói Phản Xạ</h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium max-w-xl">
-              Cải thiện khả năng phản xạ và phát âm tiếng Trung của bạn. Nói chuyện trực tiếp với giáo viên AI, nhận phân tích so sánh độ chính xác từng từ.
-            </p>
-          </div>
+      <PremiumGate
+        isOpen={!!premiumModalVisible}
+        onClose={() => setPremiumModalVisible(false)}
+        feature="tính năng AI luyện nói phản xạ"
+      />
+      <PageHeader
+        title="AI Luyện Nói Phản Xạ"
+        description="Cải thiện khả năng phản xạ và phát âm tiếng Trung của bạn. Nói chuyện trực tiếp với giáo viên AI, nhận phân tích so sánh độ chính xác từng từ."
+        icon="🎤"
+      />
 
           {/* 1. TOPICS GRID VIEW */}
           {mode === "topics" && (

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { getLatestBooks, getTrendingBooks, getRandomBooks } from "@/api/stories";
 import { getAssetUrl } from "@/lib/utils/assets";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function StoriesPage() {
   // Query books data
@@ -28,13 +29,11 @@ export default function StoriesPage() {
 
   return (
     <div className="flex-1 flex flex-col gap-6">
-      {/* Header Description */}
-          <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent p-6 rounded-3xl border border-amber-200/20 shadow-2xs space-y-1.5">
-            <h2 className="text-xl font-extrabold text-amber-800 dark:text-amber-500">📚 Đọc Truyện & Sách Song Ngữ</h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium max-w-xl">
-              Nâng cao vốn từ vựng và ngữ cảnh ngữ pháp thông qua việc đọc sách dịch đối chiếu tiếng Trung - Việt. Tích hợp lưu trữ tiến trình tự động.
-            </p>
-          </div>
+      <PageHeader
+        title="Đọc Truyện & Sách Song Ngữ"
+        description="Nâng cao vốn từ vựng và ngữ cảnh ngữ pháp thông qua việc đọc sách dịch đối chiếu tiếng Trung - Việt. Tích hợp lưu trữ tiến trình tự động."
+        icon="📚"
+      />
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-3">

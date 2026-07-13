@@ -5,6 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
 import { getAssetUrl } from "@/lib/utils/assets";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
+import { FilterPills } from "@/components/ui/filter-pills";
+import { Pagination } from "@/components/ui/pagination";
 
 const LIMIT = 6;
 
@@ -45,30 +48,17 @@ export default function BilingualListPage() {
 
   return (
     <div className="flex-1 flex flex-col gap-6">
-      {/* Header & Description */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight">Đọc Song Ngữ</h1>
-        <p className="text-zinc-500">
-          Nâng cao khả năng đọc dịch, củng cố vốn từ vựng HSK qua các chủ đề hấp dẫn. Nhấn vào chữ Hán bất kỳ để học pinyin &amp; nghĩa.
-        </p>
-      </div>
+      <PageHeader
+        title="Đọc Song Ngữ"
+        description="Nâng cao khả năng đọc dịch, củng cố vốn từ vựng HSK qua các chủ đề hấp dẫn. Nhấn vào chữ Hán bất kỳ để học pinyin & nghĩa."
+        icon="📖"
+      />
 
-      {/* Inline HSK Level Filter Pills */}
-      <div className="flex flex-wrap gap-2">
-        {HSK_LEVELS.map((level) => (
-          <button
-            key={level}
-            onClick={() => handleLevelChange(level)}
-            className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer select-none ${
-              selectedLevel === level
-                ? "bg-amber-600 text-white shadow-md shadow-amber-600/10"
-                : "bg-zinc-100 hover:bg-zinc-200 text-zinc-500"
-            }`}
-          >
-            {level}
-          </button>
-        ))}
-      </div>
+      <FilterPills
+        options={HSK_LEVELS}
+        value={selectedLevel}
+        onChange={handleLevelChange}
+      />
 
       {/* Loading */}
       {isLoading && (
@@ -167,44 +157,12 @@ export default function BilingualListPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2 pb-6">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 disabled:pointer-events-none disabled:opacity-50"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
-          </button>
-          
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-            <button
-              key={pageNum}
-              onClick={() => setPage(pageNum)}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold transition-all ${
-                page === pageNum
-                  ? "bg-amber-600 text-white shadow-md"
-                  : "border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700"
-              }`}
-            >
-              {pageNum}
-            </button>
-          ))}
-
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 disabled:pointer-events-none disabled:opacity-50"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-            </svg>
-          </button>
-        </div>
-      )}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        className="mt-4 pb-6"
+      />
     </div>
   );
 }

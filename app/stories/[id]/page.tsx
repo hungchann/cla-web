@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getBookLibraryById, saveReadingProgress, getReadingProgress } from "@/api/stories";
 import { speakChinese } from "@/lib/utils/speech";
 import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
+import { BackButton } from "@/components/BackButton";
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -143,6 +144,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="flex-1 flex flex-col gap-6">
+      <BackButton href="/stories" label="Danh sách sách" />
         <main className="flex-1 overflow-y-auto p-6 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Cột trái: Nội dung chương đang đọc */}
           <div className="lg:col-span-3 space-y-6">

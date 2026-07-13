@@ -7,7 +7,7 @@ import Header from "./Header";
  * Auth routes don't render the global header/navigation chrome.
  * Everything else gets the standard app layout with Header.
  */
-const AUTH_ROUTES = ["/sign-in", "/register", "/forgot-password"];
+const AUTH_ROUTES = ["/sign-in", "/register", "/forgot-password", "/"];
 
 export default function AppShell({
   children,

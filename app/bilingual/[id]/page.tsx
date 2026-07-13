@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
 import { parseSRTtoArray } from "@/services/subtitle";
 import { speakChinese } from "@/lib/utils/speech";
+import { BackButton } from "@/components/BackButton";
 
 const MOCK_DICTIONARY: Record<string, { pinyin: string; meaning: string }> = {
   "面对": { pinyin: "miànduì", meaning: "Đối mặt, đối diện" },
@@ -216,6 +217,7 @@ export default function BilingualDetailPage({
   return (
     <div className="flex-1 flex flex-col gap-6">
       <div className="p-6 md:p-8 space-y-6 max-w-3xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
+          <BackButton href="/bilingual" label="Danh sách bài đọc" />
           
           {/* Header titles */}
           <div className="text-center space-y-2">

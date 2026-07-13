@@ -5,6 +5,8 @@ import { bilingualApi } from "@/api/bilingual";
 import { fetchVideoGenres } from "@/api/video";
 import Link from "next/link";
 import { useState, useMemo } from "react";
+import { PageHeader } from "@/components/PageHeader";
+import { FilterPills } from "@/components/ui/filter-pills";
 
 // Mock video data để phục vụ demo khi API rỗng
 const MOCK_VIDEOS = [
@@ -74,42 +76,33 @@ export default function VideoListPage() {
     });
   }, [videos, selectedGenreId]);
 
-  return (
-    <div className="flex-1 flex flex-col gap-6 py-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight">Học Tiếng Trung Qua Video</h1>
-        <p className="text-zinc-500 dark:text-zinc-400">
-          Xem các video bài giảng chất lượng với phụ đề chạy chữ song ngữ. Trả lời câu hỏi trắc nghiệm tương tác để ôn tập từ vựng ngay trong quá trình xem.
-        </p>
-      </div>
+  const genreOptions = useMemo(() => {
+    const allOption = { id: "__all__", title: "📂 Tất cả" };
+    const genreItems = (genres ?? []).map((g) => ({ id: String(g.id), title: `🏷️ ${g.title}` }));
+    return [allOption, ...genreItems];
+  }, [genres]);
 
-      {/* Category Filters */}
-      <div className="flex flex-wrap gap-2.5">
-        <button
-          onClick={() => setSelectedGenreId(null)}
-          className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer select-none ${
-            selectedGenreId === null
-              ? "bg-amber-600 text-white shadow-md shadow-amber-600/10"
-              : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
-          }`}
-        >
-          📂 Tất cả
-        </button>
-        {genres?.map((genre) => (
-          <button
-            key={genre.id}
-            onClick={() => setSelectedGenreId(genre.id)}
-            className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer select-none ${
-              selectedGenreId === genre.id
-                ? "bg-amber-600 text-white shadow-md shadow-amber-600/10"
-                : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
-            }`}
-          >
-            🏷️ {genre.title}
-          </button>
-        ))}
-      </div>
+  const selectedGenreValue = selectedGenreId ?? "__all__";
+
+  const handleGenreChange = (val: string) => {
+    setSelectedGenreId(val === "__all__" ? null : val);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col gap-6">
+      <PageHeader
+        title="Học Tiếng Trung Qua Video"
+        description="Xem các video bài giảng chất lượng với phụ đề chạy chữ song ngữ. Trả lời câu hỏi trắc nghiệm tương tác để ôn tập từ vựng ngay trong quá trình xem."
+        icon="🎬"
+      />
+
+      <FilterPills
+        options={genreOptions.map((g) => g.id)}
+        value={selectedGenreValue}
+        onChange={handleGenreChange}
+        getId={(id) => id}
+        getLabel={(id) => genreOptions.find((g) => g.id === id)?.title ?? id}
+      />
 
       {/* Loading State */}
       {isLoading && (

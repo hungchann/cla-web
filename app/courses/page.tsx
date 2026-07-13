@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { PageHeader } from "@/components/PageHeader";
 
 const featuredCourses = [
   {
@@ -81,6 +82,11 @@ export default function CoursesPage() {
 
   return (
     <div className="flex-1 flex flex-col gap-8">
+      <PageHeader
+        title="Khóa Học Tiếng Trung"
+        description="Hệ thống khóa học bài bản từ Giản thể đến Phồn thể. Chọn khóa học phù hợp với mục tiêu của bạn."
+        icon="🎓"
+      />
       <section className="space-y-6">
         <h2 className="text-xl md:text-2xl font-black text-zinc-900 tracking-tight flex items-center gap-2">
           <span className="text-amber-500">🇨🇳</span> Giản thể (Trung Quốc đại lục)

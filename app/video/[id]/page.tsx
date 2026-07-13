@@ -6,9 +6,11 @@ import { bilingualApi } from "@/api/bilingual";
 import { useDetailedVideoLogic } from "@/lib/hooks/useDetailedVideoLogic";
 import { SubtitleItem } from "@/components/video/SubtitleItem";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
-import Link from "next/link";
 import { translateWord } from "@/api/apiService";
 import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
+import { BackButton } from "@/components/BackButton";
+import { PremiumGate } from "@/components/PremiumGate";
+import { usePremium } from "@/lib/hooks/usePremium";
 
 // Mock video data chi tiết
 const MOCK_VIDEO_DETAIL = {
@@ -110,6 +112,8 @@ const timeToSeconds = (timeStr: string): number => {
 function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const { isPremium: _isPremium, isLoading: isPremiumLoading } = usePremium();
+  const [showPremiumGate, setShowPremiumGate] = useState(false);
 
   const [isOpenPinyin, setIsOpenPinyin] = useState(true);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
@@ -308,7 +312,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     handleContinueWatching();
   };
 
-  if (isLoading) {
+  if (isLoading || isPremiumLoading) {
     return (
       <div className="flex-1 flex items-center justify-center py-20">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-600 border-t-transparent"></div>
@@ -320,17 +324,14 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
 
   return (
     <div className="flex-1 flex flex-col gap-6 py-6 max-w-6xl mx-auto w-full">
+      <PremiumGate
+        isOpen={showPremiumGate}
+        onClose={() => setShowPremiumGate(false)}
+        feature="xem video bài giảng đầy đủ"
+      />
       {/* Navigation Header */}
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
-        <Link
-          href="/video"
-          className="inline-flex items-center gap-2 text-sm font-bold text-zinc-500 hover:text-amber-600 dark:hover:text-amber-500"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="h-4 w-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-          Quay lại danh sách video
-        </Link>
+        <BackButton href="/video" label="Danh sách video" />
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-zinc-500">Hiển thị Pinyin:</span>
