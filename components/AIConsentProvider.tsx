@@ -4,6 +4,16 @@ import React, { useEffect, useState, useRef } from "react";
 import { registerAIConsentPrompt, unregisterAIConsentPrompt } from "@/services/aiConsentGate";
 import { acceptAIConsent } from "@/lib/ai/aiConsentStorage";
 import { useThemeColors } from "@/lib/theme";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface AIConsentProviderProps {
   children: React.ReactNode;
@@ -54,17 +64,9 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
     <>
       {children}
 
-      {/* Premium Glassmorphic AI Consent Modal */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity duration-300 animate-fade-in"
-          onClick={handleDecline}
-        >
-          <div 
-            className="w-full max-w-md overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl transition-all scale-100 p-6 flex flex-col gap-5 text-zinc-900 dark:text-zinc-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header / Icon */}
+      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+        <AlertDialogContent className="w-full max-w-md p-6 flex flex-col gap-5">
+          <AlertDialogHeader>
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
@@ -72,13 +74,14 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-extrabold tracking-tight">Kích hoạt tính năng thông minh AI</h3>
+                <AlertDialogTitle className="text-lg font-extrabold tracking-tight">Kích hoạt tính năng thông minh AI</AlertDialogTitle>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">Đồng ý chia sẻ dữ liệu để học tập tốt hơn</p>
               </div>
             </div>
+          </AlertDialogHeader>
 
-            {/* Description */}
-            <div className="space-y-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 font-medium">
+          <AlertDialogDescription asChild>
+            <div className="space-y-3 text-sm leading-relaxed text-zinc-655 dark:text-zinc-300 font-medium">
               <p>
                 Chào bạn! Để sử dụng các tính năng nâng cao trợ lực từ trí tuệ nhân tạo (AI):
               </p>
@@ -94,25 +97,24 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
                 * Cam kết tuyệt đối: Không chia sẻ thông tin cá nhân và tài khoản đăng nhập của bạn. Dữ liệu chỉ phục vụ mục đích phân tích học tập tức thời.
               </p>
             </div>
+          </AlertDialogDescription>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-2 select-none">
-              <button
-                onClick={handleDecline}
-                className="flex-1 rounded-xl border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-850 px-4 py-3 text-sm font-bold transition-all text-zinc-700 dark:text-zinc-300 cursor-pointer active:scale-[0.98] text-center"
-              >
-                Để sau
-              </button>
-              <button
-                onClick={handleAccept}
-                className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md shadow-amber-600/10 px-4 py-3 text-sm font-bold transition-all cursor-pointer active:scale-[0.98] text-center"
-              >
-                Chấp nhận & Tiếp tục
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-3 mt-2 select-none">
+            <AlertDialogCancel
+              onClick={handleDecline}
+              className="flex-1 rounded-xl border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-850 px-4 py-3 text-sm font-bold transition-all text-zinc-750 dark:text-zinc-300 cursor-pointer active:scale-[0.98] text-center"
+            >
+              Để sau
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAccept}
+              className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md shadow-amber-600/10 px-4 py-3 text-sm font-bold transition-all cursor-pointer active:scale-[0.98] text-center border-none"
+            >
+              Chấp nhận & Tiếp tục
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

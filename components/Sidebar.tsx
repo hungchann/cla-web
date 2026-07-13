@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   view?: string;
@@ -58,34 +61,32 @@ export default function Sidebar({
   const renderContent = () => {
     if (isBilingualMode) {
       return (
-        <div className="space-y-6 text-[#4a3656] font-medium">
+        <div className="space-y-6 text-zinc-700 dark:text-zinc-300 font-medium">
           {/* Trình độ (HSK Levels) */}
           <div>
-            <h3 className="text-sm font-bold flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-zinc-900 dark:text-zinc-100">
               <span className="text-base">📋</span> Trình độ
             </h3>
-            <ul className="space-y-2.5 text-sm pl-2">
+            <ul className="space-y-3.5 text-sm pl-1">
               {[
-                { key: "hsk1", label: "HSK1" },
-                { key: "hsk2", label: "HSK2" },
-                { key: "hsk3", label: "HSK3" },
-                { key: "hsk4", label: "HSK4" },
-                { key: "hsk5", label: "HSK5" },
-                { key: "hsk6", label: "HSK6" },
+                { key: "hsk1", label: "HSK 1" },
+                { key: "hsk2", label: "HSK 2" },
+                { key: "hsk3", label: "HSK 3" },
+                { key: "hsk4", label: "HSK 4" },
+                { key: "hsk5", label: "HSK 5" },
+                { key: "hsk6", label: "HSK 6" },
               ].map((item) => (
-                <li key={item.key} className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
+                <li key={item.key} className="flex items-center gap-3">
+                  <Checkbox
                     id={`hsk-${item.key}`}
                     checked={hskLevels[item.key as keyof typeof hskLevels]}
-                    onChange={(e) =>
-                      setHskLevels({ ...hskLevels, [item.key]: e.target.checked })
+                    onCheckedChange={(checked: boolean | "indeterminate") =>
+                      setHskLevels({ ...hskLevels, [item.key]: !!checked })
                     }
-                    className="w-4.5 h-4.5 rounded-sm border-gray-300 text-amber-500 focus:ring-amber-500 accent-amber-500"
                   />
-                  <label htmlFor={`hsk-${item.key}`} className="cursor-pointer select-none">
+                  <Label htmlFor={`hsk-${item.key}`} className="cursor-pointer font-medium">
                     {item.label}
-                  </label>
+                  </Label>
                 </li>
               ))}
             </ul>
@@ -93,29 +94,27 @@ export default function Sidebar({
 
           {/* Chủ đề (Topics) */}
           <div>
-            <h3 className="text-sm font-bold flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-zinc-900 dark:text-zinc-100">
               <span className="text-base">📂</span> Chủ đề
             </h3>
-            <ul className="space-y-2.5 text-sm pl-2">
+            <ul className="space-y-3.5 text-sm pl-1">
               {[
                 { key: "culture", label: "Văn hóa" },
                 { key: "economy", label: "Kinh tế" },
                 { key: "hskk", label: "HSKK" },
                 { key: "life", label: "Cuộc sống" },
               ].map((item) => (
-                <li key={item.key} className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
+                <li key={item.key} className="flex items-center gap-3">
+                  <Checkbox
                     id={`topic-${item.key}`}
                     checked={topics[item.key as keyof typeof topics]}
-                    onChange={(e) =>
-                      setTopics({ ...topics, [item.key]: e.target.checked })
+                    onCheckedChange={(checked: boolean | "indeterminate") =>
+                      setTopics({ ...topics, [item.key]: !!checked })
                     }
-                    className="w-4.5 h-4.5 rounded-sm border-gray-300 text-amber-500 focus:ring-amber-500 accent-amber-500"
                   />
-                  <label htmlFor={`topic-${item.key}`} className="cursor-pointer select-none">
+                  <Label htmlFor={`topic-${item.key}`} className="cursor-pointer font-medium">
                     {item.label}
-                  </label>
+                  </Label>
                 </li>
               ))}
             </ul>
@@ -126,24 +125,25 @@ export default function Sidebar({
 
     if (isStudyMode) {
       return (
-        <div className="space-y-4 text-[#4a3656] font-medium">
+        <div className="space-y-4 text-zinc-700 dark:text-zinc-300 font-medium">
           {/* Learning Subtopics */}
-          <h3 className="text-xs uppercase tracking-wider text-gray-500 font-bold mb-2">Bài 1: Phát âm</h3>
-          <ul className="space-y-2 text-sm pl-2">
+          <h3 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2">Bài 1: Phát âm</h3>
+          <ul className="space-y-1.5 text-sm pl-1">
             {learnSteps.map((stepItem) => {
               const isActive = view === stepItem.id;
               return (
                 <li key={stepItem.id}>
-                  <button
+                  <Button
+                    variant={isActive ? "secondary" : "ghost"}
                     onClick={() => setView(stepItem.id)}
-                    className={`w-full text-left font-semibold py-1.5 px-2 rounded-md transition-all duration-200 cursor-pointer ${
+                    className={`w-full justify-start font-semibold text-xs py-1.5 h-auto ${
                       isActive
-                        ? "text-[#d97706] bg-white/40 shadow-xs"
-                        : "text-gray-700 hover:text-[#d97706] hover:bg-white/20"
+                        ? "text-amber-600 bg-amber-500/10 hover:bg-amber-500/15"
+                        : "text-zinc-650 hover:text-amber-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     }`}
                   >
                     • {stepItem.name}
-                  </button>
+                  </Button>
                 </li>
               );
             })}
@@ -153,71 +153,61 @@ export default function Sidebar({
     }
 
     return (
-      <div className="space-y-6 text-[#4a3656] font-medium">
+      <div className="space-y-6 text-zinc-700 dark:text-zinc-300 font-medium">
         {/* Cấp độ */}
         <div>
-          <h3 className="text-sm font-bold flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-zinc-900 dark:text-zinc-100">
             <span className="text-base">🌐</span> Cấp độ
           </h3>
-          <ul className="space-y-2.5 text-sm pl-2">
-            <li className="flex items-center gap-2.5">
-              <input
-                type="checkbox"
+          <ul className="space-y-3.5 text-sm pl-1">
+            <li className="flex items-center gap-3">
+              <Checkbox
                 id="lvl-beg"
                 checked={levels.beginner}
-                onChange={(e) => setLevels({ ...levels, beginner: e.target.checked })}
-                className="w-4.5 h-4.5 rounded-sm border-gray-300 text-amber-500 focus:ring-amber-500 accent-amber-500"
+                onCheckedChange={(checked: boolean | "indeterminate") => setLevels({ ...levels, beginner: !!checked })}
               />
-              <label htmlFor="lvl-beg" className="cursor-pointer select-none">Sơ cấp</label>
+              <Label htmlFor="lvl-beg" className="cursor-pointer font-medium">Sơ cấp</Label>
             </li>
-            <li className="flex items-center gap-2.5">
-              <input
-                type="checkbox"
+            <li className="flex items-center gap-3">
+              <Checkbox
                 id="lvl-int"
                 checked={levels.intermediate}
-                onChange={(e) => setLevels({ ...levels, intermediate: e.target.checked })}
-                className="w-4.5 h-4.5 rounded-sm border-gray-300 text-amber-500 focus:ring-amber-500 accent-amber-500"
+                onCheckedChange={(checked: boolean | "indeterminate") => setLevels({ ...levels, intermediate: !!checked })}
               />
-              <label htmlFor="lvl-int" className="cursor-pointer select-none">Trung Cấp</label>
+              <Label htmlFor="lvl-int" className="cursor-pointer font-medium">Trung Cấp</Label>
             </li>
-            <li className="flex items-center gap-2.5">
-              <input
-                type="checkbox"
+            <li className="flex items-center gap-3">
+              <Checkbox
                 id="lvl-adv"
                 checked={levels.advanced}
-                onChange={(e) => setLevels({ ...levels, advanced: e.target.checked })}
-                className="w-4.5 h-4.5 rounded-sm border-gray-300 text-amber-500 focus:ring-amber-500 accent-amber-500"
+                onCheckedChange={(checked: boolean | "indeterminate") => setLevels({ ...levels, advanced: !!checked })}
               />
-              <label htmlFor="lvl-adv" className="cursor-pointer select-none">Cao cấp</label>
+              <Label htmlFor="lvl-adv" className="cursor-pointer font-medium">Cao cấp</Label>
             </li>
           </ul>
         </div>
 
         {/* Thể loại */}
         <div>
-          <h3 className="text-sm font-bold flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-zinc-900 dark:text-zinc-100">
             <span className="text-base">📄</span> Thể loại
           </h3>
-          <ul className="space-y-2.5 text-sm pl-2">
-            <li className="flex items-center gap-2.5">
-              <input
-                type="checkbox"
+          <ul className="space-y-3.5 text-sm pl-1">
+            <li className="flex items-center gap-3">
+              <Checkbox
                 id="type-simp"
                 checked={types.simplified}
-                onChange={(e) => setTypes({ ...types, simplified: e.target.checked })}
-                className="w-4.5 h-4.5 rounded-sm border-gray-300 text-amber-500 focus:ring-amber-500 accent-amber-500"
+                onCheckedChange={(checked: boolean | "indeterminate") => setTypes({ ...types, simplified: !!checked })}
               />
-              <label htmlFor="type-simp" className="cursor-pointer select-none">Giản thể (TQ Đại Lục)</label>
+              <Label htmlFor="type-simp" className="cursor-pointer font-medium">Giản thể (TQ Đại Lục)</Label>
             </li>
-            <li className="flex items-center gap-2.5">
-              <input
-                type="checkbox"
+            <li className="flex items-center gap-3">
+              <Checkbox
                 id="type-trad"
                 checked={types.traditional}
-                onChange={(e) => setTypes({ ...types, traditional: e.target.checked })}
-                className="w-4.5 h-4.5 rounded-sm border-gray-300 text-amber-500 focus:ring-amber-500 accent-amber-500"
+                onCheckedChange={(checked: boolean | "indeterminate") => setTypes({ ...types, traditional: !!checked })}
               />
-              <label htmlFor="type-trad" className="cursor-pointer select-none">Phồn thể (Đài Loan)</label>
+              <Label htmlFor="type-trad" className="cursor-pointer font-medium">Phồn thể (Đài Loan)</Label>
             </li>
           </ul>
         </div>
@@ -226,7 +216,7 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-gradient-to-b from-[#ffe5a3] via-[#ffa3d4] to-[#f9a8d4] p-5 flex flex-col justify-between shrink-0 select-none shadow-md">
+    <aside className="w-64 min-h-screen bg-zinc-50 border-r border-zinc-200 dark:bg-zinc-900/50 dark:border-zinc-800 p-5 flex flex-col justify-between shrink-0 select-none shadow-xs">
       <div>
         {/* Logo */}
         <button
@@ -244,15 +234,15 @@ export default function Sidebar({
             </svg>
           </div>
           <div className="flex flex-col leading-none">
-            <span className="text-xs font-black tracking-widest text-[#d97706]">SUN</span>
-            <span className="text-[10px] font-bold text-gray-700 tracking-wider">CHINESE</span>
+            <span className="text-xs font-black tracking-widest text-amber-500">SUN</span>
+            <span className="text-[10px] font-bold text-zinc-400 tracking-wider">CHINESE</span>
           </div>
         </button>
 
         {/* Home Button Pill */}
-        <button
+        <Button
           onClick={() => setView("home")}
-          className="flex items-center gap-2 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold px-4 py-2.5 rounded-full shadow-sm mb-6 transition-all duration-200 cursor-pointer w-full text-left"
+          className="flex items-center gap-2 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold px-4 py-2.5 rounded-full shadow-xs mb-6 transition-all duration-200 cursor-pointer w-full justify-start text-left"
         >
           {/* Home Icon */}
           <svg
@@ -264,32 +254,35 @@ export default function Sidebar({
             <path d="M11.47 3.82a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 1-1.06 1.06l-1.1-1.1V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15a.75.75 0 0 0-.75-.75h-1.5A.75.75 0 0 0 8 15v4.5a.75.75 0 0 1-.75.75H2.25A2.25 2.25 0 0 1 0 18v-6.53l-1.1 1.1a.75.75 0 0 1-1.06-1.06l8.69-8.69Z" />
           </svg>
           <span className="text-sm">Trang chủ</span>
-        </button>
+        </Button>
 
         {/* Conditional Content */}
         {renderContent()}
       </div>
 
       {/* Bottom links */}
-      <div className="border-t border-white/20 pt-4 space-y-3 text-sm text-[#4a3656] font-semibold">
-        <button
+      <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 space-y-2.5 text-sm text-zinc-650 dark:text-zinc-400 font-semibold">
+        <Button
+          variant="ghost"
           onClick={() => setView("home")}
-          className="flex items-center gap-2 hover:text-[#d97706] transition-colors cursor-pointer w-full text-left"
+          className="flex items-center gap-2.5 hover:text-amber-600 justify-start w-full text-left h-auto py-1.5"
         >
-          <span>👤</span> Tài khoản
-        </button>
-        <button
+          <span className="text-base">👤</span> Tài khoản
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => setView("home")}
-          className="flex items-center gap-2 hover:text-[#d97706] transition-colors cursor-pointer w-full text-left"
+          className="flex items-center gap-2.5 hover:text-amber-600 justify-start w-full text-left h-auto py-1.5"
         >
-          <span>🚪</span> Đăng xuất
-        </button>
-        <button
+          <span className="text-base">🚪</span> Đăng xuất
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => setView("home")}
-          className="flex items-center gap-2 hover:text-[#d97706] transition-colors cursor-pointer w-full text-left"
+          className="flex items-center gap-2.5 hover:text-amber-600 justify-start w-full text-left h-auto py-1.5"
         >
-          <span>📞</span> Liên hệ
-        </button>
+          <span className="text-base">📞</span> Liên hệ
+        </Button>
       </div>
     </aside>
   );
