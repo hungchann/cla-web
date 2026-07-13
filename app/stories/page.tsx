@@ -52,7 +52,7 @@ export default function StoriesPage() {
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {trendingBooks.map((book: any) => {
-                      const cover = getAssetUrl(book?.image_cover?.filename_disk, null);
+                      const cover = getAssetUrl(book?.image?.filename_disk, null);
                       return (
                         <Link
                           key={book.id}
@@ -103,7 +103,7 @@ export default function StoriesPage() {
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {latestBooks.slice(0, 10).map((book: any) => {
-                      const cover = getAssetUrl(book?.image_cover?.filename_disk, null);
+                      const cover = getAssetUrl(book?.image?.filename_disk, null);
                       return (
                         <Link
                           key={book.id}
@@ -151,7 +151,7 @@ export default function StoriesPage() {
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {recommendedBooks.map((book: any) => {
-                      const cover = getAssetUrl(book?.image_cover?.filename_disk, null);
+                      const cover = getAssetUrl(book?.image?.filename_disk, null);
                       return (
                         <Link
                           key={book.id}

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { getBookLibraryById, saveReadingProgress, getReadingProgress } from "@/api/stories";
 import { speakChinese } from "@/lib/utils/speech";
+import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -12,45 +13,99 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   
   const [selectedChapterIndex, setSelectedChapterIndex] = useState<number | null>(null);
   const [isOpenPinyin, setIsOpenPinyin] = useState(true);
+  const [dynamicPinyin, setDynamicPinyin] = useState<string[]>([]);
 
   // Fetch book detail
   const { data: book, isLoading } = useQuery({
-    queryKey: ["book-detail", id],
-    queryFn: () => getBookLibraryById(id),
+    queryKey: ["book", id],
+    queryFn: () => getBookLibraryById(id as string),
+    enabled: !!id,
   });
 
-  // Fetch user reading progress (to display current chapter/progress)
   const { data: progressList } = useQuery({
-    queryKey: ["reading-progress"],
-    queryFn: getReadingProgress,
+    queryKey: ["readingProgress", id],
+    queryFn: () => getReadingProgress(),
+    enabled: !!id,
   });
 
-  // Save progress mutation
+  // Sort chapters by sort_id descending or ascending (we want ascending)
+  const chapters = book?.chapters_id ? [...book.chapters_id].sort((a: any, b: any) => a.sort_id - b.sort_id) : [];
+  const currentChapter = selectedChapterIndex !== null ? chapters[selectedChapterIndex] : null;
+
+  // Split content by newline to display lines nicely
+  const getLines = (text: any): string[] => {
+    if (!text) return [];
+    if (typeof text === "string") {
+      return text.split(/\n+/).map((line) => line.trim()).filter((line) => line.length > 0);
+    }
+    if (Array.isArray(text)) {
+      return text.map((t) => String(t)).filter((t) => t.trim().length > 0);
+    }
+    if (typeof text === "object" && text.blocks && Array.isArray(text.blocks)) {
+      // Handle rich text blocks if applicable
+      return text.blocks.map((b: any) => b?.data?.text || "").filter((t: string) => t.trim().length > 0);
+    }
+    return String(text).split(/\n+/).map((line) => line.trim()).filter((line) => line.length > 0);
+  };
+
+  let chineseLines: string[] = [];
+  let vietnameseLines: string[] = [];
+  let pinyinLines: string[] = [];
+
+  if (currentChapter) {
+    if (Array.isArray(currentChapter.book_content) && currentChapter.book_content.length > 0 && typeof currentChapter.book_content[0] === 'object' && ('zn' in currentChapter.book_content[0])) {
+      chineseLines = currentChapter.book_content.map((item: any) => item.zn || "");
+      vietnameseLines = currentChapter.book_content.map((item: any) => item.vi || "");
+      pinyinLines = currentChapter.book_content.map((item: any) => item.py || item.pinyin || "");
+    } else {
+      chineseLines = getLines(currentChapter.book_content);
+      vietnameseLines = getLines(currentChapter.content).map(line => line.replace(/<[^>]*>?/gm, ''));
+    }
+
+    // Merge dynamic pinyin if it exists and backend is missing it
+    if (dynamicPinyin.length === chineseLines.length) {
+      pinyinLines = pinyinLines.map((p, i) => p || dynamicPinyin[i] || "");
+    }
+  }
+
   const saveProgressMutation = useMutation({
     mutationFn: ({ chapterId, percentage }: { chapterId: number; percentage: number }) =>
-      saveReadingProgress(id, chapterId, percentage),
+      saveReadingProgress(id as string, chapterId, percentage),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reading-progress"] });
+      queryClient.invalidateQueries({ queryKey: ["readingProgress", id] });
     },
   });
 
-  // Automatically select the last read chapter if progress exists
+  // Auto-select first chapter if not selected
   useEffect(() => {
-    if (book && progressList && selectedChapterIndex === null) {
-      const saved = progressList.find((p: any) => String(p.id) === id);
-      if (saved && book.chapters_id) {
-        // Find matching chapter index based on sort_id or default to 0
-        const idx = book.chapters_id.findIndex((c: any) => c.sort_id === saved.current_chapter);
-        if (idx !== -1) {
-          setSelectedChapterIndex(idx);
-        } else {
-          setSelectedChapterIndex(0);
-        }
-      } else if (book.chapters_id && book.chapters_id.length > 0) {
-        setSelectedChapterIndex(0);
-      }
+    if (book && chapters.length > 0 && selectedChapterIndex === null) {
+      const lastReadIndex = chapters.findIndex((c: any) => {
+        const prog = progressList?.find((p: any) => p.chapter_id === c.sort_id);
+        return prog && prog.percentage < 100;
+      });
+      setSelectedChapterIndex(lastReadIndex !== -1 ? lastReadIndex : 0);
     }
-  }, [book, progressList, id, selectedChapterIndex]);
+  }, [book, progressList, id, selectedChapterIndex, chapters]);
+
+  // Fetch Pinyin if the backend data is missing it
+  useEffect(() => {
+    if (!currentChapter) return;
+    
+    // Check if we need to fetch pinyin (all pinyinLines are empty)
+    const hasPinyin = pinyinLines.some(p => p && p.trim().length > 0);
+    if (!hasPinyin && chineseLines.length > 0) {
+      const fetchPinyin = async () => {
+        try {
+          const segments = await apiSegmentChineseText(chineseLines);
+          const py = segments.map(row => row.map(w => w.pinyin).join(" "));
+          setDynamicPinyin(py);
+        } catch (error) {
+          console.warn("Failed to fetch pinyin for story", error);
+        }
+      };
+      fetchPinyin();
+    }
+  }, [currentChapter, chineseLines, pinyinLines]);
 
   if (isLoading) {
     return (
@@ -74,19 +129,6 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
       </div>
     );
   }
-
-  // Sort chapters by sort_id descending or ascending (we want ascending)
-  const chapters = book.chapters_id ? [...book.chapters_id].sort((a: any, b: any) => a.sort_id - b.sort_id) : [];
-  const currentChapter = selectedChapterIndex !== null ? chapters[selectedChapterIndex] : null;
-
-  // Split content by newline to display lines nicely
-  const getLines = (text: string) => {
-    if (!text) return [];
-    return text.split(/\n+/).map((line) => line.trim()).filter((line) => line.length > 0);
-  };
-
-  const chineseLines = currentChapter ? getLines(currentChapter.book_content) : [];
-  const vietnameseLines = currentChapter ? getLines(currentChapter.content) : [];
 
   const handleSelectChapter = (index: number) => {
     setSelectedChapterIndex(index);
@@ -151,9 +193,16 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                       >
                         {/* Chinese Line */}
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 leading-relaxed">
-                            {chi}
-                          </p>
+                          <div className="flex flex-col">
+                            {isOpenPinyin && pinyinLines[idx] && (
+                              <p className="text-sm font-medium text-zinc-400 mb-0.5">
+                                {pinyinLines[idx]}
+                              </p>
+                            )}
+                            <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 leading-relaxed">
+                              {chi}
+                            </p>
+                          </div>
                           <button
                             onClick={() => speakChinese(chi)}
                             className="w-6 h-6 rounded-full bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900 flex items-center justify-center text-xs text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
