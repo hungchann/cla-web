@@ -10,6 +10,11 @@ import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Folder, Lightbulb, User, Library, Notebook, Key, Trophy, FolderOpen, ChevronDown, ChevronUp, ArrowRight, Heart } from "lucide-react";
 
 // Mock data từ vựng phong phú làm fallback
 const MOCK_FLASHCARDS = [
@@ -182,7 +187,7 @@ function FlashcardDashboard() {
           <PageHeader
             title="Thẻ Ghi Nhớ Flashcard"
             description="Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS)."
-            icon="🗂️"
+            icon={<Folder className="w-7 h-7" />}
           />
 
           {/* Tabs */}
@@ -196,9 +201,9 @@ function FlashcardDashboard() {
                     : "border-transparent text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200"
                   }`}
               >
-                {tab === "suggest" && "💡 Gợi ý học nhanh"}
-                {tab === "personal" && "👤 Sổ tay của tôi"}
-                {tab === "system" && "📚 Trình độ HSK"}
+                {tab === "suggest" && <><Lightbulb className="w-4 h-4 mr-2 inline" /> Gợi ý học nhanh</>}
+                {tab === "personal" && <><User className="w-4 h-4 mr-2 inline" /> Sổ tay của tôi</>}
+                {tab === "system" && <><Library className="w-4 h-4 mr-2 inline" /> Trình độ HSK</>}
               </button>
             ))}
           </div>
@@ -208,24 +213,21 @@ function FlashcardDashboard() {
             {/* Suggest Tab */}
             {activeTab === "suggest" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Link
-                  href="/flashcard?type=suggest"
-                  className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-lg transition-all hover:-translate-y-1 group"
-                >
-                  <div className="space-y-3">
-                    <div className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center text-xl font-bold">
-                      💡
+                <Link href="/flashcard?type=suggest" className="block group">
+                  <Card className="flex flex-col justify-between p-6 border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 hover:-translate-y-1 h-full">
+                    <div className="space-y-3">
+                        <Lightbulb className="w-6 h-6" />
+                      <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-lg tracking-tight">
+                        Bộ từ gợi ý hệ thống
+                      </h3>
+                      <p className="text-xs text-zinc-550 dark:text-zinc-400 font-semibold leading-relaxed">
+                        Luyện tập nhanh với các từ vựng thiết yếu và phổ biến nhất (học thử demo).
+                      </p>
                     </div>
-                    <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors">
-                      Bộ từ gợi ý hệ thống
-                    </h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold leading-relaxed">
-                      Luyện tập nhanh với các từ vựng thiết yếu và phổ biến nhất (học thử demo).
-                    </p>
-                  </div>
-                  <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
-                    Bắt đầu học ngay →
-                  </span>
+                    <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
+                      Bắt đầu học ngay →
+                    </span>
+                  </Card>
                 </Link>
               </div>
             )}
@@ -234,38 +236,35 @@ function FlashcardDashboard() {
             {activeTab === "personal" && (
               <div className="flex flex-col gap-6">
                 {!isAuthenticated ? (
-                  <div className="flex flex-col items-center justify-center p-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-zinc-250 dark:border-zinc-800 text-center gap-4">
-                    <span className="text-3xl">🔑</span>
+                  <Card className="flex flex-col items-center justify-center p-12 text-center gap-4 border-dashed border-zinc-250 dark:border-zinc-800">
+                    <Key className="w-10 h-10 text-zinc-400" />
                     <div className="space-y-1">
-                      <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200">Yêu cầu đăng nhập</h3>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">Bạn cần đăng nhập để quản lý và học sổ tay từ vựng cá nhân của mình.</p>
+                      <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-250">Yêu cầu đăng nhập</h3>
+                      <p className="text-xs text-zinc-550 dark:text-zinc-400 font-medium">Bạn cần đăng nhập để quản lý và học sổ tay từ vựng cá nhân của mình.</p>
                     </div>
-                    <Link
-                      href="/sign-in"
-                      className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-6 py-2.5 rounded-full transition-all"
-                    >
-                      Đăng nhập ngay
-                    </Link>
-                  </div>
+                    <Button asChild size="sm">
+                      <Link href="/sign-in">Đăng nhập ngay</Link>
+                    </Button>
+                  </Card>
                 ) : (
                   <div className="flex flex-col gap-6">
                     {/* Create Deck Form */}
                     <form onSubmit={handleCreateDeck} className="flex gap-3 w-full max-w-md">
-                      <input
+                      <Input
                         type="text"
                         placeholder="Tên sổ tay mới... (vd: Từ vựng giao tiếp)"
                         value={newDeckTitle}
                         onChange={(e) => setNewDeckTitle(e.target.value)}
                         required
-                        className="flex-1 px-4 py-2.5 rounded-2xl border border-zinc-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm text-zinc-800 dark:text-white dark:bg-zinc-950 dark:border-zinc-800 transition-all font-medium"
+                        className="flex-1 font-medium"
                       />
-                      <button
+                      <Button
                         type="submit"
                         disabled={isCreatingDeck}
-                        className="px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-colors cursor-pointer disabled:opacity-55"
+                        size="default"
                       >
                         {isCreatingDeck ? "Đang tạo..." : "Tạo mới"}
-                      </button>
+                      </Button>
                     </form>
 
                     {/* Decks list */}
@@ -281,19 +280,19 @@ function FlashcardDashboard() {
                           <Link
                             key={deck.id}
                             href={`/flashcard?type=personal&notebookId=${deck.id}`}
-                            className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-lg transition-all hover:-translate-y-1 group"
+                            className="block group"
                           >
-                            <div className="space-y-3">
-                              <div className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center text-xl font-bold">
-                                📓
+                            <Card className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-md hover:border-amber-350 dark:hover:border-amber-900 transition-all hover:-translate-y-1 h-full">
+                              <div className="space-y-3">
+                                  <Notebook className="w-6 h-6" />
+                                <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors line-clamp-1">
+                                  {deck.title}
+                                </h3>
                               </div>
-                              <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors line-clamp-1">
-                                {deck.title}
-                              </h3>
-                            </div>
-                            <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
-                              Luyện tập sổ tay →
-                            </span>
+                              <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
+                                Luyện tập sổ tay →
+                              </span>
+                            </Card>
                           </Link>
                         ))}
                       </div>
@@ -320,20 +319,20 @@ function FlashcardDashboard() {
                       const topicsLoading = loadingTopics[level.id];
 
                       return (
-                        <div
+                        <Card
                           key={level.id}
-                          className="border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 transition-all shadow-2xs"
+                          className="overflow-hidden bg-white dark:bg-zinc-900 shadow-2xs rounded-3xl"
                         >
                           {/* Header */}
                           <button
                             onClick={() => handleToggleHsk(level.id)}
-                            className="w-full flex items-center justify-between p-5 text-left font-black text-base text-zinc-900 dark:text-white cursor-pointer select-none"
+                            className="w-full flex items-center justify-between p-5 text-left font-black text-base text-zinc-900 dark:text-white cursor-pointer select-none bg-transparent border-none"
                           >
                             <span className="flex items-center gap-3">
-                              <span className="text-xl">🏆</span> {level.name}
+                              <Trophy className="w-5 h-5 text-amber-500" /> {level.name}
                             </span>
                             <span className="text-zinc-400 font-bold transition-transform duration-250">
-                              {isExpanded ? "▲" : "▼"}
+                              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                             </span>
                           </button>
 
@@ -352,26 +351,28 @@ function FlashcardDashboard() {
                                     <Link
                                       key={item.id}
                                       href={`/flashcard?type=system&notebookId=${level.id}&topicId=${item.topic_id?.id}`}
-                                      className="flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 border border-zinc-200/85 dark:border-zinc-800 rounded-2xl hover:border-amber-500/50 dark:hover:border-amber-500/50 hover:shadow-2xs transition-all text-sm font-bold text-zinc-800 dark:text-zinc-200 group"
+                                      className="block group"
                                     >
-                                      <span className="text-amber-500">📁</span>
-                                      <div className="flex flex-col gap-0.5 min-w-0">
-                                        <span className="group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors truncate">
-                                          {item.topic_id?.name}
-                                        </span>
-                                        {item.topic_id?.chinese_name && (
-                                          <span className="text-[10px] text-zinc-400 font-medium">
-                                            {item.topic_id.chinese_name}
+                                      <Card className="flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 border border-zinc-200/85 dark:border-zinc-800 rounded-2xl hover:border-amber-500/50 dark:hover:border-amber-500/50 hover:shadow-2xs transition-all text-sm font-bold text-zinc-800 dark:text-zinc-200 h-full">
+                                        <FolderOpen className="w-5 h-5 text-amber-500" />
+                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                          <span className="group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors truncate">
+                                            {item.topic_id?.name}
                                           </span>
-                                        )}
-                                      </div>
+                                          {item.topic_id?.chinese_name && (
+                                            <span className="text-[10px] text-zinc-400 font-medium">
+                                              {item.topic_id.chinese_name}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </Card>
                                     </Link>
                                   ))}
                                 </div>
                               )}
                             </div>
                           )}
-                        </div>
+                        </Card>
                       );
                     })}
                   </div>
@@ -570,10 +571,10 @@ function FlashcardStudySession({
             </p>
 
             {sense.examples?.map((ex: any) => (
-              <div key={ex.chinese} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2.5 flex flex-col gap-0.5 border border-zinc-100 dark:border-zinc-850">
-                <p className="font-medium text-amber-600 dark:text-amber-500">{ex.chinese}</p>
-                <p className="text-xs text-zinc-400 font-semibold">{ex.pinyin}</p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{ex.vietnamese || ex.p_vi}</p>
+              <div key={ex.chinese} className="bg-zinc-50 dark:bg-zinc-950 rounded-lg p-2.5 flex flex-col gap-0.5 border border-zinc-150 dark:border-zinc-850">
+                <p className="font-semibold text-amber-650 dark:text-amber-500">{ex.chinese}</p>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold">{ex.pinyin}</p>
+                <p className="text-xs text-zinc-550 dark:text-zinc-400 mt-0.5">{ex.vietnamese || ex.p_vi}</p>
               </div>
             ))}
           </div>
@@ -585,17 +586,17 @@ function FlashcardStudySession({
   return (
     <div className="flex-1 flex flex-col">
       <div className="space-y-8 max-w-xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
-          <div className="bg-[#f59e0b] text-gray-950 font-black py-3 px-6 rounded-xl text-center shadow-xs text-sm uppercase tracking-wide">
+          <div className="bg-amber-500 text-white font-black py-3 px-6 rounded-2xl text-center shadow-xs text-sm uppercase tracking-wide">
             {fallbackDataActive ? "Thử thách Flashcard" : "Học tập Flashcard"}
           </div>
 
-          <div className="flex justify-between items-center text-xs font-bold text-gray-400 select-none px-2">
+          <div className="flex justify-between items-center text-xs font-bold text-zinc-400 dark:text-zinc-500 select-none px-2">
             <span>Tiến trình: {displayIndex + 1} / {totalCards}</span>
             <button
               onClick={toggleFavorite}
-              className={`text-lg cursor-pointer ${isFavorite ? "text-red-500" : "text-gray-300"}`}
+              className={`cursor-pointer bg-transparent border-none ${isFavorite ? "text-rose-500" : "text-zinc-300 dark:text-zinc-700"}`}
             >
-              {isFavorite ? "♥" : "♡"}
+              <Heart className="w-6 h-6" fill={isFavorite ? "currentColor" : "none"} />
             </button>
           </div>
 
@@ -604,31 +605,31 @@ function FlashcardStudySession({
               isFlipped={isCardFlipped}
               onFlip={handleFlipAction}
               frontContent={
-                <div className="flex-1 flex flex-col items-center justify-center p-6 h-full text-center">
-                  <span className="text-4xl font-extrabold text-gray-900 tracking-wider">
+                <div className="flex-1 flex flex-col items-center justify-center p-6 h-full text-center bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/60 dark:border-zinc-800 shadow-2xs">
+                  <span className="text-4xl font-extrabold text-zinc-900 dark:text-white tracking-wider">
                     {activeVocab?.name || activeDetail?.word}
                   </span>
-                  <p className="text-xs text-gray-400 font-bold mt-4">Nhấp để xem nghĩa</p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-4">Nhấp để xem nghĩa</p>
                 </div>
               }
               backContent={
-                <div className="flex-1 flex flex-col justify-between p-6 h-full overflow-y-auto scrollbar-thin">
+                <div className="flex-1 flex flex-col justify-between p-6 h-full overflow-y-auto scrollbar-thin bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/60 dark:border-zinc-800 shadow-2xs">
                   <div className="space-y-4">
                     <div className="text-center">
-                      <span className="text-3xl font-extrabold text-gray-900 tracking-wider">
+                      <span className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-wider">
                         {activeVocab?.name || activeDetail?.word}
                       </span>
-                      <p className="text-sm font-semibold text-gray-400 font-mono mt-1">
+                      <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 font-mono mt-1">
                         {activeVocab?.pinyin || activeDetail?.pinyin}
                       </p>
                     </div>
 
-                    <div className="border-t border-gray-100 pt-3 space-y-3">
+                    <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-3 space-y-3">
                       {sensesContent}
                     </div>
 
                     {activeDetail?.note && (
-                      <div className="text-xs text-gray-400 border-t border-gray-100 pt-2">
+                      <div className="text-xs text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/85 pt-2">
                         <span className="font-bold">Ghi chú: </span>
                         {activeDetail.note}
                       </div>
@@ -641,11 +642,11 @@ function FlashcardStudySession({
                         e.stopPropagation();
                         speakChinese(activeVocab?.name || activeDetail?.word || "");
                       }}
-                      className="border border-amber-250 text-amber-700 hover:bg-amber-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 justify-center"
+                      className="border border-amber-500/25 text-amber-700 dark:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 justify-center bg-transparent"
                     >
                       🔊 Nghe phát âm
                     </button>
-                    <div className="text-center text-xs text-zinc-400 mt-2">
+                    <div className="text-center text-xs text-zinc-400 dark:text-zinc-500 mt-2">
                       Nhấp để quay lại mặt trước
                     </div>
                   </div>
@@ -665,7 +666,7 @@ function FlashcardStudySession({
           <div className="flex justify-start w-full pt-4">
             <Link
               href="/flashcard"
-              className="text-xs font-black text-gray-400 hover:text-gray-600"
+              className="text-xs font-black text-zinc-400 hover:text-amber-600 dark:text-zinc-550 dark:hover:text-amber-500 transition-colors"
             >
               &larr; Về sổ tay cá nhân
             </Link>

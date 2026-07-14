@@ -6,7 +6,8 @@ import { fetchVideoGenres } from "@/api/video";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { FilterPills } from "@/components/ui/filter-pills";
+import { FilterPills } from "@/components/FilterPills";
+import { Video } from "lucide-react";
 
 // Mock video data để phục vụ demo khi API rỗng
 const MOCK_VIDEOS = [
@@ -93,7 +94,7 @@ export default function VideoListPage() {
       <PageHeader
         title="Học Tiếng Trung Qua Video"
         description="Xem các video bài giảng chất lượng với phụ đề chạy chữ song ngữ. Trả lời câu hỏi trắc nghiệm tương tác để ôn tập từ vựng ngay trong quá trình xem."
-        icon="🎬"
+        icon={<Video className="w-7 h-7" />}
       />
 
       <FilterPills
@@ -136,7 +137,7 @@ export default function VideoListPage() {
             return (
               <article
                 key={video.id}
-                className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 transition-all duration-300 hover:-translate-y-1"
+                className="group relative flex flex-col justify-between overflow-hidden border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 hover:-translate-y-1"
               >
                 {/* Thumbnail Youtube */}
                 <div className="relative aspect-video w-full overflow-hidden bg-zinc-150 dark:bg-zinc-800">
@@ -157,7 +158,7 @@ export default function VideoListPage() {
                 {/* Body */}
                 <div className="flex flex-1 flex-col justify-between p-5">
                   <div className="flex flex-col gap-2">
-                    <h3 className="text-md font-bold line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors">
+                    <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-base tracking-tight">
                       {video.title}
                     </h3>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">

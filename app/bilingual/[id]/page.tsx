@@ -11,6 +11,11 @@ import { bilingualApi } from "@/api/bilingual";
 import { parseSRTtoArray } from "@/services/subtitle";
 import { speakChinese } from "@/lib/utils/speech";
 import { BackButton } from "@/components/BackButton";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const MOCK_DICTIONARY: Record<string, { pinyin: string; meaning: string }> = {
   "面对": { pinyin: "miànduì", meaning: "Đối mặt, đối diện" },
@@ -215,18 +220,18 @@ export default function BilingualDetailPage({
   ];
 
   return (
-    <div className="flex-1 flex flex-col gap-6">
+    <div className="flex-1 flex flex-col gap-6 bg-transparent">
       <div className="p-6 md:p-8 space-y-6 max-w-3xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
           <BackButton href="/bilingual" label="Danh sách bài đọc" />
           
           {/* Header titles */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">面对同辈压力</h1>
-            <p className="text-sm md:text-base font-semibold text-[#d97706] italic">Đối mặt với áp lực đồng trang lứa</p>
+            <h1 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">面对同辈压力</h1>
+            <p className="text-sm md:text-base font-bold text-amber-600 dark:text-amber-500 italic">Đối mặt với áp lực đồng trang lứa</p>
           </div>
 
           {/* Banner Image */}
-          <div className="relative rounded-2xl overflow-hidden shadow-xs border border-gray-150 h-56 md:h-64 w-full bg-gray-50 shrink-0">
+          <div className="relative rounded-3xl overflow-hidden shadow-xs border border-zinc-200/60 dark:border-zinc-800 h-56 md:h-64 w-full bg-zinc-100 dark:bg-zinc-900 shrink-0">
             <Image
               src="/images/study_tablet.png"
               alt="Bilingual Study Banner"
@@ -236,11 +241,11 @@ export default function BilingualDetailPage({
           </div>
 
           {/* Audio controller - plays/pauses the audio block */}
-          <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center gap-3">
+          <div className="bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/50 dark:border-zinc-800 p-5 rounded-2xl flex flex-col items-center gap-3 shadow-3xs">
             <div className="flex items-center gap-6 justify-center">
               <button 
                 onClick={() => setProgress(Math.max(0, progress - 10))}
-                className="text-gray-500 hover:text-gray-900 transition-colors text-xl font-bold cursor-pointer"
+                className="text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors text-xl font-bold cursor-pointer"
               >
                 ⏮
               </button>
@@ -255,13 +260,13 @@ export default function BilingualDetailPage({
                     }
                   }
                 }}
-                className="w-10 h-10 bg-amber-400 text-gray-900 rounded-full flex items-center justify-center hover:bg-amber-500 transition-all shadow-xs active:scale-95 cursor-pointer font-bold"
+                className="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center hover:bg-amber-600 transition-all shadow-xs active:scale-95 cursor-pointer font-bold border-none"
               >
                 {isPlaying ? "⏸" : "▶"}
               </button>
               <button 
                 onClick={() => setProgress(Math.min(100, progress + 10))}
-                className="text-gray-500 hover:text-gray-900 transition-colors text-xl font-bold cursor-pointer"
+                className="text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors text-xl font-bold cursor-pointer"
               >
                 ⏭
               </button>
@@ -269,39 +274,39 @@ export default function BilingualDetailPage({
             
             {/* Timeline Progress Bar */}
             <div className="w-full max-w-md flex items-center gap-3">
-              <span className="text-[10px] font-bold text-gray-400 select-none">0:12</span>
-              <div className="flex-1 h-1.5 bg-gray-200 rounded-full relative cursor-pointer overflow-hidden">
+              <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 select-none">0:12</span>
+              <div className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-850 rounded-full relative cursor-pointer overflow-hidden">
                 <div 
-                  className="h-full bg-amber-400 rounded-full" 
+                  className="h-full bg-amber-500 rounded-full" 
                   style={{ width: `${progress}%` }} 
                 />
               </div>
-              <span className="text-[10px] font-bold text-gray-400 select-none">0:45</span>
+              <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 select-none">0:45</span>
             </div>
 
             {selectedWord && (
-              <div className="mt-4 flex flex-col gap-3 w-full border-t border-gray-200 pt-4">
+              <div className="mt-4 flex flex-col gap-3 w-full border-t border-zinc-200/80 dark:border-zinc-850 pt-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-extrabold text-amber-600 dark:text-amber-500">
+                  <span className="text-3xl font-extrabold text-amber-650 dark:text-amber-500">
                     {selectedWord.word}
                   </span>
                   {isTranslating ? (
-                    <span className="inline-block w-4 h-4 border-2 border-zinc-200 border-t-amber-600 rounded-full animate-spin"></span>
+                    <span className="inline-block w-4 h-4 border-2 border-zinc-200 border-t-amber-650 rounded-full animate-spin"></span>
                   ) : (
-                    <span className="text-sm font-semibold text-zinc-400">
+                    <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
                       {selectedWord.pinyin}
                     </span>
                   )}
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Ý nghĩa:</h4>
-                  <p className="mt-1 text-md font-medium text-zinc-800 dark:text-zinc-200">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-550">Ý nghĩa:</h4>
+                  <p className="mt-1 text-md font-semibold text-zinc-800 dark:text-zinc-200">
                     {selectedWord.meaning}
                   </p>
                 </div>
                 <button
                   onClick={() => speakChinese(selectedWord.word)}
-                  className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border-none cursor-pointer"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
                     <path fillRule="evenodd" d="M5.075 10.812a1.25 1.25 0 0 1-1.25-1.25v-1.12a1.25 1.25 0 0 1 1.25-1.25h1.375a.75.75 0 0 0 .53-.22l3.47-3.47A.75.75 0 0 1 11.5 4v12a.75.75 0 0 1-1.3-.53l-3.47-3.47a.75.75 0 0 0-.53-.22H5.075Zm10.957-6.273a.75.75 0 0 1 1.06 0 8 8 0 0 1 0 11.322.75.75 0 1 1-1.06-1.06 6.5 6.5 0 0 0 0-9.193.75.75 0 0 1 0-1.069Z" clipRule="evenodd" />
@@ -313,7 +318,7 @@ export default function BilingualDetailPage({
           </div>
 
           {/* Tabs bar */}
-          <div className="border-b border-gray-100 flex items-center gap-6 md:gap-8 font-bold text-xs uppercase tracking-wider text-gray-400 select-none">
+          <div className="border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-6 md:gap-8 font-extrabold text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500 select-none">
             {[
               { id: "content", name: "Nội dung" },
               { id: "vocab", name: "Từ vựng" },
@@ -326,8 +331,8 @@ export default function BilingualDetailPage({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`pb-2 transition-all cursor-pointer ${
-                    isActive ? "border-b-2 border-gray-900 text-gray-900" : "hover:text-gray-600"
+                  className={`pb-2 transition-all cursor-pointer bg-transparent border-none ${
+                    isActive ? "border-b-2 border-zinc-900 dark:border-zinc-50 text-zinc-900 dark:text-zinc-50" : "hover:text-zinc-600 dark:hover:text-zinc-350"
                   }`}
                 >
                   {tab.name}
@@ -343,31 +348,31 @@ export default function BilingualDetailPage({
             {activeTab === "content" && (
               <div className="space-y-6">
                 {/* Paragraph container with orange border */}
-                <div className="border border-[#f59e0b] rounded-xl p-5 md:p-6 bg-white shadow-2xs relative flex flex-col md:flex-row justify-between gap-4">
+                <div className="border border-amber-500/35 dark:border-amber-500/20 rounded-2xl p-5 md:p-6 bg-white dark:bg-zinc-900 shadow-2xs relative flex flex-col md:flex-row justify-between gap-4">
                   <div className="space-y-4 flex-1">
                     <div>
-                      <p className="text-base font-extrabold text-[#d97706] tracking-wide leading-relaxed">
+                      <p className="text-base font-black text-amber-700 dark:text-amber-500 tracking-wide leading-relaxed">
                         面对同辈压力，核心是建立自我坐标系
                       </p>
-                      <p className="text-xs font-bold text-gray-400 mt-1 italic">
+                      <p className="text-xs font-bold text-zinc-450 dark:text-zinc-500 mt-1 italic">
                         Đối mặt với áp lực từ đồng trang lứa, cốt lõi là xây dựng hệ quy chiếu của riêng mình
                       </p>
                     </div>
 
-                    <div className="border-t border-gray-50 pt-3 space-y-3">
-                      <p className="text-sm font-bold text-gray-800 leading-relaxed">
+                    <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-3.5 space-y-3">
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-relaxed">
                         管理信息 input、专注纵向成长，而非横向比较。
                       </p>
-                      <p className="text-xs font-semibold text-gray-500 leading-relaxed">
+                      <p className="text-xs font-semibold text-zinc-550 dark:text-zinc-400 leading-relaxed">
                         Quản lý lượng thông tin tiếp nhận, tập trung vào sự phát triển theo chiều dọc của bản thân, thay vì liên tục so sánh theo chiều ngang với người khác.
                       </p>
                     </div>
 
-                    <div className="border-t border-gray-50 pt-3 space-y-3">
-                      <p className="text-sm font-bold text-gray-800 leading-relaxed">
+                    <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-3.5 space-y-3">
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-relaxed">
                         识别压力类型：同辈压力分
                       </p>
-                      <p className="text-xs font-semibold text-gray-500 leading-relaxed">
+                      <p className="text-xs font-semibold text-zinc-550 dark:text-zinc-400 leading-relaxed">
                         Nhận diện loại áp lực: Áp lực từ đồng trang lứa thường được chia thành:
                       </p>
                     </div>
@@ -376,7 +381,7 @@ export default function BilingualDetailPage({
                   {/* Speaker Button on the right */}
                   <button
                     onClick={() => speakChinese("面对同辈压力，核心是建立自我坐标系。管理信息输入、专注纵向成长，而非横向比较。")}
-                    className="w-10 h-10 border border-amber-200 hover:bg-amber-50 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-95 shrink-0 self-start mt-2"
+                    className="w-10 h-10 border border-amber-200 hover:bg-amber-50 dark:border-zinc-700 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-500 cursor-pointer active:scale-95 shrink-0 self-start mt-2 bg-transparent"
                   >
                     🔊
                   </button>
@@ -384,10 +389,10 @@ export default function BilingualDetailPage({
 
                 {/* Vocabulary Table (rendered underneath contents) */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-extrabold text-gray-900">Từ vựng trong bài</h3>
-                  <div className="overflow-x-auto border border-gray-100 rounded-xl">
-                    <table className="min-w-full divide-y divide-gray-100 text-left text-xs font-semibold">
-                      <thead className="bg-gray-50 text-gray-500 uppercase font-black tracking-wider">
+                  <h3 className="text-sm font-black text-zinc-900 dark:text-white">Từ vựng trong bài</h3>
+                  <div className="overflow-x-auto border border-zinc-200/60 dark:border-zinc-800 rounded-2xl shadow-3xs">
+                    <table className="min-w-full divide-y divide-zinc-100 dark:divide-zinc-800/60 text-left text-xs font-semibold">
+                      <thead className="bg-zinc-50 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 font-black tracking-wider uppercase border-b border-zinc-150 dark:border-zinc-800">
                         <tr>
                           <th className="px-4 py-3">Từ vựng</th>
                           <th className="px-4 py-3">Từ loại</th>
@@ -396,14 +401,14 @@ export default function BilingualDetailPage({
                           <th className="px-4 py-3">Ví dụ</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50 bg-white text-gray-800">
+                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200">
                         {vocabData.map((vocab, index) => (
-                          <tr key={index} className="hover:bg-gray-50/50">
-                            <td className="px-4 py-3 font-extrabold text-amber-600 text-sm">{vocab.word}</td>
-                            <td className="px-4 py-3 text-gray-500">{vocab.type}</td>
+                          <tr key={index} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/40">
+                            <td className="px-4 py-3 font-black text-amber-650 dark:text-amber-500 text-sm">{vocab.word}</td>
+                            <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{vocab.type}</td>
                             <td className="px-4 py-3 font-mono">{vocab.pinyin}</td>
-                            <td className="px-4 py-3 text-gray-900">{vocab.meaning}</td>
-                            <td className="px-4 py-3 text-gray-500 leading-normal">{vocab.example}</td>
+                            <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{vocab.meaning}</td>
+                            <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 leading-normal">{vocab.example}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -412,12 +417,12 @@ export default function BilingualDetailPage({
                 </div>
 
                 {/* Grammar Block */}
-                <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-5 space-y-3">
-                  <h3 className="text-sm font-extrabold text-[#d97706]">Ngữ pháp nổi bật</h3>
-                  <ul className="space-y-3.5 pl-4 list-disc text-xs text-gray-700 font-semibold leading-relaxed">
+                <div className="bg-amber-500/5 dark:bg-amber-500/2 border border-amber-500/10 dark:border-amber-500/5 rounded-2xl p-5 space-y-3">
+                  <h3 className="text-sm font-black text-amber-700 dark:text-amber-500">Ngữ pháp nổi bật</h3>
+                  <ul className="space-y-3.5 pl-4 list-disc text-xs text-zinc-700 dark:text-zinc-300 font-semibold leading-relaxed">
                     <li>
-                      <span className="text-[#d97706] font-bold">而非 (ér fēi)</span>: mang ý nghĩa "mà không phải", "thay vì", dùng để làm rõ sự lựa chọn/tương phản.
-                      <div className="bg-white/80 border border-amber-100 px-3 py-1.5 rounded-md mt-1 font-mono text-gray-600">
+                      <span className="text-amber-650 dark:text-amber-500 font-bold">而非 (ér fēi)</span>: mang ý nghĩa "mà không phải", "thay vì", dùng để làm rõ sự lựa chọn/tương phản.
+                      <div className="bg-white dark:bg-zinc-900 border border-amber-500/15 dark:border-amber-500/5 px-3 py-2 rounded-xl mt-1.5 font-mono text-zinc-600 dark:text-zinc-400">
                         专注纵向成长，而非横向比较。 (Tập trung phát triển theo chiều dọc chứ không phải so sánh theo chiều ngang).
                       </div>
                     </li>
@@ -429,9 +434,9 @@ export default function BilingualDetailPage({
             {/* 2. Tab content: TỪ VỰNG */}
             {activeTab === "vocab" && (
               <div className="space-y-3">
-                <div className="overflow-x-auto border border-gray-100 rounded-xl">
-                  <table className="min-w-full divide-y divide-gray-100 text-left text-xs font-semibold">
-                    <thead className="bg-gray-50 text-gray-500 uppercase font-black tracking-wider">
+                <div className="overflow-x-auto border border-zinc-200/60 dark:border-zinc-800 rounded-2xl shadow-3xs">
+                  <table className="min-w-full divide-y divide-zinc-100 dark:divide-zinc-800/60 text-left text-xs font-semibold">
+                    <thead className="bg-zinc-50 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 font-black tracking-wider uppercase border-b border-zinc-150 dark:border-zinc-800">
                       <tr>
                         <th className="px-4 py-3">Từ vựng</th>
                         <th className="px-4 py-3">Từ loại</th>
@@ -440,14 +445,14 @@ export default function BilingualDetailPage({
                         <th className="px-4 py-3">Ví dụ</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50 bg-white text-gray-800">
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200">
                       {vocabData.map((vocab, index) => (
-                        <tr key={index} className="hover:bg-gray-50/50">
-                          <td className="px-4 py-3 font-extrabold text-amber-600 text-sm">{vocab.word}</td>
-                          <td className="px-4 py-3 text-gray-500">{vocab.type}</td>
+                        <tr key={index} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/40">
+                          <td className="px-4 py-3 font-black text-amber-650 dark:text-amber-500 text-sm">{vocab.word}</td>
+                          <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{vocab.type}</td>
                           <td className="px-4 py-3 font-mono">{vocab.pinyin}</td>
-                          <td className="px-4 py-3 text-gray-900">{vocab.meaning}</td>
-                          <td className="px-4 py-3 text-gray-500 leading-normal">{vocab.example}</td>
+                          <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{vocab.meaning}</td>
+                          <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 leading-normal">{vocab.example}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -458,18 +463,18 @@ export default function BilingualDetailPage({
 
             {/* 3. Tab content: NGỮ PHÁP */}
             {activeTab === "grammar" && (
-              <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-5 space-y-4">
-                <h3 className="text-sm font-extrabold text-[#d97706]">Cấu trúc ngữ pháp quan trọng</h3>
-                <ul className="space-y-4 pl-4 list-disc text-xs text-gray-700 font-semibold leading-relaxed">
+              <div className="bg-amber-500/5 dark:bg-amber-500/2 border border-amber-500/10 dark:border-amber-500/5 rounded-2xl p-5 space-y-4">
+                <h3 className="text-sm font-black text-amber-700 dark:text-amber-500">Cấu trúc ngữ pháp quan trọng</h3>
+                <ul className="space-y-4 pl-4 list-disc text-xs text-zinc-700 dark:text-zinc-300 font-semibold leading-relaxed">
                   <li>
-                    <span className="text-[#d97706] font-bold">而非 (ér fēi)</span>: dùng làm liên từ, mang ý nghĩa phủ định vế phía sau để khẳng định vế trước.
-                    <div className="bg-white border border-amber-100 px-3 py-2 rounded-md mt-1.5 font-mono text-gray-600">
+                    <span className="text-amber-650 dark:text-amber-500 font-bold">而非 (ér fēi)</span>: dùng làm liên từ, mang ý nghĩa phủ định vế phía sau để khẳng định vế trước.
+                    <div className="bg-white dark:bg-zinc-900 border border-amber-500/15 dark:border-amber-500/5 px-3 py-2 rounded-xl mt-1.5 font-mono text-zinc-600 dark:text-zinc-400">
                       专注纵向成长，而非横向比较。 (Tập trung phát triển theo chiều dọc chứ không phải so sánh theo chiều ngang).
                     </div>
                   </li>
                   <li>
-                    <span className="text-[#d97706] font-bold">核心是... (héxīn shì...)</span>: Cốt lõi là... dùng để xác định phần cốt tủy của giải pháp.
-                    <div className="bg-white border border-amber-100 px-3 py-2 rounded-md mt-1.5 font-mono text-gray-600">
+                    <span className="text-amber-650 dark:text-amber-500 font-bold">核心是... (héxīn shì...)</span>: Cốt lõi là... dùng để xác định phần cốt tủy của giải pháp.
+                    <div className="bg-white dark:bg-zinc-900 border border-amber-500/15 dark:border-amber-500/5 px-3 py-2 rounded-xl mt-1.5 font-mono text-zinc-600 dark:text-zinc-400">
                       核心是建立自我坐标系。 (Cốt lõi là thiết lập hệ quy chiếu của riêng mình).
                     </div>
                   </li>
@@ -479,21 +484,21 @@ export default function BilingualDetailPage({
 
             {/* 4. Tab content: SHADOWING (Image 3) */}
             {activeTab === "shadowing" && (
-              <div className="border border-[#f59e0b] rounded-xl p-6 bg-white shadow-2xs text-center space-y-6">
-                <h3 className="text-lg font-bold text-gray-900">Shadowing</h3>
+              <div className="border border-amber-500/35 dark:border-amber-500/20 rounded-2xl p-6 bg-white dark:bg-zinc-900 shadow-2xs text-center space-y-6">
+                <h3 className="text-lg font-black text-zinc-900 dark:text-white">Shadowing</h3>
                 
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between gap-4 max-w-md mx-auto">
+                <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-150 dark:border-zinc-850 flex items-center justify-between gap-4 max-w-md mx-auto">
                   <div className="text-left">
-                    <p className="text-sm font-extrabold text-[#d97706] tracking-wide leading-relaxed">
+                    <p className="text-sm font-black text-amber-700 dark:text-amber-500 tracking-wide leading-relaxed">
                       面对同辈压力，核心是建立自我坐标系
                     </p>
-                    <p className="text-xs font-bold text-gray-400 mt-1">
+                    <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500 mt-1">
                       Đối mặt với áp lực từ đồng trang lứa, cốt lõi là xây dựng hệ quy chiếu của riêng mình
                     </p>
                   </div>
                   <button
                     onClick={() => speakChinese("面对同辈压力，核心是建立自我坐标系")}
-                    className="w-9 h-9 border border-amber-250 hover:bg-amber-100 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90"
+                    className="w-9 h-9 border border-amber-250 dark:border-zinc-700 hover:bg-amber-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-500 cursor-pointer active:scale-90 bg-transparent"
                   >
                     🔊
                   </button>
@@ -504,7 +509,7 @@ export default function BilingualDetailPage({
                   {shadowState === "idle" && (
                     <button
                       onClick={() => setShadowState("recording")}
-                      className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-800 active:scale-95 transition-all cursor-pointer"
+                      className="w-16 h-16 bg-zinc-900 dark:bg-zinc-800 text-white rounded-full flex items-center justify-center shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-700 active:scale-95 transition-all cursor-pointer border-none"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
                         <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
@@ -517,11 +522,11 @@ export default function BilingualDetailPage({
                     <div className="flex flex-col items-center gap-2">
                       <button
                         onClick={() => setShadowState("done")}
-                        className="w-16 h-16 bg-[#e11d48] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 animate-pulse cursor-pointer"
+                        className="w-16 h-16 bg-[#e11d48] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 animate-pulse cursor-pointer border-none"
                       >
                         <span className="w-4 h-4 bg-white rounded-xs" />
                       </button>
-                      <p className="text-xs font-bold text-rose-600 tracking-wider">
+                      <p className="text-xs font-bold text-rose-600 dark:text-rose-455 tracking-wider">
                         ĐANG THU ÂM: {shadowSeconds}s / 3s
                       </p>
                     </div>
@@ -534,80 +539,56 @@ export default function BilingualDetailPage({
                           onClick={() => {
                             speakChinese("面对同辈压力，核心是建立自我坐标系");
                           }}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer"
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer border-none"
                         >
                           ▶ Nghe lại bài mẫu
                         </button>
                         <button
                           onClick={() => setShadowState("idle")}
-                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer"
-                        >
-                          🔄 Thu lại
-                        </button>
-                      </div>
-                      
-                      <div className="bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-lg flex items-center gap-3 text-emerald-800 font-extrabold text-xs">
-                        <span className="text-lg">🎯</span>
-                        <div>
-                          <p>Điểm Shadowing: 92/100 (Xuất sắc)</p>
-                          <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Bạn phát âm rất chuẩn và ngữ điệu tự nhiên!</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {shadowState === "idle" && (
-                    <span className="text-xs text-gray-400 font-bold">
-                      Nhấn vào biểu tượng Microphone để bắt đầu luyện Shadowing
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 5. Tab content: BÀI TẬP */}
+                          className="bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dar            {/* 5. Tab content: BÀI TẬP */}
             {activeTab === "exercise" && (
-              <div className="bg-white border border-gray-100 rounded-xl p-5 md:p-6 shadow-xs space-y-6">
+              <Card className="p-5 md:p-6 shadow-2xs space-y-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800">
                 {exerciseType === "select" ? (
                   <div className="text-center space-y-6 py-4">
-                    <h3 className="text-lg font-black text-gray-900">Lựa chọn dạng bài</h3>
+                    <h3 className="text-lg font-black text-zinc-900 dark:text-white">Lựa chọn dạng bài</h3>
                     <div className="flex flex-col gap-4 max-w-xs mx-auto">
-                      <button
+                      <Button
                         onClick={() => setExerciseType("quiz")}
-                        className="bg-[#f59e0b] hover:bg-amber-600 text-gray-950 font-bold py-3.5 px-6 rounded-xl shadow-xs transition-all active:scale-98 text-sm cursor-pointer"
+                        className="py-6 rounded-2xl text-sm font-extrabold"
                       >
                         Trắc nghiệm
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setExerciseType("trans_zh_vi")}
-                        className="bg-[#f59e0b] hover:bg-amber-600 text-gray-950 font-bold py-3.5 px-6 rounded-xl shadow-xs transition-all active:scale-98 text-sm cursor-pointer"
+                        className="py-6 rounded-2xl text-sm font-extrabold"
                       >
                         Dịch Trung - Việt
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setExerciseType("trans_vi_zh")}
-                        className="bg-[#f59e0b] hover:bg-amber-600 text-gray-950 font-bold py-3.5 px-6 rounded-xl shadow-xs transition-all active:scale-98 text-sm cursor-pointer"
+                        className="py-6 rounded-2xl text-sm font-extrabold"
                       >
                         Dịch Việt - Trung
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <button
+                    <Button
+                      variant="link"
                       onClick={() => setExerciseType("select")}
-                      className="text-xs font-bold text-gray-400 hover:text-gray-600 flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-bold text-zinc-400 hover:text-zinc-650 flex items-center gap-1 p-0 h-auto"
                     >
                       &larr; Quay lại dạng bài
-                    </button>
+                    </Button>
 
                     {exerciseType === "quiz" && (
                       <div className="space-y-6">
-                        <div className="flex items-center gap-3 border-b border-gray-50 pb-4">
-                          <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                        <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-850 pb-4">
+                          <Badge variant="outline" className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm select-none border-amber-500/20 text-amber-600 dark:text-amber-500 bg-amber-500/5">
                             Q1
-                          </span>
-                          <h3 className="font-extrabold text-gray-900 text-sm md:text-base">
+                          </Badge>
+                          <h3 className="font-extrabold text-zinc-900 dark:text-white text-sm md:text-base">
                             Từ &quot;同辈&quot; (tóngbèi) trong bài đọc có nghĩa là gì?
                           </h3>
                         </div>
@@ -620,16 +601,16 @@ export default function BilingualDetailPage({
                             { key: "D", val: "D. Người lãnh đạo, cấp trên" },
                           ].map((opt) => {
                             const isSelected = quizSelected === opt.key;
-                            let btnStyle = "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50/20";
+                            let btnStyle = "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 hover:border-amber-300 dark:hover:border-amber-500";
 
                             if (isSelected) {
                               if (opt.key === "B") {
-                                btnStyle = "border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500";
+                                btnStyle = "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-450 ring-2 ring-emerald-500/30";
                               } else {
-                                btnStyle = "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500";
+                                btnStyle = "border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-455 ring-2 ring-rose-500/30";
                               }
                             } else if (quizSelected && opt.key === "B") {
-                              btnStyle = "border-emerald-500 bg-emerald-50 text-emerald-800";
+                              btnStyle = "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-455";
                             }
 
                             return (
@@ -638,7 +619,7 @@ export default function BilingualDetailPage({
                                 onClick={() => {
                                   if (!quizSelected) setQuizSelected(opt.key);
                                 }}
-                                className={`flex items-center gap-3 p-4 rounded-xl border-2 font-bold text-left transition-all duration-200 active:scale-[0.98] text-xs cursor-pointer ${btnStyle}`}
+                                className={`flex items-center gap-3 p-4 rounded-2xl border-2 font-bold text-left transition-all duration-200 active:scale-[0.98] text-xs cursor-pointer ${btnStyle}`}
                               >
                                 <span>{opt.val}</span>
                               </button>
@@ -647,10 +628,10 @@ export default function BilingualDetailPage({
                         </div>
 
                         {quizSelected && (
-                          <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${
+                          <div className={`p-4 rounded-2xl border font-semibold text-xs leading-relaxed space-y-2 ${
                             quizSelected === "B"
-                              ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                              : "bg-rose-50 border-rose-200 text-rose-900"
+                              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-450"
+                              : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-455"
                           }`}>
                             <div className="flex items-center gap-1.5 font-bold text-sm">
                               {quizSelected === "B" ? (
@@ -659,12 +640,13 @@ export default function BilingualDetailPage({
                                 <span>❌ Sai rồi! Đáp án đúng là B.</span>
                               )}
                             </div>
-                            <button
+                            <Button
+                              variant="link"
                               onClick={() => setQuizSelected(null)}
-                              className="text-amber-600 hover:text-amber-700 underline block cursor-pointer"
+                              className="text-amber-650 hover:text-amber-700 dark:text-amber-500 dark:hover:text-amber-400 underline block cursor-pointer p-0 h-auto font-bold text-xs"
                             >
                               Làm lại
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -672,37 +654,64 @@ export default function BilingualDetailPage({
 
                     {exerciseType === "trans_zh_vi" && (
                       <div className="space-y-4">
-                        <h4 className="font-extrabold text-sm text-gray-900">Dịch câu sau sang tiếng Việt:</h4>
-                        <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl font-bold text-md text-[#d97706]">
+                        <h4 className="font-extrabold text-sm text-zinc-900 dark:text-white">Dịch câu sau sang tiếng Việt:</h4>
+                        <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-850 p-4 rounded-2xl font-bold text-md text-amber-700 dark:text-amber-500">
                           管理信息输入、专注纵向成长，而非横向比较。
                         </div>
-                        <textarea
+                        <Textarea
                           placeholder="Nhập bản dịch tiếng Việt của bạn..."
-                          className="w-full h-24 border border-gray-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          className="w-full h-24 text-xs font-semibold"
                         />
-                        <button
+                        <Button
                           onClick={() => alert("Hệ thống ghi nhận bản dịch! Cốt lõi: Quản lý lượng thông tin đầu vào, tập trung vào tăng trưởng theo chiều dọc chứ không phải so sánh theo chiều ngang.")}
-                          className="bg-gray-950 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-gray-800 transition-all cursor-pointer"
+                          className="font-bold text-xs px-5 py-2"
                         >
                           Kiểm tra kết quả
+                        </Button>
+                      </div>
+                    )}
+
+                    {exerciseType === "trans_vi_zh" && (
+                      <div className="space-y-4">
+                        <h4 className="font-extrabold text-sm text-zinc-900 dark:text-white">Dịch câu sau sang chữ Hán (Giản thể):</h4>
+                        <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-850 p-4 rounded-2xl font-bold text-sm text-zinc-700 dark:text-zinc-300">
+                          Đối mặt với áp lực từ đồng trang lứa, cốt lõi là xây dựng hệ quy chiếu của riêng mình.
+                        </div>
+                        <Input
+                          type="text"
+                          placeholder="Nhập câu tiếng Trung..."
+                          className="w-full text-xs font-semibold"
+                        />
+                        <Button
+                          onClick={() => alert("Hệ thống ghi nhận bản dịch! Đáp án mẫu: 面对同辈压力，核心是建立自我坐标系。")}
+                          className="font-bold text-xs px-5 py-2"
+                        >
+                          Kiểm tra kết quả
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            )}��t quả
                         </button>
                       </div>
                     )}
 
                     {exerciseType === "trans_vi_zh" && (
                       <div className="space-y-4">
-                        <h4 className="font-extrabold text-sm text-gray-900">Dịch câu sau sang chữ Hán (Giản thể):</h4>
-                        <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl font-bold text-sm text-gray-700">
+                        <h4 className="font-extrabold text-sm text-zinc-900 dark:text-white">Dịch câu sau sang chữ Hán (Giản thể):</h4>
+                        <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-850 p-4 rounded-2xl font-bold text-sm text-zinc-700 dark:text-zinc-300">
                           Đối mặt với áp lực từ đồng trang lứa, cốt lõi là xây dựng hệ quy chiếu của riêng mình.
                         </div>
                         <input
                           type="text"
                           placeholder="Nhập câu tiếng Trung..."
-                          className="w-full border border-gray-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          className="w-full border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 rounded-2xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
                         />
                         <button
                           onClick={() => alert("Hệ thống ghi nhận bản dịch! Đáp án mẫu: 面对同辈压力，核心是建立自我坐标系。")}
-                          className="bg-gray-950 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-gray-800 transition-all cursor-pointer"
+                          className="bg-zinc-950 dark:bg-zinc-850 text-white rounded-2xl font-bold px-4 py-2 text-xs hover:bg-zinc-800 transition-all cursor-pointer border-none"
                         >
                           Kiểm tra kết quả
                         </button>
@@ -716,10 +725,10 @@ export default function BilingualDetailPage({
           </div>
 
           {/* Bottom link to go back */}
-          <div className="flex justify-start w-full pt-6 border-t border-gray-100">
+          <div className="flex justify-start w-full pt-6 border-t border-zinc-100 dark:border-zinc-800">
             <Link
               href="/bilingual"
-              className="text-xs font-black text-gray-500 hover:text-amber-600 flex items-center gap-1 transition-colors"
+              className="text-xs font-black text-zinc-500 hover:text-amber-600 flex items-center gap-1 transition-colors"
             >
               &larr; Quay lại danh sách
             </Link>

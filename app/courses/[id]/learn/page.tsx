@@ -10,6 +10,11 @@ import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { speakChinese } from "@/lib/utils/speech";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Play, Check, Star, Folder, Volume2, Target, Lightbulb, XCircle, User, Mic, PartyPopper } from "lucide-react";
 
 const MOCK_GRAMMAR_SRT = `1
 00:00:01,000 --> 00:00:05,000
@@ -440,7 +445,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                   </button>
 
                   <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs select-none bg-black/30 px-3 py-1.5 rounded-lg backdrop-blur-xs font-bold">
-                    <span>▶ Đang giảng: Đại từ - Tính từ</span>
+                    <span className="flex items-center gap-1.5"><Play className="w-4 h-4" /> Đang giảng: Đại từ - Tính từ</span>
                     <span>04:12 / 12:45</span>
                   </div>
                 </div>
@@ -488,7 +493,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                             : "bg-white border-gray-200 text-gray-600 hover:text-amber-500 hover:border-amber-200"
                         }`}
                       >
-                        {isSavedToFlashcard ? "✓ Đã lưu Flashcard" : "⭐ Lưu từ vào flashcard"}
+                        {isSavedToFlashcard ? <><Check className="w-4 h-4" /> Đã lưu Flashcard</> : <><Star className="w-4 h-4" /> Lưu từ vào flashcard</>}
                       </button>
                     ) : (
                       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 shadow-lg flex flex-col gap-2 w-48 text-left">
@@ -505,7 +510,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 disabled={savingVocab}
                                 className="w-full text-left py-1 px-2 hover:bg-amber-50 dark:hover:bg-zinc-800 text-[11px] font-semibold rounded text-zinc-700 dark:text-zinc-300 bg-transparent border-none cursor-pointer"
                               >
-                                📁 {deck.title}
+                                <Folder className="w-4 h-4 text-amber-500" /> {deck.title}
                               </button>
                             ))}
                           </div>
@@ -607,7 +612,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                             }}
                             className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer"
                           >
-                            {playBackState ? "🔊 Đang phát..." : "▶ Nghe lại"}
+                            {playBackState ? <><Volume2 className="w-4 h-4 mr-1.5" /> Đang phát...</> : <><Play className="w-4 h-4 mr-1.5" /> Nghe lại</>}
                           </button>
                           <button
                             onClick={() => setRecordState("idle")}
@@ -617,7 +622,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                           </button>
                         </div>
                         <div className="bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-lg flex items-center gap-3 text-emerald-800 font-extrabold text-xs">
-                          <span className="text-lg">🎯</span>
+                          <Target className="w-5 h-5 text-amber-500" />
                           <div>
                             <p>Điểm phát âm: 92/100 (Xuất sắc)</p>
                             <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Luyện nói chuẩn âm sắc pinyin!</p>
@@ -647,7 +652,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
               <div className="space-y-6">
                 <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold shadow-2xs">
                   <div className="text-sm mb-2 flex items-center gap-1.5 text-amber-700 font-black">
-                    <span>💡</span> Note phát triển
+                    <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Note phát triển
                   </div>
                   Note: 2 phần này sẽ được set thời gian xuất hiện để khớp với thời gian từ đang được giảng trong video.
                 </div>
@@ -722,9 +727,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     }`}>
                       <div className="flex items-center gap-1.5 font-bold text-sm">
                         {vocabSelected === "C" ? (
-                          <span>🎉 Chính xác!</span>
+                          <span className="flex items-center gap-1.5"><PartyPopper className="w-4 h-4 text-emerald-500" /> Chính xác!</span>
                         ) : (
-                          <span>❌ Sai rồi! Thử lại xem nhé.</span>
+                          <span className="flex items-center gap-1.5"><XCircle className="w-4 h-4" /> Sai rồi! Thử lại xem nhé.</span>
                         )}
                       </div>
                       <p>
@@ -753,7 +758,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
               <div className="space-y-6">
                 <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold space-y-3 shadow-2xs">
                   <div className="text-sm font-bold flex items-center gap-1.5 text-amber-700">
-                    <span>💡</span> Đặc điểm giao diện
+                    <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Đặc điểm giao diện
                   </div>
                   <ul className="list-disc pl-4 space-y-2">
                     <li>Phần này trong câu hỏi trắc nghiệm có thể kèm audio hoặc không.</li>
@@ -778,7 +783,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                   />
 
                   <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs select-none bg-black/30 px-3 py-1.5 rounded-lg backdrop-blur-xs font-bold pointer-events-none">
-                    <span>▶ Đang phát: Video bài giảng Ngữ pháp</span>
+                    <span className="flex items-center gap-1.5"><Play className="w-4 h-4" /> Đang phát: Video bài giảng Ngữ pháp</span>
                     <span>{Math.floor(grammarCurrentTime)}s</span>
                   </div>
                 </div>
@@ -963,9 +968,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                           }`}>
                             <div className="flex items-center gap-1.5 font-bold text-sm">
                               {grammarSelected === correctKey ? (
-                                <span>🎉 Chính xác!</span>
+                                <span className="flex items-center gap-1.5"><PartyPopper className="w-4 h-4 text-emerald-500" /> Chính xác!</span>
                               ) : (
-                                <span>❌ Chọn chưa đúng rồi!</span>
+                                <span className="flex items-center gap-1.5"><XCircle className="w-4 h-4 text-rose-500" /> Chọn chưa đúng rồi!</span>
                               )}
                             </div>
                             <p>
@@ -1001,7 +1006,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
               <div className="space-y-6">
                 <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold space-y-3 shadow-2xs">
                   <div className="text-sm font-bold flex items-center gap-1.5 text-amber-700">
-                    <span>💡</span> Đặc điểm giao diện
+                    <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Đặc điểm giao diện
                   </div>
                   <ul className="list-disc pl-4 space-y-2">
                     <li>Phần này trong câu hỏi trắc nghiệm có thể kèm audio hoặc không</li>
@@ -1046,24 +1051,24 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     </h4>
 
                     <div className="relative">
-                      <input
+                      <Input
                         type="text"
                         value={dictationInput}
                         onChange={(e) => setDictationInput(e.target.value)}
                         placeholder="Gợi ý: nhập 'ni hao' hoặc '你好' để chấm điểm"
                         disabled={dictationChecked}
-                        className="w-full bg-transparent border-b-2 border-dashed border-amber-300 focus:border-amber-500 focus:outline-none py-2 text-sm text-gray-800 font-bold placeholder-gray-400 transition-all font-mono"
+                        className="w-full bg-transparent border-b-2 border-dashed border-amber-300 focus:border-amber-500 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none px-0 py-2 text-sm text-gray-800 font-bold placeholder-gray-400 transition-all font-mono"
                       />
                     </div>
 
                     <div className="flex gap-4">
-                      <button
+                      <Button
                         onClick={handleCheckDictation}
                         disabled={dictationChecked}
-                        className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-2 rounded-full text-xs shadow-xs transition-colors cursor-pointer disabled:bg-gray-200 disabled:text-gray-400 active:scale-95 shrink-0"
+                        className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-5 rounded-full text-xs shadow-xs transition-colors cursor-pointer disabled:bg-gray-200 disabled:text-gray-400 active:scale-95 shrink-0"
                       >
                         Kiểm tra
-                      </button>
+                      </Button>
                       {dictationChecked && (
                         <button
                           onClick={resetDictation}
@@ -1078,7 +1083,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                   {dictationChecked && dictationScore !== null && (
                     <div className="p-5 bg-white border border-amber-200 rounded-xl shadow-2xs space-y-2">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">🎯</span>
+                        <Target className="w-8 h-8 text-amber-500" />
                         <div>
                           <h5 className="font-extrabold text-amber-700 text-sm">
                             Đúng {dictationScore}%
@@ -1123,7 +1128,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                       >
                         {isSpeakerA && (
                           <div className="w-12 h-12 bg-sky-100 rounded-full flex items-center justify-center text-2xl shrink-0 shadow-sm">
-                            👩‍🎓
+                            <User className="w-6 h-6 text-zinc-400" />
                           </div>
                         )}
 
@@ -1192,7 +1197,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     </>
                                   ) : (
                                     <>
-                                      🎙️ Nhấp để nói
+                                      <Mic className="w-4 h-4 inline mr-1.5" /> Nhấp để nói
                                     </>
                                   )}
                                 </button>
@@ -1312,7 +1317,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 {/* Right side: Helper Text "Đây là 3 file để..." */}
                 <div className="md:col-span-1 text-sm font-bold text-gray-700 leading-relaxed space-y-2 p-2">
                   <div className="flex items-center gap-1.5 text-amber-600 text-lg">
-                    💡
+                    <Lightbulb className="w-5 h-5 text-amber-500" />
                   </div>
                   <p className="font-semibold text-gray-600">
                     Đây là 3 file để người học tải về để ôn tập thêm

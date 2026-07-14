@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { grammarApi } from "@/api/grammar";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { FileText, PackageOpen } from "lucide-react";
 
 export default function GrammarPage() {
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
@@ -79,7 +83,7 @@ export default function GrammarPage() {
       <PageHeader
         title="Cấu Trúc Ngữ Pháp Tiếng Trung"
         description="Tổng hợp đầy đủ cấu trúc ngữ pháp quan trọng theo hệ thống bài giảng và chủ đề của Sun Chinese. Có ví dụ kèm Pinyin & nghĩa Việt rõ ràng."
-        icon="📝"
+        icon={<FileText className="w-7 h-7" />}
       />
 
           {/* Module Selector Pill Tabs */}
@@ -90,17 +94,18 @@ export default function GrammarPage() {
               modules?.map((mod: any) => {
                 const isActive = selectedModuleId === mod.id;
                 return (
-                  <button
+                  <Button
                     key={mod.id}
                     onClick={() => setSelectedModuleId(mod.id)}
-                    className={`px-4 py-2 text-xs font-bold rounded-full transition-all cursor-pointer shadow-2xs ${
+                    variant={isActive ? "default" : "outline"}
+                    className={`text-xs font-bold rounded-full cursor-pointer ${
                       isActive
-                        ? "bg-violet-600 text-white shadow-md shadow-violet-650/20"
-                        : "bg-white dark:bg-zinc-900 border border-zinc-200 hover:bg-zinc-50 hover:text-violet-600"
+                        ? "bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-650/20"
+                        : "bg-white dark:bg-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-violet-600"
                     }`}
                   >
                     {mod.title}
-                  </button>
+                  </Button>
                 );
               })
             )}
@@ -109,7 +114,7 @@ export default function GrammarPage() {
           {/* Split Pane: Subcategories Topics (Left) vs Detail Items (Right) */}
           <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[400px]">
             {/* Left pane: Topics / Subcategories */}
-            <div className="w-full md:w-64 shrink-0 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 shadow-2xs">
+            <Card className="w-full md:w-64 shrink-0 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 shadow-2xs bg-white dark:bg-zinc-900">
               <h2 className="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-2">
                 Chủ đề ngữ pháp
               </h2>
@@ -131,7 +136,7 @@ export default function GrammarPage() {
                           setSelectedTopicId(topic.id);
                           setSelectedTopicTitle(topic.title);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none bg-transparent ${
                           isActive
                             ? "bg-violet-50 text-violet-700 dark:bg-violet-950/20 dark:text-violet-400"
                             : "text-zinc-650 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800"
@@ -147,10 +152,10 @@ export default function GrammarPage() {
                   </p>
                 )}
               </div>
-            </div>
+            </Card>
 
             {/* Right pane: Detailed list of Grammar items */}
-            <div className="flex-1 min-w-0 flex flex-col bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-6 shadow-2xs">
+            <Card className="flex-1 min-w-0 flex flex-col border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-6 shadow-2xs bg-white dark:bg-zinc-900">
               {itemsLoading ? (
                 <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-600 border-t-transparent"></div>
@@ -179,9 +184,9 @@ export default function GrammarPage() {
                             <h3 className="text-md font-extrabold text-violet-900 dark:text-violet-400 leading-snug">
                               {item.title}
                             </h3>
-                            <span className="text-[10px] bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 font-black px-2 py-0.5 rounded-full select-none shrink-0">
+                            <Badge className="bg-violet-150 text-violet-700 dark:bg-violet-900 dark:text-violet-300 font-black px-2 py-0.5 rounded-full select-none border-none text-[10px]">
                               Ngữ pháp
-                            </span>
+                            </Badge>
                           </div>
 
                           {item.description && (
@@ -202,19 +207,19 @@ export default function GrammarPage() {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                      <span className="text-3xl">📭</span>
+                      <PackageOpen className="w-10 h-10 text-zinc-300 dark:text-zinc-700" />
                       <p className="mt-2 text-xs font-bold text-zinc-400">Không tìm thấy nội dung ngữ pháp cho chủ đề này.</p>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
-                  <span className="text-4xl">📝</span>
+                  <FileText className="w-12 h-12 text-zinc-300 dark:text-zinc-800" />
                   <p className="mt-2 text-xs font-bold text-zinc-400">Vui lòng chọn một chủ đề bên trái để xem nội dung.</p>
                 </div>
               )}
+            </Card>
           </div>
-        </div>
 
       {/* Embedded styles for rendered HTML */}
       <style jsx global>{`

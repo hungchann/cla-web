@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getLatestBooks, getTrendingBooks, getRandomBooks } from "@/api/stories";
 import { getAssetUrl } from "@/lib/utils/assets";
 import { PageHeader } from "@/components/PageHeader";
+import { Lightbulb, Library } from "lucide-react";
 
 export default function StoriesPage() {
   // Query books data
@@ -32,7 +33,7 @@ export default function StoriesPage() {
       <PageHeader
         title="Đọc Truyện & Sách Song Ngữ"
         description="Nâng cao vốn từ vựng và ngữ cảnh ngữ pháp thông qua việc đọc sách dịch đối chiếu tiếng Trung - Việt. Tích hợp lưu trữ tiến trình tự động."
-        icon="📚"
+        icon={<Library className="w-7 h-7" />}
       />
 
           {isLoading ? (
@@ -73,13 +74,13 @@ export default function StoriesPage() {
                                 </span>
                               </div>
                             )}
-                            <div className="absolute top-2 right-2 bg-amber-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                            <div className="absolute top-2 right-2 bg-amber-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
                               Trending
                             </div>
                           </div>
                           
                           <div className="px-1">
-                            <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 line-clamp-1 group-hover:text-amber-600 transition-colors">
+                            <h4 className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-sm tracking-tight">
                               {book.title}
                             </h4>
                             <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
@@ -127,7 +128,7 @@ export default function StoriesPage() {
                           </div>
                           
                           <div className="px-1">
-                            <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 line-clamp-1 group-hover:text-amber-600 transition-colors">
+                            <h4 className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-sm tracking-tight">
                               {book.title}
                             </h4>
                             <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
@@ -145,7 +146,7 @@ export default function StoriesPage() {
               {recommendedBooks && recommendedBooks.length > 0 && (
                 <section className="space-y-4">
                   <h3 className="text-md font-extrabold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                    💡 Có Thể Bạn Sẽ Thích
+                    <Lightbulb className="w-5 h-5 inline mr-1.5" /> Có Thể Bạn Sẽ Thích
                   </h3>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

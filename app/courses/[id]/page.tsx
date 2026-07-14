@@ -3,7 +3,12 @@
 import Image from "next/image";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 const syllabusLessons = [
   {
@@ -52,16 +57,19 @@ export default function CourseDetailPage({
   }
 
   return (
-    <div className="flex flex-col flex-1 pb-16 bg-[#fafafa] -m-4 sm:-m-6 lg:-m-8">
+    <div className="flex flex-col flex-1 pb-16 bg-transparent -m-4 sm:-m-6 lg:-m-8">
       <main className="max-w-5xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
         <BackButton href="/courses" label="Danh sách khóa học" />
+        
         {/* Info Banner */}
-        <section className="bg-white rounded-2xl border-2 border-[#f59e0b] overflow-hidden flex flex-col md:flex-row shadow-xs">
-          <div className="p-6 md:p-8 flex-1 space-y-4">
-            <h1 className="text-xl md:text-2xl font-black text-zinc-900 leading-snug">
+        <Card className="relative overflow-hidden bg-gradient-to-br from-white to-zinc-50/50 dark:from-zinc-900 dark:to-zinc-950 rounded-3xl border-zinc-200/60 dark:border-zinc-800 flex flex-col md:flex-row shadow-sm">
+          <div className="absolute right-0 top-0 -mr-16 -mt-16 w-44 h-44 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+          
+          <div className="p-6 md:p-8 flex-1 space-y-4 z-10">
+            <h1 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white leading-snug">
               {courseTitle}
             </h1>
-            <ul className="space-y-3.5 pl-5 list-disc text-sm md:text-base text-gray-700 font-medium">
+            <ul className="space-y-3 pl-5 list-disc text-sm md:text-base text-zinc-700 dark:text-zinc-300 font-semibold leading-relaxed">
               <li>Dành cho người mới bắt đầu học Tiếng Trung hoặc học nhưng bị mất gốc</li>
               <li>
                 Muốn học giao tiếp Tiếng Trung để đi du lịch, công tác nhưng không có nhiều thời
@@ -70,7 +78,7 @@ export default function CourseDetailPage({
               <li>Học các chủ điểm giao tiếp từ con số 0</li>
             </ul>
           </div>
-          <div className="relative w-full md:w-80 h-52 md:h-auto bg-gray-50 shrink-0 border-t md:border-t-0 md:border-l border-gray-100">
+          <div className="relative w-full md:w-80 h-52 md:h-auto bg-zinc-50 dark:bg-zinc-900 shrink-0 border-t md:border-t-0 md:border-l border-zinc-150 dark:border-zinc-800">
             <Image
               src="/images/study_tablet.png"
               alt="Syllabus Study Desk"
@@ -78,49 +86,50 @@ export default function CourseDetailPage({
               className="object-cover"
             />
           </div>
-        </section>
+        </Card>
 
         {/* Tabs */}
-        <section className="border-b border-gray-200">
-          <div className="flex gap-8 text-sm md:text-base font-bold">
-            <button
-              onClick={() => setActiveTab("info")}
-              className={`pb-3 px-1 transition-colors cursor-pointer ${
-                activeTab === "info"
-                  ? "border-b-3 border-[#f59e0b] text-[#f59e0b]"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              Thông tin khóa học
-            </button>
-            <button
-              onClick={() => setActiveTab("syllabus")}
-              className={`pb-3 px-1 transition-colors cursor-pointer ${
-                activeTab === "syllabus"
-                  ? "border-b-3 border-[#f59e0b] text-[#f59e0b]"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              Nội dung bài học
-            </button>
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`pb-3 px-1 transition-colors cursor-pointer ${
-                activeTab === "reviews"
-                  ? "border-b-3 border-[#f59e0b] text-[#f59e0b]"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              Đánh giá của học viên
-            </button>
-          </div>
+        <section className="border-b border-zinc-200 dark:border-zinc-800 flex gap-4 md:gap-8 overflow-x-auto no-scrollbar">
+          <Button
+            variant="ghost"
+            onClick={() => setActiveTab("info")}
+            className={`rounded-none border-b-2 font-extrabold px-1 pb-3 pt-0 h-auto hover:bg-transparent ${
+              activeTab === "info"
+                ? "border-amber-500 text-amber-600 dark:text-amber-500"
+                : "border-transparent text-zinc-400 dark:text-zinc-500 hover:text-zinc-750 dark:hover:text-zinc-300"
+            }`}
+          >
+            Thông tin khóa học
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setActiveTab("syllabus")}
+            className={`rounded-none border-b-2 font-extrabold px-1 pb-3 pt-0 h-auto hover:bg-transparent ${
+              activeTab === "syllabus"
+                ? "border-amber-500 text-amber-600 dark:text-amber-500"
+                : "border-transparent text-zinc-400 dark:text-zinc-500 hover:text-zinc-750 dark:hover:text-zinc-300"
+            }`}
+          >
+            Nội dung bài học
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setActiveTab("reviews")}
+            className={`rounded-none border-b-2 font-extrabold px-1 pb-3 pt-0 h-auto hover:bg-transparent ${
+              activeTab === "reviews"
+                ? "border-amber-500 text-amber-600 dark:text-amber-500"
+                : "border-transparent text-zinc-400 dark:text-zinc-500 hover:text-zinc-750 dark:hover:text-zinc-300"
+            }`}
+          >
+            Đánh giá của học viên
+          </Button>
         </section>
 
         {/* Tab content */}
         {activeTab === "syllabus" && (
           <section className="space-y-8">
-            <div className="bg-white rounded-xl border border-gray-100 p-6 flex flex-col md:flex-row gap-6 shadow-xs">
-              <div className="relative w-full md:w-56 h-36 rounded-lg overflow-hidden shrink-0">
+            <Card className="bg-white dark:bg-zinc-900 rounded-2xl border-zinc-200/60 dark:border-zinc-800 p-6 flex flex-col md:flex-row gap-6 shadow-2xs">
+              <div className="relative w-full md:w-56 h-36 rounded-xl overflow-hidden shrink-0 bg-zinc-100 dark:bg-zinc-800">
                 <Image
                   src="/images/student_cafe.png"
                   alt="Student studying in Cafe"
@@ -129,8 +138,8 @@ export default function CourseDetailPage({
                 />
               </div>
               <div className="space-y-3 flex-1">
-                <h3 className="font-extrabold text-gray-900 text-lg">Nội dung bài học</h3>
-                <p className="text-gray-600 text-sm md:text-base leading-relaxed font-medium">
+                <h3 className="font-black text-zinc-900 dark:text-white text-lg">Nội dung bài học</h3>
+                <p className="text-zinc-650 dark:text-zinc-400 text-sm md:text-base leading-relaxed font-semibold">
                   Khóa học hướng đến đối tượng người Việt mới bắt đầu học tiếng Trung.
                   <br />
                   Gồm 15 bài học chính thức.
@@ -140,74 +149,73 @@ export default function CourseDetailPage({
                   sung.
                 </p>
               </div>
-            </div>
+            </Card>
 
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-amber-50 p-4 rounded-xl border border-amber-100">
-              <div className="w-full md:w-1/2 space-y-1.5">
-                <div className="flex justify-between text-xs font-bold text-amber-800">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-amber-50/50 dark:bg-amber-950/10 p-5 rounded-2xl border border-amber-200/50 dark:border-amber-900/30 shadow-3xs">
+              <div className="w-full md:w-1/2 space-y-2">
+                <div className="flex justify-between text-xs font-black text-amber-700 dark:text-amber-400">
                   <span>Tiến độ học tập</span>
                   <span>40%</span>
                 </div>
-                <div className="w-full bg-amber-200 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-[#f59e0b] h-full rounded-full" style={{ width: "40%" }} />
-                </div>
+                <Progress value={40} className="h-2.5 bg-amber-100 dark:bg-amber-950 [&>div]:bg-amber-500" />
               </div>
-              <button
+              <Button
                 onClick={() => handleSubtopicClick("learn-video-vocab")}
-                className="bg-[#f59e0b] text-white hover:bg-amber-600 font-bold px-6 py-2.5 rounded-full text-sm shadow-xs transition-colors cursor-pointer active:scale-95"
+                className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-6 py-5 rounded-2xl text-sm shadow-xs transition-colors cursor-pointer active:scale-95 shadow-amber-500/10 flex items-center gap-2"
               >
-                Học tiếp =&gt;
-              </button>
+                Học tiếp <ArrowRight className="w-4 h-4" />
+              </Button>
             </div>
 
             <div className="space-y-4">
               {syllabusLessons.map((lesson) => {
                 const isExpanded = !!expandedLessons[lesson.num];
                 return (
-                  <div
+                  <Card
                     key={lesson.num}
-                    className="bg-white rounded-xl border border-gray-100 shadow-2xs overflow-hidden"
+                    className="bg-white dark:bg-zinc-900 rounded-2xl border-zinc-200/60 dark:border-zinc-800 shadow-2xs overflow-hidden"
                   >
                     <button
                       onClick={() => toggleLesson(lesson.num)}
-                      className="w-full flex items-center justify-between p-4.5 font-extrabold text-gray-900 hover:bg-gray-50 transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center justify-between p-5 font-black text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all text-left cursor-pointer border-none bg-transparent"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-[15px]">{lesson.title}</span>
                         {lesson.tag && (
-                          <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
+                          <Badge variant="outline" className="text-[10px] bg-emerald-500/5 text-emerald-600 dark:text-emerald-450 border-emerald-500/20 px-2">
                             {lesson.tag}
-                          </span>
+                          </Badge>
                         )}
                       </div>
-                      <span className="text-gray-500 font-mono text-lg">
-                        {isExpanded ? "▼" : "▶"}
-                      </span>
+                      <div className="text-zinc-400 dark:text-zinc-500">
+                        {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                      </div>
                     </button>
 
                     {isExpanded && (
-                      <div className="px-6 pb-6 pt-2 border-t border-gray-50 space-y-2">
+                      <div className="px-6 pb-6 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2">
                         {lesson.subtopics.length > 0 ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             {lesson.subtopics.map((sub) => (
-                              <button
+                              <Button
                                 key={sub.id}
+                                variant="outline"
                                 onClick={() => handleSubtopicClick(sub.id)}
-                                className="flex items-center justify-between p-3.5 bg-[#fff8e6] hover:bg-[#ffe082] text-gray-900 hover:text-amber-950 font-bold rounded-lg transition-all duration-200 border border-amber-100 cursor-pointer text-left w-full"
+                                className="flex justify-between p-3.5 h-auto text-zinc-800 dark:text-zinc-200 hover:text-amber-900 dark:hover:text-amber-400 font-bold rounded-2xl border-amber-500/20 hover:border-amber-500/40 hover:bg-amber-500/5 dark:hover:bg-amber-500/10 cursor-pointer w-full text-left"
                               >
                                 <span className="text-xs">{sub.name}</span>
-                                <span className="text-amber-600 text-xs font-mono">&rarr;</span>
-                              </button>
+                                <ArrowRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" />
+                              </Button>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-400 italic">
+                          <p className="text-sm text-zinc-400 dark:text-zinc-500 italic font-semibold">
                             Bài học chưa được mở khóa hoặc đang cập nhật nội dung.
                           </p>
                         )}
                       </div>
                     )}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
@@ -215,9 +223,9 @@ export default function CourseDetailPage({
         )}
 
         {activeTab === "info" && (
-          <section className="bg-white rounded-xl p-8 border border-gray-100 text-gray-600 space-y-4">
-            <h3 className="font-extrabold text-gray-900 text-lg">Mô tả chi tiết khóa học</h3>
-            <p className="text-sm leading-relaxed">
+          <section className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-200/60 dark:border-zinc-800 text-zinc-600 dark:text-zinc-450 space-y-4 shadow-2xs">
+            <h3 className="font-black text-zinc-900 dark:text-white text-lg">Mô tả chi tiết khóa học</h3>
+            <p className="text-sm leading-relaxed font-semibold">
               Đây là khóa học đàm thoại toàn diện được thiết kế đặc biệt cho người Việt Nam học
               tiếng Trung từ cơ bản. Các nội dung bám sát thực tế cuộc sống, công sở và đi lại.
             </p>
@@ -225,14 +233,14 @@ export default function CourseDetailPage({
         )}
 
         {activeTab === "reviews" && (
-          <section className="bg-white rounded-xl p-8 border border-gray-100 space-y-4">
-            <h3 className="font-extrabold text-gray-900 text-lg">Đánh giá tiêu biểu</h3>
-            <div className="border-l-4 border-amber-400 pl-4 space-y-1">
-              <p className="text-sm italic text-gray-600">
+          <section className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-200/60 dark:border-zinc-800 space-y-4 shadow-2xs">
+            <h3 className="font-black text-zinc-900 dark:text-white text-lg">Đánh giá tiêu biểu</h3>
+            <div className="border-l-4 border-amber-500 pl-4 space-y-1">
+              <p className="text-sm italic text-zinc-650 dark:text-zinc-350 font-semibold leading-relaxed">
                 &quot;Khóa học rất thực tế, bài học từ vựng có video ngắn rất dễ nhớ. Phần luyện nói
                 chấm điểm pinyin cực kỳ hay!&quot;
               </p>
-              <span className="text-xs text-gray-400 font-bold">- Nguyễn Văn A (Học viên)</span>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-bold">- Nguyễn Văn A (Học viên)</span>
             </div>
           </section>
         )}

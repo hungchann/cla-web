@@ -11,6 +11,7 @@ import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
 import { BackButton } from "@/components/BackButton";
 import { PremiumGate } from "@/components/PremiumGate";
 import { usePremium } from "@/lib/hooks/usePremium";
+import { Lightbulb } from "lucide-react";
 
 // Mock video data chi tiết
 const MOCK_VIDEO_DETAIL = {
@@ -368,7 +369,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-30 flex items-center justify-center p-6">
                 <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-amber-500">
-                    💡 Trắc Nghiệm Dừng Video
+                    <Lightbulb className="w-5 h-5 inline mr-1.5 text-amber-500" /> Trắc Nghiệm Dừng Video
                   </span>
 
                   <div>

@@ -157,7 +157,7 @@ export default function SpeakingPage() {
       <PageHeader
         title="AI Luyện Nói Phản Xạ"
         description="Cải thiện khả năng phản xạ và phát âm tiếng Trung của bạn. Nói chuyện trực tiếp với giáo viên AI, nhận phân tích so sánh độ chính xác từng từ."
-        icon={<Mic className="w-7 h-7 text-rose-500" />}
+        icon={<Mic className="w-7 h-7" />}
       />
 
       {/* 1. TOPICS GRID VIEW */}
@@ -178,7 +178,7 @@ export default function SpeakingPage() {
                 <Card
                   key={topic.id}
                   onClick={() => handleTopicSelect(topic)}
-                  className="group cursor-pointer overflow-hidden border-zinc-200/60 dark:border-zinc-800 hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-full bg-white dark:bg-zinc-900"
+                  className="group cursor-pointer overflow-hidden border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 flex flex-col h-full hover:-translate-y-1"
                 >
                   <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -187,20 +187,20 @@ export default function SpeakingPage() {
                       alt={topic.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <Badge className="absolute bottom-2 left-2 bg-rose-600 hover:bg-rose-600 text-white font-extrabold text-[10px] rounded-md px-2 py-0.5 shadow-sm border-none">
+                    <Badge className="absolute bottom-2 left-2 rounded-full bg-amber-500 text-white font-bold hover:bg-amber-600 border-none px-3 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
                       {topic.level || "HSK"}
                     </Badge>
                   </div>
                   <CardContent className="p-5 flex-1 flex flex-col justify-between gap-4">
                     <div className="space-y-2">
-                      <CardTitle className="text-base font-bold text-zinc-900 dark:text-white line-clamp-1 group-hover:text-rose-600 transition-colors">
+                      <CardTitle className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-base tracking-tight">
                         {topic.title}
                       </CardTitle>
                       <CardDescription className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                         {topic.description}
                       </CardDescription>
                     </div>
-                    <Button variant="outline" className="w-full text-xs font-bold text-rose-600 hover:text-rose-700 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl cursor-pointer">
+                    <Button variant="outline" className="w-full text-xs font-bold text-amber-600 hover:text-amber-700 border-amber-200 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded-xl cursor-pointer">
                       Khám phá tình huống
                     </Button>
                   </CardContent>
@@ -223,7 +223,7 @@ export default function SpeakingPage() {
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Quay lại danh sách chủ đề
             </Button>
-            <Badge variant="outline" className="text-xs font-black text-rose-600 bg-rose-50 dark:bg-rose-950/20 px-3 py-1 rounded-full uppercase border-rose-200">
+            <Badge variant="outline" className="text-xs font-black text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-3 py-1 rounded-full uppercase border-amber-200">
               {selectedTopic.title}
             </Badge>
           </div>
@@ -240,7 +240,7 @@ export default function SpeakingPage() {
                 <Card
                   key={category.id}
                   onClick={() => handleCategorySelect(category)}
-                  className="group cursor-pointer border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-5 flex items-start gap-4 hover:shadow-md hover:border-rose-300 dark:hover:border-rose-900 transition-all duration-200 bg-white dark:bg-zinc-900"
+                  className="group cursor-pointer border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl p-5 flex items-start gap-4 transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900"
                 >
                   <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-zinc-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}

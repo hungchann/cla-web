@@ -8,6 +8,9 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPills } from "@/components/ui/filter-pills";
 import { Pagination } from "@/components/ui/pagination";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BookOpen, ArrowRight, AlertCircle, PackageOpen } from "lucide-react";
 
 const LIMIT = 6;
 
@@ -38,8 +41,6 @@ export default function BilingualListPage() {
   const totalCount = data?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / LIMIT) || 1;
 
-
-
   // Reset page when filter changes
   const handleLevelChange = (level: string) => {
     setSelectedLevel(level);
@@ -51,7 +52,7 @@ export default function BilingualListPage() {
       <PageHeader
         title="Đọc Song Ngữ"
         description="Nâng cao khả năng đọc dịch, củng cố vốn từ vựng HSK qua các chủ đề hấp dẫn. Nhấn vào chữ Hán bất kỳ để học pinyin & nghĩa."
-        icon="📖"
+        icon={<BookOpen className="w-7 h-7 text-amber-600" />}
       />
 
       <FilterPills
@@ -70,8 +71,8 @@ export default function BilingualListPage() {
       {/* Error State */}
       {!isLoading && error && displayItems.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center flex-1">
-          <span className="text-4xl">⚠️</span>
-          <p className="mt-2 text-zinc-500 font-semibold">Không thể tải dữ liệu. Vui lòng thử lại sau.</p>
+          <AlertCircle className="w-10 h-10 text-rose-500" />
+          <p className="mt-2 text-zinc-500 dark:text-zinc-400 font-semibold">Không thể tải dữ liệu. Vui lòng thử lại sau.</p>
         </div>
       )}
 
@@ -79,15 +80,15 @@ export default function BilingualListPage() {
       {!isLoading && displayItems.length > 0 && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {displayItems.map((item: any) => (
-            <article
+            <Card
               key={item.id}
-              className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+              className="group relative flex flex-col justify-between overflow-hidden border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 hover:-translate-y-1"
             >
               {/* Image Thumbnail */}
-              <div className="relative aspect-video w-full overflow-hidden bg-zinc-100">
+              <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                 {/* Fallback gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-red-500/20 flex items-center justify-center font-bold text-4xl text-zinc-300 select-none group-hover:scale-105 transition-transform duration-500">
-                  📖
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-red-500/20 flex items-center justify-center font-bold text-4xl text-zinc-300 dark:text-zinc-700 select-none group-hover:scale-105 transition-transform duration-500">
+                  <BookOpen className="w-10 h-10 text-amber-500" />
                 </div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -103,48 +104,47 @@ export default function BilingualListPage() {
                 />
                 
                 {/* HSK Level badge */}
-                <span className="absolute left-3 bottom-3 inline-flex items-center rounded-md bg-amber-600 px-2.5 py-1 text-xs font-bold text-white shadow-md">
+                <Badge className="absolute left-3 bottom-3 rounded-full bg-amber-500 text-white font-bold hover:bg-amber-600 border-none px-3 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
                   {item.level || "HSK"}
-                </span>
+                </Badge>
 
                 {/* Genre ribbon */}
                 {item.genre?.some((g: any) => (typeof g === "string" && g === "Văn hóa") || (g?.genre_of_section_id?.title === "Văn hóa")) && (
-                  <span className="absolute top-2 left-2 text-xs font-bold bg-amber-500 text-zinc-900 px-2 py-0.5 rounded shadow-sm z-10">
+                  <Badge className="absolute top-2 left-2 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-0.5 text-[10px] uppercase tracking-wider border-none shadow-sm z-10">
                     Văn hóa
-                  </span>
+                  </Badge>
                 )}
               </div>
 
               {/* Card Body */}
               <div className="flex flex-1 flex-col justify-between p-5">
                 <div className="flex flex-col gap-2">
-                  <h3 className="text-lg font-bold text-zinc-900 line-clamp-1 group-hover:text-amber-600 transition-colors">
+                  <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-base tracking-tight">
                     {item.titleCN}
                   </h3>
-                  <p className="text-sm font-medium text-zinc-600 line-clamp-2">
+                  <p className="text-sm font-semibold text-zinc-550 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                     {item.titleVN}
                   </p>
                 </div>
-                <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-4">
-                  <span className="text-xs text-zinc-400">
+                <div className="mt-5 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/80 pt-4">
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500 font-bold">
                     {new Date(item.date).toLocaleDateString("vi-VN", {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
+                      timeZone: "UTC"
                     })}
                   </span>
                   <Link
                     href={`/bilingual/${item.id}`}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700"
+                    className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400"
                   >
                     Xem chi tiết
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="h-3 w-3">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                    </svg>
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </div>
-            </article>
+            </Card>
           ))}
         </div>
       )}
@@ -152,7 +152,7 @@ export default function BilingualListPage() {
       {/* No Items Found */}
       {!isLoading && !error && displayItems.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center flex-1">
-          <span className="text-4xl">📭</span>
+          <PackageOpen className="w-12 h-12 text-zinc-300 dark:text-zinc-700" />
           <p className="mt-2 text-zinc-500">Không tìm thấy bài đọc nào phù hợp với bộ lọc.</p>
         </div>
       )}

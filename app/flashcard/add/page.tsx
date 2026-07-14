@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lightbulb } from "lucide-react";
 
 // Mock Dictionary for autocomplete
 const DICTIONARY_DB: Record<string, {
@@ -92,7 +93,7 @@ export default function AddWordPage() {
           <div className="md:col-span-1 space-y-4 pr-2">
             <div className="bg-amber-50/50 border border-amber-200 p-4 rounded-xl text-xs leading-relaxed text-amber-900 font-bold space-y-3 shadow-2xs">
               <div className="text-sm font-bold flex items-center gap-1 text-amber-700">
-                💡 Note
+                <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Note
               </div>
               <p className="font-semibold text-gray-600">
                 Note: sau khi người dùng gõ thêm từ mới xong, các phần bên dưới sẽ tự động hiện ra dựa theo file từ điển có sẵn, sau đó người dùng được tự do chỉnh sửa thông tin.
