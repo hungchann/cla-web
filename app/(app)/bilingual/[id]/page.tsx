@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { PageContainer } from "@/components/PageContainer";
 
 const MOCK_DICTIONARY: Record<string, { pinyin: string; meaning: string }> = {
     "面对": { pinyin: "miànduì", meaning: "Đối mặt, đối diện" },
@@ -220,8 +221,7 @@ export default function BilingualDetailPage({
     ];
 
     return (
-        <div className="flex-1 flex flex-col gap-6 bg-transparent">
-            <div className="p-6 md:p-8 space-y-6 max-w-3xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
+        <PageContainer maxWidth="narrow" className="gap-6">
                 <BackButton href="/bilingual" label="Danh sách bài đọc" />
 
                 {/* Header titles */}
@@ -639,8 +639,8 @@ export default function BilingualDetailPage({
 
                                             {quizSelected && (
                                                 <div className={`p-4 rounded-2xl border font-semibold text-xs leading-relaxed space-y-2 ${quizSelected === "B"
-                                                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-450"
-                                                        : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-455"
+                                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-450"
+                                                    : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-455"
                                                     }`}>
                                                     <div className="flex items-center gap-1.5 font-bold text-sm">
                                                         {quizSelected === "B" ? (
@@ -715,6 +715,6 @@ export default function BilingualDetailPage({
                     </div>
 
                 </div>
-            </div>
-            );
+            </PageContainer>
+    );
 }

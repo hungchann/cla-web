@@ -14,7 +14,7 @@ const primaryNavigation = [
   { title: "AI luyện nói", href: "/speaking" },
   { title: "Từ vựng", href: "/flashcard" },
   { title: "Ngữ pháp", href: "/grammar" },
-  { title: "Bài tập", href: "/video" },
+  { title: "Video", href: "/video" },
 ]
 
 function isActiveRoute(pathname: string, href: string) {
@@ -63,14 +63,7 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="flex flex-1 items-center justify-end lg:flex-none">
-          <Button
-            asChild
-            className="h-10 rounded-xl bg-amber-500 px-4 text-sm font-black text-amber-950 shadow-sm shadow-amber-500/25 hover:bg-amber-400 sm:px-5"
-          >
-            <Link href="/sign-in">Đăng nhập</Link>
-          </Button>
-        </div>
+        <div className="flex flex-1 items-center justify-end lg:flex-none" />
       </div>
     </header>
   )

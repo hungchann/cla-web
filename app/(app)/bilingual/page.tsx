@@ -12,6 +12,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, ArrowRight, AlertCircle, PackageOpen } from "lucide-react";
+import { PageContainer } from "@/components/PageContainer";
 
 const LIMIT = 6;
 
@@ -54,7 +55,7 @@ export default function BilingualListPage() {
     };
 
     return (
-        <div className="flex-1 flex flex-col gap-7">
+        <PageContainer className="gap-7">
             <PageHeader
                 title="Đọc Song Ngữ"
                 description="Nâng cao khả năng đọc dịch, củng cố vốn từ vựng HSK qua các chủ đề hấp dẫn. Nhấn vào chữ Hán bất kỳ để học pinyin & nghĩa."
@@ -169,6 +170,6 @@ export default function BilingualListPage() {
                 onPageChange={setPage}
                 className="mt-4 pb-6"
             />
-        </div>
+        </PageContainer>
     );
 }

@@ -161,7 +161,7 @@ const routeSidebars: Record<string, RouteSidebar> = {
     ],
   },
   "/video": {
-    label: "Bài tập",
+    label: "Video",
     groups: [
       {
         title: "Video luyện tập",
@@ -227,7 +227,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       collapsible="offcanvas"
-      className="app-submenu-sidebar border-r-0 p-3"
+      className="app-submenu-sidebar border-r-0"
       {...props}
     >
       <SidebarHeader className="px-3 pb-4 pt-4">

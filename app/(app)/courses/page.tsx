@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageContainer } from "@/components/PageContainer";
 
 const featuredCourses = [
     {
@@ -86,7 +87,7 @@ export default function CoursesPage() {
     const showTraditional = selectedScript !== "simplified";
 
     return (
-        <div className="flex-1 flex flex-col gap-9">
+        <PageContainer className="gap-9">
             <PageHeader
                 title="Khóa Học Tiếng Trung"
                 description="Hệ thống khóa học bài bản từ Giản thể đến Phồn thể. Chọn khóa học phù hợp với mục tiêu của bạn."
@@ -188,6 +189,6 @@ export default function CoursesPage() {
                     )}
                 </section>
             )}
-        </div>
+        </PageContainer>
     );
 }
