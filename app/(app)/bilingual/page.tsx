@@ -55,7 +55,7 @@ export default function BilingualListPage() {
     };
 
     return (
-        <PageContainer className="gap-7">
+        <PageContainer>
             <PageHeader
                 title="Đọc Song Ngữ"
                 description="Nâng cao khả năng đọc dịch, củng cố vốn từ vựng HSK qua các chủ đề hấp dẫn. Nhấn vào chữ Hán bất kỳ để học pinyin & nghĩa."
@@ -89,7 +89,7 @@ export default function BilingualListPage() {
                     {displayItems.map((item: any) => (
                         <Card
                             key={item.id}
-                            className="group relative flex flex-col justify-between overflow-hidden border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 hover:-translate-y-1"
+                            className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900"
                         >
                             {/* Image Thumbnail */}
                             <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">

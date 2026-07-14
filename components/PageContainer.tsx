@@ -14,7 +14,7 @@ export function PageContainer({
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 flex-1 flex-col px-4 py-7 sm:px-6 lg:px-8 lg:py-9",
+        "flex w-full min-w-0 flex-1 flex-col gap-9 px-4 py-7 sm:px-6 lg:px-8 lg:py-9",
         maxWidth === "default" && "mx-auto max-w-[1180px]",
         maxWidth === "narrow" && "mx-auto max-w-3xl pb-20",
         maxWidth === "full" && "max-w-none",

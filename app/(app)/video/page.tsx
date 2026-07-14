@@ -8,6 +8,7 @@ import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPills } from "@/components/ui/filter-pills";
 import { Video } from "lucide-react";
+import { PageContainer } from "@/components/PageContainer";
 
 // Mock video data để phục vụ demo khi API rỗng
 const MOCK_VIDEOS = [
@@ -90,7 +91,7 @@ export default function VideoListPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col gap-6">
+    <PageContainer>
       <PageHeader
         title="Học Tiếng Trung Qua Video"
         description="Xem các video bài giảng chất lượng với phụ đề chạy chữ song ngữ. Trả lời câu hỏi trắc nghiệm tương tác để ôn tập từ vựng ngay trong quá trình xem."
@@ -137,7 +138,7 @@ export default function VideoListPage() {
             return (
               <article
                 key={video.id}
-                className="group relative flex flex-col justify-between overflow-hidden border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 hover:-translate-y-1"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900"
               >
                 {/* Thumbnail Youtube */}
                 <div className="relative aspect-video w-full overflow-hidden bg-zinc-150 dark:bg-zinc-800">
@@ -148,7 +149,7 @@ export default function VideoListPage() {
                     alt={video.title_trans}
                     className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute bottom-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-lg transition-transform group-hover:scale-110">
+                  <div className="absolute bottom-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg transition-transform group-hover:scale-110">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5">
                       <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
                     </svg>
@@ -184,6 +185,6 @@ export default function VideoListPage() {
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

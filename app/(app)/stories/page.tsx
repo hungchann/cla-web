@@ -6,6 +6,7 @@ import { getLatestBooks, getTrendingBooks, getRandomBooks } from "@/api/stories"
 import { getAssetUrl } from "@/lib/utils/assets";
 import { PageHeader } from "@/components/PageHeader";
 import { Lightbulb, Library } from "lucide-react";
+import { PageContainer } from "@/components/PageContainer";
 
 export default function StoriesPage() {
   // Query books data
@@ -29,7 +30,7 @@ export default function StoriesPage() {
   const isLoading = latestLoading || trendingLoading || recommendedLoading;
 
   return (
-    <div className="flex-1 flex flex-col gap-6">
+    <PageContainer>
       <PageHeader
         title="Đọc Truyện & Sách Song Ngữ"
         description="Nâng cao vốn từ vựng và ngữ cảnh ngữ pháp thông qua việc đọc sách dịch đối chiếu tiếng Trung - Việt. Tích hợp lưu trữ tiến trình tự động."
@@ -59,7 +60,7 @@ export default function StoriesPage() {
                           href={`/stories/${book.id}`}
                           className="group flex flex-col gap-2 cursor-pointer"
                         >
-                          <div className="aspect-[3/4] w-full rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 relative shadow-xs group-hover:shadow-md group-hover:scale-[1.02] transition-all">
+                          <div className="aspect-[3/4] w-full rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-amber-950/10 dark:border-zinc-800/50 relative shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10">
                             {cover ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -110,7 +111,7 @@ export default function StoriesPage() {
                           href={`/stories/${book.id}`}
                           className="group flex flex-col gap-2 cursor-pointer"
                         >
-                          <div className="aspect-[3/4] w-full rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 relative shadow-xs group-hover:shadow-md group-hover:scale-[1.02] transition-all">
+                          <div className="aspect-[3/4] w-full rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-amber-950/10 dark:border-zinc-800/50 relative shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10">
                             {cover ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -119,8 +120,8 @@ export default function StoriesPage() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950/20 dark:to-indigo-950/20 flex items-center justify-center p-4 text-center">
-                                <span className="text-xs font-extrabold text-blue-800 dark:text-blue-500 line-clamp-3">
+                              <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center p-4 text-center">
+                                <span className="text-xs font-extrabold text-zinc-600 dark:text-zinc-400 line-clamp-3">
                                   {book.title}
                                 </span>
                               </div>
@@ -158,7 +159,7 @@ export default function StoriesPage() {
                           href={`/stories/${book.id}`}
                           className="group flex flex-col gap-2 cursor-pointer"
                         >
-                          <div className="aspect-[3/4] w-full rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 relative shadow-xs group-hover:shadow-md group-hover:scale-[1.02] transition-all">
+                          <div className="aspect-[3/4] w-full rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-amber-950/10 dark:border-zinc-800/50 relative shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10">
                             {cover ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -167,8 +168,8 @@ export default function StoriesPage() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-950/20 dark:to-teal-950/20 flex items-center justify-center p-4 text-center">
-                                <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-500 line-clamp-3">
+                              <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center p-4 text-center">
+                                <span className="text-xs font-extrabold text-zinc-600 dark:text-zinc-400 line-clamp-3">
                                   {book.title}
                                 </span>
                               </div>
@@ -191,6 +192,6 @@ export default function StoriesPage() {
               )}
             </>
           )}
-    </div>
+    </PageContainer>
   );
 }

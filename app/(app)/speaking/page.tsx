@@ -8,9 +8,10 @@ import { speakingApi } from "@/api/speaking";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
 import { useRouter } from "next/navigation";
 import { getAssetUrl } from "@/lib/utils/assets";
+import { PageContainer } from "@/components/PageContainer";
 
 // Shadcn UI Components
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +35,6 @@ import {
     RefreshCw,
     Home,
     User,
-    CheckCircle2,
     Flame,
     Target
 } from "lucide-react";
@@ -148,7 +148,7 @@ export default function SpeakingPage() {
     };
 
     return (
-        <div className="flex-1 flex flex-col gap-6">
+        <PageContainer>
             <PremiumGate
                 isOpen={!!premiumModalVisible}
                 onClose={() => setPremiumModalVisible(false)}
@@ -178,7 +178,7 @@ export default function SpeakingPage() {
                                 <Card
                                     key={topic.id}
                                     onClick={() => handleTopicSelect(topic)}
-                                    className="group cursor-pointer overflow-hidden border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 flex flex-col h-full hover:-translate-y-1"
+                                    className="group cursor-pointer overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900 flex flex-col h-full"
                                 >
                                     <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -240,7 +240,7 @@ export default function SpeakingPage() {
                                 <Card
                                     key={category.id}
                                     onClick={() => handleCategorySelect(category)}
-                                    className="group cursor-pointer border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl p-5 flex items-start gap-4 transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900"
+                                    className="group cursor-pointer rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900 p-5 flex items-start gap-4"
                                 >
                                     <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-zinc-100">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -251,13 +251,13 @@ export default function SpeakingPage() {
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0 space-y-1">
-                                        <CardTitle className="text-sm font-extrabold text-zinc-900 dark:text-white line-clamp-1 group-hover:text-rose-600 transition-colors">
+                                        <CardTitle className="text-sm font-extrabold text-zinc-900 dark:text-white line-clamp-1 group-hover:text-amber-600 transition-colors">
                                             {category.title}
                                         </CardTitle>
                                         <CardDescription className="text-[11px] text-zinc-400 dark:text-zinc-500 line-clamp-2 leading-relaxed">
                                             {category.description}
                                         </CardDescription>
-                                        <span className="inline-flex items-center gap-0.5 text-[10px] text-rose-500 font-bold mt-1">
+                                        <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-500 font-bold mt-1">
                                             Bắt đầu hội thoại <ChevronRight className="w-3.5 h-3.5" />
                                         </span>
                                     </div>
@@ -275,11 +275,11 @@ export default function SpeakingPage() {
 
             {/* 3. CONVERSATIONAL PRACTICE VIEW */}
             {mode === "practice" && selectedCategory && (
-                <Card className="flex-1 flex flex-col rounded-2xl shadow-2xs overflow-hidden h-[600px] border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <Card className="flex-1 flex flex-col rounded-2xl shadow-sm overflow-hidden h-[600px] border border-amber-950/10 bg-white/90 dark:border-zinc-800 dark:bg-zinc-900">
                     {/* Practice Top Header */}
                     <div className="border-b border-zinc-100 dark:border-zinc-800 px-6 py-4 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 shrink-0">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-rose-500 tracking-wider uppercase">Tình huống nói</span>
+                            <span className="text-[10px] font-black text-amber-500 tracking-wider uppercase">Tình huống nói</span>
                             <CardTitle className="text-sm font-extrabold text-zinc-900 dark:text-white line-clamp-1">
                                 {selectedCategory.title}
                             </CardTitle>
@@ -301,13 +301,13 @@ export default function SpeakingPage() {
                     >
                         {practiceLoading && visibleMessages.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center space-y-3">
-                                <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
+                                <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
                                 <p className="text-xs font-bold text-zinc-400">Đang chuẩn bị hội thoại...</p>
                             </div>
                         ) : (
                             <>
                                 {errorMessage && (
-                                    <div className="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 border border-rose-100 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5">
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-450 border border-amber-100 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5">
                                         <AlertCircle className="w-4 h-4 shrink-0" />
                                         <span>{errorMessage}</span>
                                     </div>
@@ -317,7 +317,7 @@ export default function SpeakingPage() {
                                     const isSpeakerA = message.speaker?.toUpperCase() === "A";
                                     const bubbleBg = isSpeakerA
                                         ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                                        : "bg-rose-600 text-white shadow-xs";
+                                        : "bg-amber-600 text-white shadow-xs";
 
                                     const wordHighlightStyle = (detail: any) => {
                                         if (detail.isCorrect) return "text-emerald-500 dark:text-emerald-450 font-extrabold";
@@ -332,7 +332,7 @@ export default function SpeakingPage() {
                                                 }`}
                                         >
                                             {/* Speaker Avatar Icon */}
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 select-none ${isSpeakerA ? "bg-rose-100 text-rose-700" : "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300"
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 select-none ${isSpeakerA ? "bg-amber-100 text-amber-700" : "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300"
                                                 }`}>
                                                 {isSpeakerA ? (
                                                     <span className="font-extrabold text-[11px]">A</span>
@@ -359,25 +359,25 @@ export default function SpeakingPage() {
                                                 </div>
 
                                                 {/* Pinyin */}
-                                                <p className={`text-xs italic ${isSpeakerA ? "text-zinc-550" : "text-rose-100"}`}>
+                                                <p className={`text-xs italic ${isSpeakerA ? "text-zinc-550" : "text-amber-100"}`}>
                                                     {message.pinyin}
                                                 </p>
 
                                                 {/* Vietnamese Translation */}
-                                                <p className={`text-[13px] font-medium border-t pt-1.5 ${isSpeakerA ? "text-zinc-650 border-zinc-200/50" : "text-rose-50 border-rose-400/20"}`}>
+                                                <p className={`text-[13px] font-medium border-t pt-1.5 ${isSpeakerA ? "text-zinc-650 border-zinc-200/50" : "text-amber-50 border-amber-400/20"}`}>
                                                     {message.vietnamese_text}
                                                 </p>
 
                                                 {/* USER PRACTICE RECORD CONTROLS (Only visible for B's bubbles) */}
                                                 {message.speaker?.toUpperCase() === "B" && (
-                                                    <div className="mt-4 pt-3 border-t border-rose-400/20 space-y-3">
+                                                    <div className="mt-4 pt-3 border-t border-amber-400/20 space-y-3">
                                                         {/* Toggle Recording Button */}
                                                         <div className="flex items-center gap-3 flex-wrap">
                                                             {activeRecordingId === message.id ? (
                                                                 <Button
                                                                     size="sm"
                                                                     onClick={() => handleToggleRecording(message.id)}
-                                                                    className="bg-rose-100 hover:bg-rose-250 text-rose-700 rounded-full font-extrabold text-[11px] animate-pulse flex items-center gap-1.5 shadow-3xs cursor-pointer"
+                                                                    className="bg-amber-100 hover:bg-amber-250 text-amber-700 rounded-full font-extrabold text-[11px] animate-pulse flex items-center gap-1.5 shadow-3xs cursor-pointer"
                                                                 >
                                                                     <Mic className="w-3.5 h-3.5" />
                                                                     <span>Đang thu (Nhấn để dừng)</span>
@@ -386,7 +386,7 @@ export default function SpeakingPage() {
                                                                 <Button
                                                                     size="sm"
                                                                     onClick={() => handleToggleRecording(message.id)}
-                                                                    className="bg-white hover:bg-rose-50 text-rose-600 rounded-full font-extrabold text-[11px] flex items-center gap-1.5 shadow-3xs cursor-pointer border border-none"
+                                                                    className="bg-white hover:bg-amber-50 text-amber-600 rounded-full font-extrabold text-[11px] flex items-center gap-1.5 shadow-3xs cursor-pointer border border-none"
                                                                 >
                                                                     <Mic className="w-3.5 h-3.5" />
                                                                     <span>Nhấn để ghi âm nói</span>
@@ -499,7 +499,7 @@ export default function SpeakingPage() {
 
             {/* 4. PERFORMANCE RESULTS OVERVIEW */}
             {mode === "result" && resultStats && selectedCategory && (
-                <Card className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm space-y-8 flex flex-col items-center max-w-xl mx-auto">
+                <Card className="flex-1 bg-white/90 dark:bg-zinc-900 border border-amber-950/10 dark:border-zinc-800 rounded-2xl p-6 md:p-8 shadow-sm space-y-8 flex flex-col items-center max-w-xl mx-auto">
                     {/* Circular success indicator banner */}
                     <div className="bg-rose-500 text-white text-center w-full p-6 rounded-2xl space-y-2 shrink-0 select-none">
                         <Award className="w-10 h-10 text-white mx-auto animate-bounce" />
@@ -657,6 +657,6 @@ export default function SpeakingPage() {
                     </div>
                 </DialogContent>
             </Dialog>
-        </div>
+        </PageContainer>
     );
 }

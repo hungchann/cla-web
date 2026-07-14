@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, PackageOpen } from "lucide-react";
+import { PageContainer } from "@/components/PageContainer";
 
 export default function GrammarPage() {
     const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
@@ -79,7 +80,7 @@ export default function GrammarPage() {
     });
 
     return (
-        <div className="flex-1 flex flex-col gap-6">
+        <PageContainer>
             <PageHeader
                 title="Cấu Trúc Ngữ Pháp Tiếng Trung"
                 description="Tổng hợp đầy đủ cấu trúc ngữ pháp quan trọng theo hệ thống bài giảng và chủ đề của Sun Chinese. Có ví dụ kèm Pinyin & nghĩa Việt rõ ràng."
@@ -99,8 +100,8 @@ export default function GrammarPage() {
                                 onClick={() => setSelectedModuleId(mod.id)}
                                 variant={isActive ? "default" : "outline"}
                                 className={`text-xs font-bold rounded-full cursor-pointer ${isActive
-                                        ? "bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-650/20"
-                                        : "bg-white dark:bg-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-violet-600"
+                                        ? "bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-650/20"
+                                        : "bg-white dark:bg-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-amber-600"
                                     }`}
                             >
                                 {mod.title}
@@ -113,7 +114,7 @@ export default function GrammarPage() {
             {/* Split Pane: Subcategories Topics (Left) vs Detail Items (Right) */}
             <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[400px]">
                 {/* Left pane: Topics / Subcategories */}
-                <Card id="topics" className="scroll-mt-24 w-full md:w-64 shrink-0 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 shadow-2xs bg-white dark:bg-zinc-900">
+                <Card id="topics" className="scroll-mt-24 w-full md:w-64 shrink-0 rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm p-4 flex flex-col gap-3 dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 className="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-2">
                         Chủ đề ngữ pháp
                     </h2>
@@ -136,9 +137,9 @@ export default function GrammarPage() {
                                             setSelectedTopicTitle(topic.title);
                                         }}
                                         className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none bg-transparent ${isActive
-                                                ? "bg-violet-50 text-violet-700 dark:bg-violet-950/20 dark:text-violet-400"
-                                                : "text-zinc-650 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                                            }`}
+                                                 ? "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                                                 : "text-zinc-650 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                             }`}
                                     >
                                         {topic.title}
                                     </button>
@@ -153,10 +154,10 @@ export default function GrammarPage() {
                 </Card>
 
                 {/* Right pane: Detailed list of Grammar items */}
-                <Card id="details" className="scroll-mt-24 flex-1 min-w-0 flex flex-col border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-6 shadow-2xs bg-white dark:bg-zinc-900">
+                <Card id="details" className="scroll-mt-24 flex-1 min-w-0 flex flex-col rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm p-6 dark:border-zinc-800 dark:bg-zinc-900">
                     {itemsLoading ? (
                         <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20">
-                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-600 border-t-transparent"></div>
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-600 border-t-transparent"></div>
                             <p className="text-xs font-bold text-zinc-400">Đang tải cấu trúc ngữ pháp...</p>
                         </div>
                     ) : selectedTopicId ? (
@@ -176,13 +177,13 @@ export default function GrammarPage() {
                                     {grammarItems.map((item: any) => (
                                         <article
                                             key={item.id}
-                                            className="bg-violet-50/20 dark:bg-violet-950/5 border border-violet-100/50 dark:border-violet-900/30 rounded-2xl p-5 md:p-6 space-y-4 shadow-3xs"
+                                            className="bg-amber-50/20 dark:bg-amber-950/5 border border-amber-100/50 dark:border-amber-900/30 rounded-2xl p-5 md:p-6 space-y-4 shadow-3xs"
                                         >
-                                            <div className="flex items-start justify-between gap-3 border-b border-violet-100/20 pb-3">
-                                                <h3 className="text-md font-extrabold text-violet-900 dark:text-violet-400 leading-snug">
+                                            <div className="flex items-start justify-between gap-3 border-b border-amber-100/20 pb-3">
+                                                <h3 className="text-md font-extrabold text-amber-900 dark:text-amber-450 leading-snug">
                                                     {item.title}
                                                 </h3>
-                                                <Badge className="bg-violet-150 text-violet-700 dark:bg-violet-900 dark:text-violet-300 font-black px-2 py-0.5 rounded-full select-none border-none text-[10px]">
+                                                <Badge className="bg-amber-150 text-amber-700 dark:bg-amber-900 dark:text-amber-300 font-black px-2 py-0.5 rounded-full select-none border-none text-[10px]">
                                                     Ngữ pháp
                                                 </Badge>
                                             </div>
@@ -226,7 +227,7 @@ export default function GrammarPage() {
         .grammar-html-renderer h3,
         .grammar-html-renderer h4 {
           font-weight: 800;
-          color: #4c1d95;
+          color: #7c2d12;
           margin-top: 1.25rem;
           margin-bottom: 0.5rem;
         }
@@ -234,7 +235,7 @@ export default function GrammarPage() {
         .dark .grammar-html-renderer h2,
         .dark .grammar-html-renderer h3,
         .dark .grammar-html-renderer h4 {
-          color: #a78bfa;
+          color: #fdba74;
         }
         .grammar-html-renderer p {
           margin-bottom: 0.75rem;
@@ -249,23 +250,23 @@ export default function GrammarPage() {
           margin-bottom: 0.25rem;
         }
         .grammar-html-renderer strong {
-          color: #7c3aed;
-          font-weight: 700;
+          color: #ea580c;
+          font-weight: 750;
         }
         .dark .grammar-html-renderer strong {
-          color: #ddd6fe;
+          color: #fed7aa;
         }
         .grammar-html-renderer blockquote {
-          border-left: 4px solid #8b5cf6;
+          border-left: 4px solid #f97316;
           padding-left: 1rem;
           margin: 1rem 0;
           font-style: italic;
-          background-color: rgba(139, 92, 246, 0.05);
+          background-color: rgba(249, 115, 22, 0.05);
           padding-top: 0.5rem;
           padding-bottom: 0.5rem;
           border-radius: 0 0.5rem 0.5rem 0;
         }
       `}</style>
-        </div>
+        </PageContainer>
     );
 }

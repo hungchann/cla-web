@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useVocabFlashcardData } from "@/lib/hooks/useVocabFlashcardData";
 import { FlashcardCard } from "@/components/flashcard/FlashcardC";
 import { FlashcardControls } from "@/components/flashcard/FlashcardControls";
@@ -10,11 +10,11 @@ import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { PageContainer } from "@/components/PageContainer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Folder, Lightbulb, User, Library, Notebook, Key, Trophy, FolderOpen, ChevronDown, ChevronUp, ArrowRight, Heart } from "lucide-react";
+import { Folder, Lightbulb, User, Library, Notebook, Key, Trophy, FolderOpen, ChevronDown, ChevronUp, Heart } from "lucide-react";
 
 // Mock data từ vựng phong phú làm fallback
 const MOCK_FLASHCARDS = [
@@ -182,8 +182,7 @@ function FlashcardDashboard() {
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 flex-1">
+    <PageContainer className="max-w-4xl">
           <PageHeader
             title="Thẻ Ghi Nhớ Flashcard"
             description="Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS)."
@@ -214,7 +213,7 @@ function FlashcardDashboard() {
             {activeTab === "suggest" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Link href="/flashcard?type=suggest" className="block group">
-                  <Card className="flex flex-col justify-between p-6 border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 hover:-translate-y-1 h-full">
+                  <Card className="flex flex-col justify-between p-6 rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900 h-full">
                     <div className="space-y-3">
                         <Lightbulb className="w-6 h-6" />
                       <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-lg tracking-tight">
@@ -282,7 +281,7 @@ function FlashcardDashboard() {
                             href={`/flashcard?type=personal&notebookId=${deck.id}`}
                             className="block group"
                           >
-                            <Card className="flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:shadow-md hover:border-amber-350 dark:hover:border-amber-900 transition-all hover:-translate-y-1 h-full">
+                            <Card className="flex flex-col justify-between p-6 rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900 h-full">
                               <div className="space-y-3">
                                   <Notebook className="w-6 h-6" />
                                 <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors line-clamp-1">
@@ -321,7 +320,7 @@ function FlashcardDashboard() {
                       return (
                         <Card
                           key={level.id}
-                          className="overflow-hidden bg-white dark:bg-zinc-900 shadow-2xs rounded-3xl"
+                          className="overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
                         >
                           {/* Header */}
                           <button
@@ -353,7 +352,7 @@ function FlashcardDashboard() {
                                       href={`/flashcard?type=system&notebookId=${level.id}&topicId=${item.topic_id?.id}`}
                                       className="block group"
                                     >
-                                      <Card className="flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 border border-zinc-200/85 dark:border-zinc-800 rounded-2xl hover:border-amber-500/50 dark:hover:border-amber-500/50 hover:shadow-2xs transition-all text-sm font-bold text-zinc-800 dark:text-zinc-200 h-full">
+                                      <Card className="flex items-center gap-3 p-4 rounded-xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 text-sm font-bold text-zinc-800 dark:text-zinc-200 h-full">
                                         <FolderOpen className="w-5 h-5 text-amber-500" />
                                         <div className="flex flex-col gap-0.5 min-w-0">
                                           <span className="group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors truncate">
@@ -380,8 +379,7 @@ function FlashcardDashboard() {
               </div>
             )}
           </div>
-        </div>
-      </div>
+    </PageContainer>
   );
 }
 
@@ -400,7 +398,6 @@ function FlashcardStudySession({
   restart,
   paramFakeData,
 }: Readonly<FlashcardStudySessionProps>) {
-  const router = useRouter();
   // Nén data mock để truyền vào hook nếu cần
   const defaultMockJson = useMemo(() => {
     return encodeURIComponent(
@@ -584,8 +581,7 @@ function FlashcardStudySession({
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="space-y-8 max-w-xl w-full mx-auto flex-1 flex flex-col justify-start pb-20">
+    <PageContainer maxWidth="narrow" className="max-w-xl">
           <div className="bg-amber-500 text-white font-black py-3 px-6 rounded-2xl text-center shadow-xs text-sm uppercase tracking-wide">
             {fallbackDataActive ? "Thử thách Flashcard" : "Học tập Flashcard"}
           </div>
@@ -605,7 +601,7 @@ function FlashcardStudySession({
               isFlipped={isCardFlipped}
               onFlip={handleFlipAction}
               frontContent={
-                <div className="flex-1 flex flex-col items-center justify-center p-6 h-full text-center bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/60 dark:border-zinc-800 shadow-2xs">
+                <div className="flex-1 flex flex-col items-center justify-center p-6 h-full text-center rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   <span className="text-4xl font-extrabold text-zinc-900 dark:text-white tracking-wider">
                     {activeVocab?.name || activeDetail?.word}
                   </span>
@@ -613,7 +609,7 @@ function FlashcardStudySession({
                 </div>
               }
               backContent={
-                <div className="flex-1 flex flex-col justify-between p-6 h-full overflow-y-auto scrollbar-thin bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/60 dark:border-zinc-800 shadow-2xs">
+                <div className="flex-1 flex flex-col justify-between p-6 h-full overflow-y-auto scrollbar-thin rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   <div className="space-y-4">
                     <div className="text-center">
                       <span className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-wider">
@@ -671,8 +667,7 @@ function FlashcardStudySession({
               &larr; Về sổ tay cá nhân
             </Link>
           </div>
-      </div>
-    </div>
+    </PageContainer>
   );
 }
 
