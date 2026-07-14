@@ -2,7 +2,8 @@
 
 import { Globe2, Map, Clock, Calendar, GraduationCap } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,35 +74,38 @@ const traditionalCourses = [
 ];
 
 export default function CoursesPage() {
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedLevel = searchParams.get("level");
+  const selectedScript = searchParams.get("script");
 
-  const handleCourseClick = (courseId: string) => {
-    if (courseId === "bilingual-pressure") {
-      router.push("/bilingual/bilingual-pressure");
-      return;
-    }
-    router.push(`/courses/${courseId}`);
-  };
+  const matchesSelectedLevel = (course: { level?: string }) =>
+    !selectedLevel || course.level === selectedLevel;
+  const visibleSimplifiedCourses = simplifiedCourses.filter(matchesSelectedLevel);
+  const visibleTraditionalCourses = traditionalCourses.filter(matchesSelectedLevel);
+  const showSimplified = selectedScript !== "traditional";
+  const showTraditional = selectedScript !== "simplified";
 
   return (
-    <div className="flex-1 flex flex-col gap-8">
+    <div className="flex-1 flex flex-col gap-9">
       <PageHeader
         title="Khóa Học Tiếng Trung"
         description="Hệ thống khóa học bài bản từ Giản thể đến Phồn thể. Chọn khóa học phù hợp với mục tiêu của bạn."
         icon={<GraduationCap className="w-7 h-7" />}
       />
-      <section className="space-y-6">
+      {showSimplified && (
+      <section id="simplified" className="scroll-mt-24 space-y-5">
         <h2 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
           <Globe2 className="text-amber-500 w-6 h-6" /> Giản thể (Trung Quốc đại lục)
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {simplifiedCourses.map((course) => (
-            <Card
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {visibleSimplifiedCourses.map((course) => (
+            <Link
               key={course.id}
-              onClick={() => handleCourseClick(course.id)}
-              className="group relative flex flex-col justify-between overflow-hidden border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 text-left cursor-pointer w-full hover:-translate-y-1"
+              href={`/courses/${course.id}`}
+              className="group block"
             >
-              <div className="relative h-44 w-full bg-zinc-100 dark:bg-zinc-800">
+            <Card className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 text-left shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900">
+              <div className="relative h-40 w-full bg-zinc-100 dark:bg-zinc-800">
                 <Image
                   src="/images/study_tablet.png"
                   alt={course.title}
@@ -121,22 +125,31 @@ export default function CoursesPage() {
                 </div>
               </div>
             </Card>
+            </Link>
           ))}
         </div>
+        {visibleSimplifiedCourses.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-amber-950/15 bg-white/55 p-8 text-center text-sm font-semibold text-zinc-500">
+            Chưa có khóa học phù hợp với bộ lọc này.
+          </p>
+        )}
       </section>
+      )}
 
-      <section className="space-y-6 pb-6">
+      {showTraditional && (
+      <section id="traditional" className="scroll-mt-24 space-y-5 pb-6">
         <h2 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
           <Map className="text-amber-500 w-6 h-6" /> Phồn thể (Đài Loan, Hong Kong, Macao)
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {traditionalCourses.map((course) => (
-            <Card
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {visibleTraditionalCourses.map((course) => (
+            <Link
               key={course.id}
-              onClick={() => handleCourseClick(course.id)}
-              className="group relative flex flex-col justify-between overflow-hidden border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl transition-all duration-350 shadow-2xs hover:shadow-md hover:border-amber-300 dark:hover:border-amber-900 text-left cursor-pointer w-full hover:-translate-y-1"
+              href={course.id === "bilingual-pressure" ? "/bilingual/bilingual-pressure" : `/courses/${course.id}`}
+              className="group block"
             >
-              <div className="relative h-44 w-full bg-zinc-100 dark:bg-zinc-800">
+            <Card className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 text-left shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900">
+              <div className="relative h-40 w-full bg-zinc-100 dark:bg-zinc-800">
                 <Image
                   src="/images/study_tablet.png"
                   alt={course.title}
@@ -165,9 +178,16 @@ export default function CoursesPage() {
                 </div>
               </div>
             </Card>
+            </Link>
           ))}
         </div>
+        {visibleTraditionalCourses.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-amber-950/15 bg-white/55 p-8 text-center text-sm font-semibold text-zinc-500">
+            Chưa có khóa học phù hợp với bộ lọc này.
+          </p>
+        )}
       </section>
+      )}
     </div>
   );
 }

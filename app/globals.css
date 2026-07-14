@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: hsl(40 33% 98.5%);
   --foreground: hsl(240 10% 3.9%);
@@ -23,6 +25,14 @@
   --radius: 0.75rem;
   --bg-gradient: radial-gradient(circle at 35% 20%, #fff2cc 0%, transparent 45%),
     linear-gradient(90deg, #fff7e5 0%, #fff9ef 55%, #ffffff 100%);
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
 .dark {
@@ -47,6 +57,14 @@
   --ring: hsl(38 92% 50%);
   --bg-gradient: radial-gradient(circle at 35% 20%, hsl(38 92% 50% / 0.05) 0%, transparent 45%),
     linear-gradient(90deg, hsl(240 10% 4%) 0%, hsl(240 10% 2.5%) 55%, hsl(240 10% 1.5%) 100%);
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
 @theme {
@@ -69,11 +87,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-  
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -83,6 +101,19 @@ body {
   background: var(--bg-gradient);
   min-height: 100vh;
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* The fixed desktop sidebar is a contextual menu, inspired by the warm shell
+   in the product direction. It is scoped so the reusable shadcn sidebar stays
+   available for other contexts. */
+.app-submenu-sidebar [data-sidebar="sidebar"] {
+  background: linear-gradient(165deg, #fff3a6 0%, #ffd2cd 46%, #f0a5fa 100%);
+  color: #3f3f46;
+  box-shadow: 10px 0 30px rgb(146 64 14 / 0.05);
+}
+
+.app-submenu-sidebar [data-sidebar="menu-button"]:is(:hover, [data-active="true"]) {
+  color: #854d0e;
 }
 
 /* Smooth scrollbar */
@@ -98,4 +129,15 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1aa;
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }

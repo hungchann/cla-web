@@ -1,420 +1,74 @@
-"use client";
+import Link from "next/link"
+import { ArrowRight, BookOpen, Flame, GraduationCap, Headphones, Layers } from "lucide-react"
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { tokenUtils } from "@/lib/utils/tokenUtils";
-import { bilingualApi } from "@/api/bilingual";
-import { updateHskLevel } from "@/api/profile";
-import { getUser } from "@/api/apiService";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/PageHeader"
+import { Card } from "@/components/ui/card"
 
-// Lucide Icons
-import {
-  Award,
-  Crown,
-  Ticket,
-  BookOpen,
-  FileText,
-  Mic,
-  CheckCircle2,
-  AlertCircle,
-  Video,
-  Layers,
-  TrendingUp,
-  RotateCw
-} from "lucide-react";
-
-interface UserStats {
-  mastered: number;
-  learning: number;
-  review: number;
-}
+const learningAreas = [
+  {
+    title: "Khóa học",
+    description: "Theo lộ trình từ sơ cấp đến trung cấp.",
+    href: "/courses",
+    icon: GraduationCap,
+    accent: "bg-amber-100 text-amber-700",
+  },
+  {
+    title: "Đọc song ngữ",
+    description: "Đọc hiểu HSK và chạm vào từ để tra nghĩa.",
+    href: "/bilingual",
+    icon: BookOpen,
+    accent: "bg-orange-100 text-orange-700",
+  },
+  {
+    title: "AI luyện nói",
+    description: "Luyện phát âm và phản xạ qua hội thoại.",
+    href: "/speaking",
+    icon: Headphones,
+    accent: "bg-rose-100 text-rose-700",
+  },
+  {
+    title: "Từ vựng",
+    description: "Ghi nhớ từ mới bằng flashcard cá nhân.",
+    href: "/flashcard",
+    icon: Layers,
+    accent: "bg-yellow-100 text-yellow-700",
+  },
+]
 
 export default function DashboardPage() {
-  const [userData, setUserData] = useState<any>(null);
-  const [levels, setLevels] = useState<any[]>([]);
-  const [currentLevel, setCurrentLevel] = useState<string>("");
-  const [loadingLevel, setLoadingLevel] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  // Premium & Voucher states
-  const [isPremium, setIsPremium] = useState(false);
-  const [voucherCode, setVoucherCode] = useState("");
-  const [redeeming, setRedeeming] = useState(false);
-  const [voucherStatus, setVoucherStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  useEffect(() => {
-    const checkPremium = () => {
-      const user = tokenUtils.getUserData();
-      if (user && (user.role === "Premium" || user.is_premium || localStorage.getItem("cla_premium_active") === "true")) {
-        setIsPremium(true);
-      }
-    };
-    checkPremium();
-  }, []);
-
-  const handleStripeCheckout = () => {
-    alert("Đang kết nối tới Stripe Checkout...");
-    localStorage.setItem("cla_premium_active", "true");
-    setIsPremium(true);
-    alert("Thanh toán giả lập Stripe thành công! Gói Premium đã được kích hoạt.");
-  };
-
-  const handleRedeemVoucher = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!voucherCode.trim()) return;
-    setRedeeming(true);
-    setVoucherStatus(null);
-    
-    // Giả lập kiểm tra voucher
-    setTimeout(() => {
-      const code = voucherCode.trim().toUpperCase();
-      if (code === "CLA-SEED-2026" || code === "PREMIUM99") {
-        setVoucherStatus({ type: "success", text: "Áp dụng mã thành công! Bạn nhận được 30 ngày Premium." });
-        localStorage.setItem("cla_premium_active", "true");
-        setIsPremium(true);
-      } else {
-        setVoucherStatus({ type: "error", text: "Mã voucher không hợp lệ hoặc đã được sử dụng." });
-      }
-      setRedeeming(false);
-    }, 1000);
-  };
-
-  const stats: UserStats = {
-    mastered: 24,
-    learning: 45,
-    review: 12,
-  };
-
-  useEffect(() => {
-    const user = tokenUtils.getUserData();
-    if (user) {
-      setUserData(user);
-    } else {
-      // Giả lập user để trải nghiệm demo mượt mà
-      setUserData({
-        first_name: "Học Viên",
-        last_name: "CLA",
-        email: "demo@cla-learning.com",
-        avatar: null,
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    const loadProfileAndLevels = async () => {
-      const hasToken = !!tokenUtils.getAccessToken() || !!tokenUtils.getRefreshToken();
-      if (!hasToken) return;
-      setLoadingLevel(true);
-      try {
-        const fullUser = await getUser();
-        if (fullUser?.user) {
-          setUserData(fullUser.user);
-        }
-        if (fullUser?.profile?.self_assessed_hsk_level) {
-          setCurrentLevel(fullUser.profile.self_assessed_hsk_level);
-        }
-        const allLevels = await bilingualApi.getLevels();
-        setLevels(allLevels || []);
-      } catch (err) {
-        console.error("Lỗi lấy thông tin trình độ", err);
-      } finally {
-        setLoadingLevel(false);
-      }
-    };
-    loadProfileAndLevels();
-  }, []);
-
-  const handleLevelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setIsUpdating(true);
-    try {
-      await updateHskLevel(val);
-      setCurrentLevel(val);
-    } catch (err) {
-      console.error("Lỗi cập nhật HSK", err);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   return (
-    <div className="flex-1 flex flex-col gap-8">
-      {/* Welcome Banner */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 p-8 shadow-xl shadow-amber-600/10">
-        <div className="absolute right-0 top-0 -mr-6 -mt-6 h-36 w-36 rounded-full bg-white/10 blur-2xl"></div>
-        <div className="relative z-10 flex flex-col gap-2 md:max-w-2xl">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100 bg-amber-700/30 w-fit px-2.5 py-1 rounded-full select-none flex items-center gap-1.5">
-              <TrendingUp className="w-3 h-3" /> Học tập mỗi ngày
-            </span>
-            {userData && userData.email !== "demo@cla-learning.com" && (
-              <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/10 px-3 py-1.5 rounded-full">
-                <Award className="w-3.5 h-3.5 text-amber-200" />
-                <span>Trình độ:</span>
-                <select
-                  value={currentLevel}
-                  onChange={handleLevelChange}
-                  disabled={isUpdating || loadingLevel}
-                  className="bg-transparent text-amber-250 border-none outline-none font-bold cursor-pointer select-none"
-                >
-                  <option value="" className="bg-amber-600 text-white">Chưa chọn</option>
-                  {levels.map((lvl) => (
-                    <option key={lvl.id} value={lvl.id} className="bg-amber-600 text-white font-semibold">
-                      {lvl.title}
-                    </option>
-                  ))}
-                </select>
-                {isUpdating && <RotateCw className="h-3 w-3 animate-spin text-white" />}
-              </div>
-            )}
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl mt-1">
-            Chào mừng quay lại, {userData?.first_name || "Bạn học"}!
-          </h1>
-          <p className="text-lg text-amber-50 leading-relaxed">
-            Tiếp tục lộ trình chinh phục tiếng Trung của bạn. Hôm nay bạn muốn cải thiện kỹ năng nào?
-          </p>
-        </div>
-      </section>
+    <div className="flex flex-1 flex-col gap-8">
+      <PageHeader
+        title="Chào bạn, cùng học tiếng Trung nhé"
+        description="Chọn một khu vực học tập để tiếp tục theo nhịp của riêng bạn."
+        icon={<Flame className="size-6" />}
+      />
 
-      {/* Progress Cards */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="flex items-center gap-4 p-5 shadow-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-650 shrink-0">
-            <CheckCircle2 className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Đã thành thạo</p>
-            <p className="text-2xl font-black text-zinc-850 dark:text-zinc-100">{stats.mastered} từ</p>
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-4 p-5 shadow-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 shrink-0">
-            <BookOpen className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Đang học</p>
-            <p className="text-2xl font-black text-zinc-850 dark:text-zinc-100">{stats.learning} từ</p>
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-4 p-5 shadow-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 shrink-0">
-            <AlertCircle className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Cần ôn tập</p>
-            <p className="text-2xl font-black text-zinc-850 dark:text-zinc-100">{stats.review} từ</p>
-          </div>
-        </Card>
-      </section>
-
-      {/* VIP/Premium & Voucher Section */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Premium Status Card */}
-        <Card className="md:col-span-2 relative overflow-hidden bg-zinc-950 dark:bg-zinc-900 border-zinc-850 p-6 flex flex-col justify-between min-h-[180px] text-white">
-          <Crown className="absolute right-4 bottom-4 opacity-10 w-24 h-24 text-white select-none pointer-events-none" />
-          <CardHeader className="p-0 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-bold text-white">Gói Tài Khoản của Bạn</CardTitle>
-            <Badge variant={isPremium ? "default" : "secondary"} className={isPremium ? "bg-amber-500 hover:bg-amber-500 text-zinc-950 border-none font-black flex items-center gap-1" : "bg-zinc-800 text-zinc-400 border-none font-bold"}>
-              {isPremium ? (
-                <>
-                  <Crown className="w-3.5 h-3.5" /> Premium
-                </>
-              ) : (
-                "Free"
-              )}
-            </Badge>
-          </CardHeader>
-          <CardContent className="p-0 mt-3 text-zinc-400 text-xs leading-relaxed max-w-md">
-            {isPremium 
-              ? "Xin chúc mừng! Bạn đã sở hữu tài khoản Premium. Mở khóa toàn bộ kho sách, video bài học và flashcard không giới hạn." 
-              : "Nâng cấp lên gói Premium để học không giới hạn, xem đầy đủ video giải thích ngữ pháp, tra từ nhanh và nhận nhiều ưu đãi hơn."
-            }
-          </CardContent>
-          <CardFooter className="p-0 mt-6 pt-4 border-t border-zinc-850 flex items-center justify-between flex-wrap gap-3">
-            {isPremium ? (
-              <span className="text-[11px] font-bold text-amber-500">Hạn dùng: Vô thời hạn (Vip Lifetime)</span>
-            ) : (
-              <>
-                <span className="text-[11px] font-bold text-zinc-400">Gói 399k / Năm</span>
-                <Button
-                  onClick={handleStripeCheckout}
-                  size="sm"
-                  className="bg-amber-500 hover:bg-amber-600 text-zinc-955 font-bold rounded-xl active:scale-[0.98] cursor-pointer border-none"
-                >
-                  Nâng cấp Premium
-                </Button>
-              </>
-            )}
-          </CardFooter>
-        </Card>
-
-        {/* Voucher Card */}
-        <Card className="p-6 flex flex-col justify-between border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40">
-          <CardHeader className="p-0 mb-3">
-            <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-zinc-900 dark:text-zinc-50">
-              <Ticket className="w-4.5 h-4.5 text-zinc-500" /> Nhập mã giới thiệu
-            </CardTitle>
-            <CardDescription className="text-[11px] leading-relaxed text-zinc-550 dark:text-zinc-400">
-              Nhập mã Voucher từ người seeding để nhận ngay 30 ngày Premium trải nghiệm miễn phí.
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="p-0">
-            <form onSubmit={handleRedeemVoucher} className="space-y-3">
-              <Input
-                type="text"
-                value={voucherCode}
-                onChange={(e) => setVoucherCode(e.target.value)}
-                placeholder="Ví dụ: CLA-SEED-2026"
-                disabled={redeeming}
-                className="w-full h-9.5 text-xs font-bold"
-              />
-              {voucherStatus && (
-                <div className={`p-2 rounded-lg text-[10px] font-bold text-center flex items-center justify-center gap-1.5 ${
-                  voucherStatus.type === "success" 
-                    ? "bg-emerald-500/10 text-emerald-600" 
-                    : "bg-rose-500/10 text-rose-600"
-                }`}>
-                  {voucherStatus.type === "success" ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  )}
-                  <span>{voucherStatus.text}</span>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {learningAreas.map((area) => {
+          const Icon = area.icon
+          return (
+            <Link key={area.href} href={area.href} className="group">
+              <Card className="flex h-full min-h-48 flex-col justify-between rounded-2xl border-amber-950/10 bg-white/80 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className={`flex size-11 items-center justify-center rounded-2xl ${area.accent}`}>
+                  <Icon className="size-5" />
                 </div>
-              )}
-              <Button
-                type="submit"
-                disabled={redeeming || !voucherCode.trim()}
-                className="w-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-white disabled:opacity-50 h-9.5"
-              >
-                {redeeming ? "Đang xử lý..." : "Áp dụng"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Main Learning Hub */}
-      <section className="flex flex-col gap-6">
-        <h2 className="text-xl font-bold tracking-tight">Khu Vực Học Tập</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Card 1: Bilingual */}
-          <Card className="group relative flex flex-col justify-between p-6 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <div className="flex flex-col gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/20 shrink-0">
-                <BookOpen className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Đọc Song Ngữ</h3>
-              <p className="text-sm text-zinc-550 dark:text-zinc-400 leading-relaxed">
-                Rèn luyện khả năng đọc hiểu với các bài viết song ngữ Trung - Việt, nhấn để tra Pinyin và nghĩa của từ tức thì.
-              </p>
-            </div>
-            <div className="mt-6">
-              <Button asChild className="w-full font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white h-10">
-                <Link href="/bilingual">Bắt đầu đọc</Link>
-              </Button>
-            </div>
-          </Card>
-
-          {/* Card 2: Videos */}
-          <Card className="group relative flex flex-col justify-between p-6 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <div className="flex flex-col gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500 text-white shadow-md shadow-red-500/20 shrink-0">
-                <Video className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Học Qua Video</h3>
-              <p className="text-sm text-zinc-550 dark:text-zinc-400 leading-relaxed">
-                Xem video bài giảng với phụ đề SRT chạy chữ song ngữ và làm các bài tập trắc nghiệm nhanh để nhớ kiến thức sâu sắc.
-              </p>
-            </div>
-            <div className="mt-6">
-              <Button asChild className="w-full font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white h-10">
-                <Link href="/video">Xem danh sách video</Link>
-              </Button>
-            </div>
-          </Card>
-
-          {/* Card 3: Flashcards */}
-          <Card className="group relative flex flex-col justify-between p-6 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <div className="flex flex-col gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500 text-white shadow-md shadow-sky-500/20 shrink-0">
-                <Layers className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Thẻ Ghi Nhớ (Flashcard)</h3>
-              <p className="text-sm text-zinc-550 dark:text-zinc-400 leading-relaxed">
-                Luyện nhớ từ vựng với phương pháp lặp lại ngắt quãng (SRS). Lật thẻ 3D trực quan và lưu trữ từ vựng vào sổ tay cá nhân.
-              </p>
-            </div>
-            <div className="mt-6">
-              <Button asChild className="w-full font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white h-10">
-                <Link href="/flashcard">Ôn tập từ vựng</Link>
-              </Button>
-            </div>
-          </Card>
-
-          {/* Card 4: Sách – Báo */}
-          <Card className="group relative flex flex-col justify-between p-6 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <div className="flex flex-col gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20 shrink-0">
-                <FileText className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Sách – Báo</h3>
-              <p className="text-sm text-zinc-550 dark:text-zinc-400 leading-relaxed">
-                Khám phá thế giới truyện, sách báo song ngữ phong phú. Cải thiện khả năng đọc trôi chảy theo ngữ cảnh.
-              </p>
-            </div>
-            <div className="mt-6">
-              <Button asChild className="w-full font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white h-10">
-                <Link href="/stories">Đọc tủ sách</Link>
-              </Button>
-            </div>
-          </Card>
-
-          {/* Card 5: Ngữ Pháp */}
-          <Card className="group relative flex flex-col justify-between p-6 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <div className="flex flex-col gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 text-white shadow-md shadow-violet-600/20 shrink-0">
-                <FileText className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Cấu Trúc Ngữ Pháp</h3>
-              <p className="text-sm text-zinc-550 dark:text-zinc-400 leading-relaxed">
-                Hệ thống các cấu trúc ngữ pháp từ sơ cấp đến cao cấp. Rõ ràng, dễ học kèm nhiều ví dụ thực tế.
-              </p>
-            </div>
-            <div className="mt-6">
-              <Button asChild className="w-full font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white h-10">
-                <Link href="/grammar">Học ngữ pháp</Link>
-              </Button>
-            </div>
-          </Card>
-
-          {/* Card 6: AI Luyện Nói */}
-          <Card className="group relative flex flex-col justify-between p-6 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <div className="flex flex-col gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500 text-white shadow-md shadow-rose-500/20 shrink-0">
-                <Mic className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">AI Luyện Nói</h3>
-              <p className="text-sm text-zinc-550 dark:text-zinc-400 leading-relaxed">
-                Luyện nói giao tiếp phản xạ với AI, nhận phân tích phát âm và chấm điểm độ chính xác chi tiết.
-              </p>
-            </div>
-            <div className="mt-6">
-              <Button asChild className="w-full font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white h-10">
-                <Link href="/speaking">Luyện nói ngay</Link>
-              </Button>
-            </div>
-          </Card>
-        </div>
+                <div className="mt-6">
+                  <h2 className="text-lg font-black tracking-tight text-zinc-900 transition-colors group-hover:text-amber-700 dark:text-zinc-100 dark:group-hover:text-amber-400">
+                    {area.title}
+                  </h2>
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
+                    {area.description}
+                  </p>
+                </div>
+                <span className="mt-5 inline-flex items-center gap-1 text-xs font-black text-amber-700">
+                  Bắt đầu học <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Card>
+            </Link>
+          )
+        })}
       </section>
     </div>
-  );
+  )
 }

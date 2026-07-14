@@ -87,7 +87,7 @@ export default function GrammarPage() {
       />
 
           {/* Module Selector Pill Tabs */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 pb-4 shrink-0">
+          <div id="modules" className="scroll-mt-24 flex flex-wrap items-center gap-2 border-b border-zinc-200 pb-4 shrink-0">
             {modulesLoading ? (
               <div className="h-6 w-32 bg-zinc-200 animate-pulse rounded-lg"></div>
             ) : (
@@ -114,7 +114,7 @@ export default function GrammarPage() {
           {/* Split Pane: Subcategories Topics (Left) vs Detail Items (Right) */}
           <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[400px]">
             {/* Left pane: Topics / Subcategories */}
-            <Card className="w-full md:w-64 shrink-0 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 shadow-2xs bg-white dark:bg-zinc-900">
+            <Card id="topics" className="scroll-mt-24 w-full md:w-64 shrink-0 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 shadow-2xs bg-white dark:bg-zinc-900">
               <h2 className="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-2">
                 Chủ đề ngữ pháp
               </h2>
@@ -155,7 +155,7 @@ export default function GrammarPage() {
             </Card>
 
             {/* Right pane: Detailed list of Grammar items */}
-            <Card className="flex-1 min-w-0 flex flex-col border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-6 shadow-2xs bg-white dark:bg-zinc-900">
+            <Card id="details" className="scroll-mt-24 flex-1 min-w-0 flex flex-col border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-6 shadow-2xs bg-white dark:bg-zinc-900">
               {itemsLoading ? (
                 <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-600 border-t-transparent"></div>

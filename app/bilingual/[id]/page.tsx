@@ -545,7 +545,18 @@ export default function BilingualDetailPage({
                         </button>
                         <button
                           onClick={() => setShadowState("idle")}
-                          className="bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dar            {/* 5. Tab content: BÀI TẬP */}
+                          className="bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer border-none"
+                        >
+                          Thử lại
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 5. Tab content: BÀI TẬP */}
             {activeTab === "exercise" && (
               <Card className="p-5 md:p-6 shadow-2xs space-y-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800">
                 {exerciseType === "select" ? (
@@ -693,37 +704,8 @@ export default function BilingualDetailPage({
                   </div>
                 )}
               </Card>
-            )}��t quả
-                        </button>
-                      </div>
-                    )}
-
-                    {exerciseType === "trans_vi_zh" && (
-                      <div className="space-y-4">
-                        <h4 className="font-extrabold text-sm text-zinc-900 dark:text-white">Dịch câu sau sang chữ Hán (Giản thể):</h4>
-                        <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-850 p-4 rounded-2xl font-bold text-sm text-zinc-700 dark:text-zinc-300">
-                          Đối mặt với áp lực từ đồng trang lứa, cốt lõi là xây dựng hệ quy chiếu của riêng mình.
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Nhập câu tiếng Trung..."
-                          className="w-full border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 rounded-2xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        />
-                        <button
-                          onClick={() => alert("Hệ thống ghi nhận bản dịch! Đáp án mẫu: 面对同辈压力，核心是建立自我坐标系。")}
-                          className="bg-zinc-950 dark:bg-zinc-850 text-white rounded-2xl font-bold px-4 py-2 text-xs hover:bg-zinc-800 transition-all cursor-pointer border-none"
-                        >
-                          Kiểm tra kết quả
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
             )}
             
-          </div>
-
           {/* Bottom link to go back */}
           <div className="flex justify-start w-full pt-6 border-t border-zinc-100 dark:border-zinc-800">
             <Link

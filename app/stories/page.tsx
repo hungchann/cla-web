@@ -45,7 +45,7 @@ export default function StoriesPage() {
             <>
               {/* 1. Sách Thịnh Hành (Trending) */}
               {trendingBooks && trendingBooks.length > 0 && (
-                <section className="space-y-4">
+                <section id="trending" className="scroll-mt-24 space-y-4">
                   <h3 className="text-md font-extrabold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
                     🔥 Đang Thịnh Hành
                   </h3>
@@ -96,7 +96,7 @@ export default function StoriesPage() {
 
               {/* 2. Sách Mới Cập Nhật */}
               {latestBooks && latestBooks.length > 0 && (
-                <section className="space-y-4">
+                <section id="latest" className="scroll-mt-24 space-y-4">
                   <h3 className="text-md font-extrabold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
                     ✨ Tác Phẩm Mới Cập Nhật
                   </h3>
@@ -144,7 +144,7 @@ export default function StoriesPage() {
 
               {/* 3. Gợi Ý Sách Hay */}
               {recommendedBooks && recommendedBooks.length > 0 && (
-                <section className="space-y-4">
+                <section id="recommended" className="scroll-mt-24 space-y-4">
                   <h3 className="text-md font-extrabold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
                     <Lightbulb className="w-5 h-5 inline mr-1.5" /> Có Thể Bạn Sẽ Thích
                   </h3>

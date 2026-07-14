@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
 import { getAssetUrl } from "@/lib/utils/assets";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPills } from "@/components/ui/filter-pills";
 import { Pagination } from "@/components/ui/pagination";
@@ -17,8 +18,13 @@ const LIMIT = 6;
 const HSK_LEVELS = ["Tất cả", "HSK 1", "HSK 2", "HSK 3", "HSK 4", "HSK 5", "HSK 6"];
 
 export default function BilingualListPage() {
-  const [selectedLevel, setSelectedLevel] = useState("Tất cả");
   const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const requestedLevel = searchParams.get("level");
+  const selectedLevel = requestedLevel && HSK_LEVELS.includes(requestedLevel)
+    ? requestedLevel
+    : "Tất cả";
 
   const offset = (page - 1) * LIMIT;
   const levelQueryParam = selectedLevel === "Tất cả" ? undefined : selectedLevel;
@@ -43,12 +49,12 @@ export default function BilingualListPage() {
 
   // Reset page when filter changes
   const handleLevelChange = (level: string) => {
-    setSelectedLevel(level);
     setPage(1);
+    router.push(level === "Tất cả" ? "/bilingual" : `/bilingual?level=${encodeURIComponent(level)}`);
   };
 
   return (
-    <div className="flex-1 flex flex-col gap-6">
+    <div className="flex-1 flex flex-col gap-7">
       <PageHeader
         title="Đọc Song Ngữ"
         description="Nâng cao khả năng đọc dịch, củng cố vốn từ vựng HSK qua các chủ đề hấp dẫn. Nhấn vào chữ Hán bất kỳ để học pinyin & nghĩa."

@@ -6,7 +6,7 @@ import { fetchVideoGenres } from "@/api/video";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { FilterPills } from "@/components/FilterPills";
+import { FilterPills } from "@/components/ui/filter-pills";
 import { Video } from "lucide-react";
 
 // Mock video data để phục vụ demo khi API rỗng
