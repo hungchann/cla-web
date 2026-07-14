@@ -9,17 +9,35 @@ import { SidebarInset, SidebarProvider } from "./ui/sidebar";
  * Auth routes don't render the global header/navigation chrome.
  * Everything else gets the standard app layout with Header.
  */
-const AUTH_ROUTES = ["/sign-in", "/register", "/forgot-password", "/"];
+// Which top-level routes should use the global AppShell (header + sidebar).
+// Only pages under these prefixes will render the global chrome. Other
+// routes (landing, auth pages, marketing) render their own layout.
+const APP_ROUTE_PREFIXES = [
+  "/dashboard",
+  "/courses",
+  "/bilingual",
+  "/stories",
+  "/speaking",
+  "/flashcard",
+  "/grammar",
+  "/video",
+];
+
+// Explicit auth routes that should not use the app chrome.
+const AUTH_ROUTES = ["/sign-in", "/register", "/forgot-password"];
 
 export default function AppShell({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname() ?? "";
-  const isAuthRoute = AUTH_ROUTES.some((route) =>
-    route === "/" ? pathname === "/" : pathname.startsWith(route)
-  );
 
-  if (isAuthRoute) {
+  // If this is an explicit auth route, or not one of the app prefixes,
+  // don't render the global AppShell (landing/marketing pages manage their
+  // own header/footer).
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+  const isAppRoute = APP_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+
+  if (isAuthRoute || !isAppRoute) {
     return <>{children}</>;
   }
 
