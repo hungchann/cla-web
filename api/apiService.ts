@@ -6,6 +6,8 @@ import {
   GET_NEW_SECTIONS_QUERY,
   GET_TOPIC_OF_EXERCISE_QUERY,
   GET_VOCABULARY_BY_SECTION_QUERY,
+  GET_VOCAB_MEANINGS_QUERY,
+  GET_VOCAB_EXAMPLES_QUERY,
 } from "@/api/graphql/documents";
 import {
   EXERCISE_COUNT_BY_LESSON_AND_TOPIC_FLOW_PATH,
@@ -352,11 +354,94 @@ export async function getAllVocabulary() {
 // Lấy danh sách từ vựng theo từng bài
 export async function getVocabularyByIdSection(idSection: string) {
   try {
-    const response = await graphqlRequest<{ vocabulary: any[] }, any>(
+    // 1. Fetch junction table rows to get vocab items
+    const response = await graphqlRequest<{ Sections_vocab_items: any[] }, any>(
       GET_VOCABULARY_BY_SECTION_QUERY,
       { idSection },
     );
-    return { data: response.data };
+
+    const junctionItems = response.data?.Sections_vocab_items || [];
+    const vocabItems = junctionItems
+      .map((item: any) => item.vocab_items_id)
+      .filter(Boolean);
+
+    if (vocabItems.length === 0) {
+      return { data: { vocabulary: [] } };
+    }
+
+    const itemIds = vocabItems.map((item: any) => item.id);
+
+    // 2. Fetch meanings for these vocab items
+    const meaningsResponse = await graphqlRequest<{ vocab_meanings: any[] }, any>(
+      GET_VOCAB_MEANINGS_QUERY,
+      { itemIds },
+    );
+    const meanings = meaningsResponse.data?.vocab_meanings || [];
+
+    // 3. Fetch examples for these meanings
+    const meaningIds = meanings.map((m: any) => m.id);
+    let examples: any[] = [];
+    if (meaningIds.length > 0) {
+      const examplesResponse = await graphqlRequest<{ vocab_examples: any[] }, any>(
+        GET_VOCAB_EXAMPLES_QUERY,
+        { meaningIds },
+      );
+      examples = examplesResponse.data?.vocab_examples || [];
+    }
+
+    // 4. Map examples to meanings
+    const examplesByMeaningId: Record<string, any[]> = {};
+    for (const ex of examples) {
+      const mId = ex.meaning_id?.id;
+      if (mId) {
+        if (!examplesByMeaningId[mId]) {
+          examplesByMeaningId[mId] = [];
+        }
+        examplesByMeaningId[mId].push(ex);
+      }
+    }
+
+    // 5. Map meanings to vocab items
+    const meaningsByItemId: Record<string, any[]> = {};
+    for (const m of meanings) {
+      const itemId = m.item_id?.id;
+      if (itemId) {
+        if (!meaningsByItemId[itemId]) {
+          meaningsByItemId[itemId] = [];
+        }
+        meaningsByItemId[itemId].push({
+          ...m,
+          examples: examplesByMeaningId[m.id] || [],
+        });
+      }
+    }
+
+    // 6. Construct the final vocabulary list in the shape expected by the UI
+    const vocabulary = vocabItems.map((item: any) => {
+      const itemMeanings = meaningsByItemId[item.id] || [];
+      const firstMeaning = itemMeanings[0];
+      const wordType = firstMeaning?.pos_id?.label_vi || "N/A";
+      const meaningStr = itemMeanings.map((m: any) => m.meaning_vi).join("; ");
+      
+      // Collect and format examples
+      const allExamples = itemMeanings.flatMap((m: any) => m.examples);
+      const exampleStr = allExamples
+        .map((ex: any) => `${ex.chinese} (${ex.pinyin}) ${ex.p_vi}`)
+        .join("; ");
+
+      return {
+        id: item.id,
+        word: item.name,
+        pinyin: item.pinyin,
+        Pinyin: item.pinyin,
+        word_type: wordType,
+        meaning: meaningStr || "N/A",
+        Example: exampleStr || "",
+        example: exampleStr || "",
+      };
+    });
+
+    return { data: { vocabulary } };
   } catch (error) {
     logger.warn("Lỗi lấy từ vựng chi tiết", error);
     throw error;

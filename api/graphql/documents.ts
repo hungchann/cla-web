@@ -66,17 +66,48 @@ export const GET_ALL_VOCABULARY_QUERY = gqlTag`
 `;
 
 export const GET_VOCABULARY_BY_SECTION_QUERY = gqlTag`
-  query GetVocabularyBySection($idSection: GraphQLStringOrFloat!) {
-    vocabulary(filter: { section_id: { _eq: $idSection } }) {
-      id
-      word
-      Pinyin
-      word_type
-      meaning
-      Example
+  query GetVocabularyBySection($idSection: ID!) {
+    Sections_vocab_items(filter: { Sections_id: { id: { _eq: $idSection } } }) {
+      vocab_items_id {
+        id
+        name
+        pinyin
+        note
+      }
     }
   }
 `;
+
+export const GET_VOCAB_MEANINGS_QUERY = gqlTag`
+  query GetVocabMeanings($itemIds: [GraphQLStringOrFloat!]!) {
+    vocab_meanings(filter: { item_id: { id: { _in: $itemIds } } }) {
+      id
+      meaning_vi
+      pos_id {
+        id
+        label_vi
+      }
+      item_id {
+        id
+      }
+    }
+  }
+`;
+
+export const GET_VOCAB_EXAMPLES_QUERY = gqlTag`
+  query GetVocabExamples($meaningIds: [GraphQLStringOrFloat!]!) {
+    vocab_examples(filter: { meaning_id: { id: { _in: $meaningIds } } }) {
+      id
+      chinese
+      pinyin
+      p_vi
+      meaning_id {
+        id
+      }
+    }
+  }
+`;
+
 
 export const GET_TOPIC_OF_EXERCISE_QUERY = gqlTag`
   query GetTopicOfExercise {
