@@ -133,14 +133,65 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   // Dynamically map options from backend data or mock data
   const getOptions = (ex: any) => {
     if (!ex) return [];
-    if (Array.isArray(ex.options)) return ex.options;
+
+    const correctAns = String(
+      ex.Correct_answer || 
+      ex.correct_answer || 
+      ex.Correct_Answer || 
+      ex.correctAnswer || 
+      ex.correct || 
+      ex.answer || 
+      ""
+    ).trim().toUpperCase();
+
+    const isOptionCorrect = (optionId: string, optionVal: string) => {
+      if (!correctAns) return false;
+      const cleanAns = correctAns.replace(/[^A-Z0-9\p{L}]/gu, "").toUpperCase();
+      if (!cleanAns) return false;
+      
+      const cleanId = optionId.replace(/[^A-Z0-9\p{L}]/gu, "").toUpperCase();
+      const cleanVal = optionVal.replace(/[^A-Z0-9\p{L}]/gu, "").toUpperCase();
+      
+      return cleanAns === cleanId || 
+             cleanAns === `ANSWER${cleanId}` || 
+             cleanAns === cleanVal;
+    };
+
+    if (Array.isArray(ex.options)) {
+      return ex.options.map((opt: any) => {
+        const optionId = String(opt.id);
+        const optionVal = String(opt.val || opt.hanzi || opt.text || "");
+        
+        const hasFlag = opt.isCorrect !== undefined || opt.is_correct !== undefined || opt.correct !== undefined;
+        if (hasFlag) {
+          const flag = opt.isCorrect ?? opt.is_correct ?? opt.correct;
+          return {
+            ...opt,
+            id: optionId,
+            hanzi: optionVal,
+            isCorrect: !!flag,
+          };
+        }
+        
+        return {
+          ...opt,
+          id: optionId,
+          hanzi: optionVal,
+          isCorrect: isOptionCorrect(optionId, optionVal),
+        };
+      });
+    }
     
-    // Directus format: answer_A, answer_B, answer_C, answer_D, answer
     const opts = [];
-    if (ex.answer_A) opts.push({ id: "A", hanzi: ex.answer_A, pinyin: "", isCorrect: ex.answer === "A" });
-    if (ex.answer_B) opts.push({ id: "B", hanzi: ex.answer_B, pinyin: "", isCorrect: ex.answer === "B" });
-    if (ex.answer_C) opts.push({ id: "C", hanzi: ex.answer_C, pinyin: "", isCorrect: ex.answer === "C" });
-    if (ex.answer_D) opts.push({ id: "D", hanzi: ex.answer_D, pinyin: "", isCorrect: ex.answer === "D" });
+    const ansA = ex.answer_A || ex.Answer_A || ex.answerA;
+    const ansB = ex.answer_B || ex.Answer_B || ex.answerB;
+    const ansC = ex.answer_C || ex.Answer_C || ex.answerC;
+    const ansD = ex.answer_D || ex.Answer_D || ex.answerD;
+    
+    if (ansA) opts.push({ id: "A", hanzi: ansA, pinyin: "", isCorrect: isOptionCorrect("A", ansA) });
+    if (ansB) opts.push({ id: "B", hanzi: ansB, pinyin: "", isCorrect: isOptionCorrect("B", ansB) });
+    if (ansC) opts.push({ id: "C", hanzi: ansC, pinyin: "", isCorrect: isOptionCorrect("C", ansC) });
+    if (ansD) opts.push({ id: "D", hanzi: ansD, pinyin: "", isCorrect: isOptionCorrect("D", ansD) });
     return opts;
   };
 

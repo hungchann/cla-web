@@ -32,6 +32,12 @@ function isAuthRoute(pathname: string): boolean {
 
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
+
+  // Proxy speech transcription request to bypass CORS restrictions
+  if (pathname === "/api/speech/transcribe") {
+    return NextResponse.rewrite(new URL("https://marutek.space/api/speech/transcribe"));
+  }
+
   const accessToken = request.cookies.get("access_token")?.value;
   const hasToken = Boolean(accessToken);
 
@@ -73,6 +79,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/api/speech/transcribe",
     /*
      * Match all request paths EXCEPT:
      * - _next/static (static files)

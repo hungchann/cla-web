@@ -43,7 +43,10 @@ export function BilingualGrammar({
       ) : (
         <div className="space-y-4">
           {grammarList.map((g: any, index: number) => {
-            const grammarHtml = normalizeGrammarContent(g.content);
+            const hasHtml = /<[a-z][\s\S]*>/i.test(g.title || "");
+            const grammarHtml = hasHtml ? normalizeGrammarContent(g.title) : normalizeGrammarContent(g.content);
+            const displayTitle = hasHtml ? "" : g.title;
+
             return (
               <div
                 key={g.id || index}
@@ -52,9 +55,11 @@ export function BilingualGrammar({
                 <div className="flex items-start gap-2">
                   <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                   <div className="min-w-0 space-y-2">
-                    <p className="text-sm font-black text-amber-700 dark:text-amber-400">
-                      {g.title}
-                    </p>
+                    {displayTitle && (
+                      <p className="text-sm font-black text-amber-700 dark:text-amber-400">
+                        {displayTitle}
+                      </p>
+                    )}
                     {g.description && (
                       <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 italic">
                         {g.description}

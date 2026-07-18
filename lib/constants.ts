@@ -124,7 +124,9 @@ export const SMTP_AUTH_BASE_URL = `${API_URL}/smtp-auth`;
 export const MARUTEK_CONFIG = {
   API_URL:
     process.env.NEXT_PUBLIC_MARUTEK_API_URL ||
-    `${API_URL}/api/speech/transcribe`,
+    (typeof window !== "undefined"
+      ? "/api/speech/transcribe"
+      : `${API_URL}/api/speech/transcribe`),
   DEFAULT_LANGUAGE: "zh-CN",
 } as const;
 

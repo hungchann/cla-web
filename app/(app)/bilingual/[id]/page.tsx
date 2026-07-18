@@ -67,10 +67,6 @@ export default function BilingualDetailPage({
     const [duration, setDuration] = useState(0);
     const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
-    // Shadowing Micro State
-    const [shadowState, setShadowState] = useState<"idle" | "recording" | "done">("idle");
-    const [shadowSeconds, setShadowSeconds] = useState(0);
-
     // Quiz State
     const [quizSelected, setQuizSelected] = useState<string | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -246,23 +242,7 @@ export default function BilingualDetailPage({
         return words;
     };
 
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (shadowState === "recording") {
-            setShadowSeconds(0);
-            timer = setInterval(() => {
-                setShadowSeconds((prev) => {
-                    if (prev >= 3) {
-                        setShadowState("done");
-                        clearInterval(timer);
-                        return 3;
-                    }
-                    return prev + 1;
-                });
-            }, 1000);
-        }
-        return () => clearInterval(timer);
-    }, [shadowState]);
+
 
     const handleWordPress = async (word: string) => {
         speakChinese(word);
@@ -503,10 +483,7 @@ export default function BilingualDetailPage({
                     {/* 4. Tab content: SHADOWING */}
                     {activeTab === "shadowing" && (
                         <BilingualShadowing
-                            shadowingEntry={srtData[0]}
-                            shadowState={shadowState}
-                            shadowSeconds={shadowSeconds}
-                            setShadowState={setShadowState}
+                            srtData={srtData}
                             onSpeakWord={speakChinese}
                         />
                     )}
