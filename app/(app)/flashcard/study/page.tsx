@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { speakChinese } from "@/lib/utils/speech";
 
@@ -205,13 +205,6 @@ function StudyContent() {
               </div>
             )}
           </div>
-
-          {/* Note below card for Quiz Mode */}
-          {mode === "quiz" && (
-            <p className="text-[10px] text-gray-400 font-bold text-center italic leading-relaxed">
-              Note: phần trắc nghiệm sẽ tự động điền nghĩa và 4 đáp án
-            </p>
-          )}
 
           {/* Add New Word Button (only visible for personal decks) */}
           {!isSystemDeck && (

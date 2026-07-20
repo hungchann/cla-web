@@ -12,9 +12,7 @@ import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { speakChinese } from "@/lib/utils/speech";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Play, Check, Star, Folder, Volume2, Target, Lightbulb, XCircle, User, Mic, PartyPopper } from "lucide-react";
+import { Play, Check, Star, Folder, Volume2, Target, XCircle, User, Mic, PartyPopper, Lightbulb } from "lucide-react";
 
 const MOCK_GRAMMAR_SRT = `1
 00:00:01,000 --> 00:00:05,000
@@ -424,8 +422,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
                 {/* STEP 1: Video từ vựng (learn-video-vocab) */}
                 {currentStep === "learn-video-vocab" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-                        <div className="lg:col-span-2 space-y-6">
+                    <div className="max-w-2xl w-full mx-auto space-y-6">
+                        <div className="space-y-6">
                             <div className="relative rounded-2xl overflow-hidden shadow-md aspect-video bg-black group border border-gray-200">
                                 <Image
                                     src="/images/student_cafe.png"
@@ -488,8 +486,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                         <button
                                             onClick={handleSaveVocabClick}
                                             className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all active:scale-95 cursor-pointer ${isSavedToFlashcard
-                                                    ? "bg-amber-100 border-amber-300 text-amber-800"
-                                                    : "bg-white border-gray-200 text-gray-600 hover:text-amber-500 hover:border-amber-200"
+                                                ? "bg-amber-100 border-amber-300 text-amber-800"
+                                                : "bg-white border-gray-200 text-gray-600 hover:text-amber-500 hover:border-amber-200"
                                                 }`}
                                         >
                                             {isSavedToFlashcard ? <><Check className="w-4 h-4" /> Đã lưu Flashcard</> : <><Star className="w-4 h-4" /> Lưu từ vào flashcard</>}
@@ -549,8 +547,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
                                     {saveMessage && (
                                         <div className={`p-2 rounded-lg text-[10px] font-bold text-center ${saveMessage.type === "success"
-                                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                                : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                                             }`}>
                                             {saveMessage.text}
                                         </div>
@@ -646,15 +644,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="space-y-6">
-                            <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold shadow-2xs">
-                                <div className="text-sm mb-2 flex items-center gap-1.5 text-amber-700 font-black">
-                                    <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Note phát triển
-                                </div>
-                                Note: 2 phần này sẽ được set thời gian xuất hiện để khớp với thời gian từ đang được giảng trong video.
-                            </div>
-                        </div>
                     </div>
                 )}
 
@@ -719,8 +708,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
                                 {vocabSelected && (
                                     <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${vocabSelected === "C"
-                                            ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                                            : "bg-rose-50 border-rose-200 text-rose-900"
+                                        ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                                        : "bg-rose-50 border-rose-200 text-rose-900"
                                         }`}>
                                         <div className="flex items-center gap-1.5 font-bold text-sm">
                                             {vocabSelected === "C" ? (
@@ -841,8 +830,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                         }
                                                     }}
                                                     className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-200 ${isActive
-                                                            ? "bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-600/10"
-                                                            : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-850 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300"
+                                                        ? "bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-600/10"
+                                                        : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-850 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300"
                                                         }`}
                                                 >
                                                     <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
@@ -957,8 +946,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
                                             {grammarSelected && (
                                                 <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${grammarSelected === correctKey
-                                                        ? "bg-amber-50 border-[#f59e0b] text-amber-950"
-                                                        : "bg-rose-50 border-rose-200 text-rose-900"
+                                                    ? "bg-amber-50 border-[#f59e0b] text-amber-950"
+                                                    : "bg-rose-50 border-rose-200 text-rose-900"
                                                     }`}>
                                                     <div className="flex items-center gap-1.5 font-bold text-sm">
                                                         {grammarSelected === correctKey ? (
@@ -1129,8 +1118,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                             <div className="max-w-md flex flex-col gap-2">
                                                 <div
                                                     className={`rounded-2xl p-4 shadow-sm relative ${isSpeakerA
-                                                            ? "bg-white border border-gray-100 dark:bg-zinc-800 dark:border-zinc-700"
-                                                            : "bg-gradient-to-br from-amber-500 to-orange-500 text-white"
+                                                        ? "bg-white border border-gray-100 dark:bg-zinc-800 dark:border-zinc-700"
+                                                        : "bg-gradient-to-br from-amber-500 to-orange-500 text-white"
                                                         }`}
                                                 >
                                                     <p className="font-bold text-sm leading-relaxed">{msg.chinese_text}</p>
@@ -1168,10 +1157,10 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                             <button
                                                                 onClick={() => handleConvToggleRecording(msg.id)}
                                                                 className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-all ${activeRecordingId === msg.id && msg.recording?.state.isRecording
-                                                                        ? "bg-rose-500 text-white animate-pulse"
-                                                                        : msg.recording?.state.isProcessing
-                                                                            ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed"
-                                                                            : "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-500 hover:bg-amber-200 cursor-pointer"
+                                                                    ? "bg-rose-500 text-white animate-pulse"
+                                                                    : msg.recording?.state.isProcessing
+                                                                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed"
+                                                                        : "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-500 hover:bg-amber-200 cursor-pointer"
                                                                     }`}
                                                                 disabled={msg.recording?.state.isProcessing}
                                                             >
@@ -1199,8 +1188,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                                 <div className="flex items-center justify-between">
                                                                     <span className="font-bold text-zinc-500 select-none">Phân tích giọng nói:</span>
                                                                     <span className={`font-black px-1.5 py-0.5 rounded text-[10px] ${msg.recording.comparison.accuracy >= 80
-                                                                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-500"
-                                                                            : "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-500"
+                                                                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-500"
+                                                                        : "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-500"
                                                                         }`}>
                                                                         Độ chính xác: {Math.round(msg.recording.comparison.accuracy)}%
                                                                     </span>

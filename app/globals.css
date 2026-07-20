@@ -25,14 +25,14 @@
   --radius: 0.75rem;
   --bg-gradient: radial-gradient(circle at 35% 20%, #fff2cc 0%, transparent 45%),
     linear-gradient(90deg, #fff7e5 0%, #fff9ef 55%, #ffffff 100%);
-  --sidebar: hsl(0 0% 98%);
+  --sidebar: hsl(40 33% 98.5%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(240 5.9% 10%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(240 4.8% 95.9%);
-  --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 91%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar-primary: hsl(38 92% 50%);
+  --sidebar-primary-foreground: hsl(40 100% 98%);
+  --sidebar-accent: hsl(38 80% 95%);
+  --sidebar-accent-foreground: hsl(38 90% 25%);
+  --sidebar-border: hsl(38 20% 90%);
+  --sidebar-ring: hsl(38 92% 50%);
 }
 
 .dark {
@@ -57,14 +57,14 @@
   --ring: hsl(38 92% 50%);
   --bg-gradient: radial-gradient(circle at 35% 20%, hsl(38 92% 50% / 0.05) 0%, transparent 45%),
     linear-gradient(90deg, hsl(240 10% 4%) 0%, hsl(240 10% 2.5%) 55%, hsl(240 10% 1.5%) 100%);
-  --sidebar: hsl(240 5.9% 10%);
+  --sidebar: hsl(240 10% 5%);
   --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(224.3 76.3% 48%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 3.7% 15.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(38 92% 50%);
+  --sidebar-primary-foreground: hsl(240 5.9% 10%);
+  --sidebar-accent: hsl(38 92% 50% / 0.15);
+  --sidebar-accent-foreground: hsl(38 92% 70%);
   --sidebar-border: hsl(240 3.7% 15.9%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar-ring: hsl(38 92% 50%);
 }
 
 @theme {

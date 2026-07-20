@@ -234,7 +234,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader className="px-3 pb-4 pt-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild className="h-12 rounded-xl hover:bg-white/45">
+            <SidebarMenuButton size="lg" asChild className="h-12 rounded-xl hover:bg-sidebar-accent/50">
               <Link href="/dashboard" aria-label="Về trang chủ Sun Chinese">
                 <SunChineseLogo
                   size={36}
@@ -247,12 +247,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <div className="px-6 pb-1 pt-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+        <div className="px-6 pb-1 pt-2 text-xs font-black uppercase tracking-[0.16em] text-sidebar-foreground/60">
           {routeSidebar.label}
         </div>
         <NavMain label="Danh mục" items={routeSidebar.groups} />
       </SidebarContent>
-      <SidebarFooter className="border-t border-zinc-500/10 p-3">
+      <SidebarFooter className="border-t border-sidebar-border/50 p-3">
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>

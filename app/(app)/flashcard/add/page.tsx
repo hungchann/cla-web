@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lightbulb } from "lucide-react";
 
 // Mock Dictionary for autocomplete
 const DICTIONARY_DB: Record<string, {
@@ -87,25 +86,10 @@ export default function AddWordPage() {
 
   return (
     <div className="flex-1 flex flex-col gap-6">
-        <div className="p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto flex-1 grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="p-6 md:p-8 space-y-6 max-w-2xl w-full mx-auto flex-1">
           
-          {/* Note sidebar in the layout */}
-          <div className="md:col-span-1 space-y-4 pr-2">
-            <div className="bg-amber-50/50 border border-amber-200 p-4 rounded-xl text-xs leading-relaxed text-amber-900 font-bold space-y-3 shadow-2xs">
-              <div className="text-sm font-bold flex items-center gap-1 text-amber-700">
-                <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Note
-              </div>
-              <p className="font-semibold text-gray-600">
-                Note: sau khi người dùng gõ thêm từ mới xong, các phần bên dưới sẽ tự động hiện ra dựa theo file từ điển có sẵn, sau đó người dùng được tự do chỉnh sửa thông tin.
-              </p>
-              <p className="text-[10px] text-gray-400 font-normal">
-                Thử gõ các từ như: &quot;爱&quot;, &quot;学习&quot; hoặc &quot;电脑&quot; để trải nghiệm tính năng điền tự động.
-              </p>
-            </div>
-          </div>
-
           {/* Form input fields */}
-          <div className="md:col-span-3 space-y-6">
+          <div className="space-y-6">
             
             {/* Title header bar */}
             <div className="bg-[#f59e0b] text-gray-950 font-black py-3 px-6 rounded-xl text-center shadow-xs text-sm uppercase tracking-wide">
