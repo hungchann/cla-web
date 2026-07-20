@@ -16,6 +16,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SunChineseLogo } from "@/components/SunChineseLogo";
 
 export const metadata: Metadata = {
   title: "CLA – Chinese Learning App | Học Tiếng Trung Hiệu Quả",
@@ -62,28 +63,6 @@ const STATS = [
   { value: "6", label: "Cấp độ HSK" },
   { value: "AI", label: "Luyện nói thông minh" },
 ];
-
-// SUN CHINESE Logo Component
-function SunChineseLogo({ className = "" }: Readonly<{ className?: string }>) {
-  return (
-    <div className={`flex items-center gap-2 select-none group shrink-0 ${className}`}>
-      <div className="relative flex items-center justify-center w-9 h-9 bg-amber-500 rounded-full shadow-md shadow-amber-500/20 transform group-hover:scale-105 transition-transform duration-200">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="w-5 h-5 text-white"
-        >
-          <path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM6.161 5.1a.75.75 0 0 1 1.06 0l1.591 1.59a.75.75 0 1 1-1.06 1.061L6.16 6.16a.75.75 0 0 1 0-1.06ZM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0 1.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9ZM17.84 5.1a.75.75 0 0 1 0 1.06l-1.591 1.59a.75.75 0 1 1-1.06-1.06L16.78 5.1a.75.75 0 0 1 1.06 0ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 .75.75ZM16.78 18.9a.75.75 0 0 1 1.06 0l1.591 1.59a.75.75 0 1 1-1.06 1.061l-1.59-1.591a.75.75 0 0 1 0-1.06ZM12 18.75a.75.75 0 0 1 .75.75V21.75a.75.75 0 0 1-1.5 0V19.5a.75.75 0 0 1 .75-.75ZM6.16 18.9a.75.75 0 0 1 0 1.06l-1.591 1.59a.75.75 0 1 1-1.06-1.06l1.59-1.591a.75.75 0 0 1 1.061 0ZM5.25 12a.75.75 0 0 1-.75.75H2.25a.75.75 0 0 1 0-1.5H4.5a.75.75 0 0 1 .75.75Z" />
-        </svg>
-      </div>
-      <div className="flex flex-col leading-none text-left">
-        <span className="text-sm font-black tracking-widest text-amber-500">SUN</span>
-        <span className="text-[10px] font-bold text-zinc-400 tracking-wider">CHINESE</span>
-      </div>
-    </div>
-  );
-}
 
 export default function LandingPage() {
   return (

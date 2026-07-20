@@ -29,6 +29,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { tokenUtils } from "@/lib/utils/tokenUtils"
+import { SunChineseLogo } from "@/components/SunChineseLogo"
 
 type RouteSidebar = {
   label: string
@@ -235,21 +236,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="h-12 rounded-xl hover:bg-white/45">
               <Link href="/dashboard" aria-label="Về trang chủ Sun Chinese">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-amber-400 text-amber-950 shadow-md shadow-amber-500/20">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="size-5"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM6.161 5.1a.75.75 0 0 1 1.06 0l1.591 1.59a.75.75 0 1 1-1.06 1.061L6.16 6.16a.75.75 0 0 1 0-1.06ZM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0 1.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9ZM17.84 5.1a.75.75 0 0 1 0 1.06l-1.591 1.59a.75.75 0 1 1-1.06-1.06L16.78 5.1a.75.75 0 0 1 1.06 0ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 .75.75ZM16.78 18.9a.75.75 0 0 1 1.06 0l1.591 1.59a.75.75 0 1 1-1.06 1.061l-1.59-1.591a.75.75 0 0 1 0-1.06ZM12 18.75a.75.75 0 0 1 .75.75V21.75a.75.75 0 0 1-1.5 0V19.5a.75.75 0 0 1 .75-.75ZM6.16 18.9a.75.75 0 0 1 0 1.06l-1.591 1.59a.75.75 0 1 1-1.06-1.06l1.59-1.591a.75.75 0 0 1 1.061 0ZM5.25 12a.75.75 0 0 1-.75.75H2.25a.75.75 0 0 1 0-1.5H4.5a.75.75 0 0 1 .75.75Z" />
-                  </svg>
-                </div>
-                <div className="grid flex-1 text-left leading-none">
-                  <span className="text-sm font-black tracking-[0.16em] text-amber-800">SUN</span>
-                  <span className="mt-1 text-[9px] font-bold tracking-[0.18em] text-zinc-500">CHINESE</span>
-                </div>
+                <SunChineseLogo
+                  size={36}
+                  textClassName="text-amber-800 dark:text-amber-500 font-black tracking-[0.16em]"
+                  subtextClassName="text-zinc-500 dark:text-zinc-400 font-bold tracking-[0.18em]"
+                />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

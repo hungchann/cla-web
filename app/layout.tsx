@@ -1,13 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import QueryProvider from "./query-provider";
 import AIConsentProvider from "@/components/AIConsentProvider";
 // AppShell is moved to the (app) route group. Root layout keeps landing/auth layouts.
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const nunito = localFont({
+  src: [
+    {
+      path: "../assets/Fonts/Nunito-VariableFont_wght.ttf",
+      style: "normal",
+    },
+    {
+      path: "../assets/Fonts/Nunito-Italic-VariableFont_wght.ttf",
+      style: "italic",
+    },
+  ],
+  variable: "--font-nunito",
 });
 
 const geistMono = Geist_Mono({
@@ -29,7 +39,7 @@ export default function RootLayout({
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {/** Root layout: landing and auth pages render directly here. The main app chrome
