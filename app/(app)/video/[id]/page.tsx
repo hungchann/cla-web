@@ -8,10 +8,21 @@ import { SubtitleItem } from "@/components/video/SubtitleItem";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { translateWord } from "@/api/apiService";
 import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
+import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { BackButton } from "@/components/BackButton";
 import { PremiumGate } from "@/components/PremiumGate";
 import { usePremium } from "@/lib/hooks/usePremium";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, Eye, EyeOff } from "lucide-react";
+import { PageContainer } from "@/components/PageContainer";
+
+// Import components và utility mới
+import { VideoPlayerSection } from "@/components/video/VideoPlayerSection";
+import { VideoQuizSection } from "@/components/video/VideoQuizSection";
+import { videoDataUsesYoutubePlayer, getYoutubeVideoIdFromVideoData } from "@/lib/utils/youtubeVideo";
+import { BilingualVocab } from "@/components/bilingual/BilingualVocab";
+import { BilingualShadowing } from "@/components/bilingual/BilingualShadowing";
+import { BilingualExercise } from "@/components/bilingual/BilingualExercise";
+import { speakChinese } from "@/lib/utils/speech";
 
 // Mock video data chi tiết
 const MOCK_VIDEO_DETAIL = {
@@ -58,7 +69,7 @@ const MOCK_EXERCISES = [
 // Mock phụ đề SRT chạy video
 const MOCK_SRT = `1
 00:00:01,000 --> 00:00:03,000
-大家好！今天我们来学习汉语口语。
+大家好！今天 we 来学习汉语口语。
 Đại gia hảo! Kim thiên ngã môn lai học tập Hán ngữ khẩu ngữ.
 Chào mọi người! Hôm nay chúng ta cùng học khẩu ngữ tiếng Trung.
 
@@ -129,6 +140,21 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const [wordInfo, setWordInfo] = useState<any>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [enrichedSubtitles, setEnrichedSubtitles] = useState<any[]>([]);
+
+  // Tab states học tập mới
+  const [activeTab, setActiveTab] = useState<"video" | "vocab" | "shadowing" | "exercise">("video");
+  const [videoVocabList, setVideoVocabList] = useState<any[]>([]);
+  const [isVocabLoading, setIsVocabLoading] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<"subtitles" | "quiz">("subtitles");
+
+  // States dành cho BilingualExercise trong tab Bài tập
+  const [exerciseQuizSelected, setExerciseQuizSelected] = useState<string | null>(null);
+  const [exerciseQuestionIndex, setExerciseQuestionIndex] = useState(0);
+  const [exerciseTabType, setExerciseTabType] = useState<"select" | "quiz" | "trans_zh_vi" | "trans_vi_zh">("select");
+
+  // YouTube logic states
+  const youtubePlayerRef = useRef<any>(null);
+  const [youtubeIsPlaying, setYoutubeIsPlaying] = useState(false);
 
   // Dynamically map options from backend data or mock data
   const getOptions = (ex: any) => {
@@ -210,10 +236,15 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     },
   });
 
-  // Gọi hook logic video chính thức đã được migrate
+  const isYoutubeVideo = videoDataUsesYoutubePlayer(videoData || MOCK_VIDEO_DETAIL);
+  const ytVideoId = isYoutubeVideo ? getYoutubeVideoIdFromVideoData(videoData || MOCK_VIDEO_DETAIL) : null;
+
+  // Gọi hook logic video chính thức
   const hookData = useDetailedVideoLogic(videoData || MOCK_VIDEO_DETAIL, {
     videoRef,
     enableAutoSpeakSubtitle: false,
+    youtubePlayerRef,
+    setYoutubeIsPlaying,
   });
 
   const {
@@ -222,7 +253,16 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     handleOptionPress,
     handleContinueWatching,
     exerciseData,
+    videoSource,
+    handleVideoLoaded,
   } = hookData;
+
+  // Tự động chuyển tab bên phải sang "quiz" khi có câu hỏi dừng video được kích hoạt
+  useEffect(() => {
+    if (activeQuestion) {
+      setRightPanelTab("quiz");
+    }
+  }, [activeQuestion]);
 
   // Phân tách từ Hán ngữ phụ đề tự động bằng API AI
   useEffect(() => {
@@ -247,7 +287,11 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
         });
         setEnrichedSubtitles(enriched);
       } catch (err) {
-        console.warn("API segment for video subtitles failed, falling back to local splits:", err);
+        if (isAIConsentRequiredError(err)) {
+          console.log("AI consent not granted yet, using local video subtitle splits fallback.");
+        } else {
+          console.warn("API segment for video subtitles failed, falling back to local splits:", err);
+        }
         const enriched = baseSubs.map((s) => ({
           ...s,
           segmentedWords: s.chinese ? s.chinese.split("").map((c) => ({ word: c, pinyin: "" })) : [],
@@ -272,18 +316,20 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   // Tự động Pause video khi có câu hỏi hoạt động
   useEffect(() => {
     if (activeQuestion) {
-      const video = videoRef.current;
-      if (video) {
-        if (!video.paused) {
+      if (isYoutubeVideo) {
+        setYoutubeIsPlaying(false);
+      } else {
+        const video = videoRef.current;
+        if (video && !video.paused) {
           video.pause();
         }
-        // Reset trạng thái chọn câu trả lời
-        setSelectedAnswer(null);
-        setIsAnswerChecked(false);
-        setIsAnswerCorrect(null);
       }
+      // Reset trạng thái chọn câu trả lời
+      setSelectedAnswer(null);
+      setIsAnswerChecked(false);
+      setIsAnswerCorrect(null);
     }
-  }, [activeQuestion]);
+  }, [activeQuestion, isYoutubeVideo]);
 
   // Cuộn tự động phụ đề theo timeline video
   const subtitleContainerRef = useRef<HTMLDivElement>(null);
@@ -299,6 +345,97 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     }
   }, [activeSubtitleIndex]);
 
+  // 1. Trích xuất danh sách từ vựng độc nhất từ phụ đề (chỉ phụ thuộc vào phụ đề)
+  useEffect(() => {
+    if (enrichedSubtitles.length === 0) {
+      setVideoVocabList([]);
+      return;
+    }
+
+    const wordMap = new Map<string, string>();
+    enrichedSubtitles.forEach((sub) => {
+      if (Array.isArray(sub.segmentedWords)) {
+        sub.segmentedWords.forEach((sw: any) => {
+          const w = sw.word?.trim();
+          // Lọc ra các từ chứa chữ Hán, bỏ qua dấu câu
+          if (w && /[\u4e00-\u9fa5]/.test(w)) {
+            if (!wordMap.has(w) || (sw.pinyin && !wordMap.get(w))) {
+              wordMap.set(w, sw.pinyin || "");
+            }
+          }
+        });
+      }
+    });
+
+    const uniqueWords = Array.from(wordMap.entries()).map(([word, pinyin]) => ({
+      word,
+      pinyin,
+      Pinyin: pinyin,
+      word_type: "Từ vựng",
+      meaning: "Bấm vào chữ Hán để xem chi tiết",
+      example: "",
+    }));
+
+    setVideoVocabList(uniqueWords);
+  }, [enrichedSubtitles]);
+
+  // 2. Kích hoạt dịch nghĩa tự động khi chuyển sang Tab từ vựng
+  useEffect(() => {
+    if (activeTab !== "vocab" || videoVocabList.length === 0) {
+      return;
+    }
+
+    let isCancelled = false;
+    const fetchMeanings = async () => {
+      // Chỉ dịch các từ đang hiển thị trạng thái chờ dịch để tránh dịch lặp lại
+      const needsTranslation = videoVocabList.some(
+        (v) => v.meaning === "Bấm vào chữ Hán để xem chi tiết" || v.meaning === "Đang tải nghĩa..."
+      );
+      if (!needsTranslation) return;
+
+      setIsVocabLoading(true);
+      const withMeanings = [...videoVocabList];
+
+      try {
+        // Dịch tuần tự từng từ một để tránh nghẽn luồng API
+        for (let i = 0; i < videoVocabList.length; i++) {
+          if (isCancelled) return;
+          const vocab = videoVocabList[i];
+
+          if (vocab.meaning === "Bấm vào chữ Hán để xem chi tiết" || vocab.meaning === "Đang tải nghĩa...") {
+            try {
+              const res = await translateWord(vocab.word);
+              const translated = res?.[0];
+              if (translated && !isCancelled) {
+                withMeanings[i] = {
+                  ...vocab,
+                  pinyin: translated.pinyin || vocab.pinyin,
+                  Pinyin: translated.pinyin || vocab.Pinyin,
+                  meaning: translated.meaning || translated.meanings || "Không tìm thấy nghĩa.",
+                };
+                setVideoVocabList([...withMeanings]);
+              }
+            } catch (err) {
+              console.warn("Failed to fetch meaning for", vocab.word, err);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Sequential translation failed:", err);
+      } finally {
+        if (!isCancelled) {
+          setIsVocabLoading(false);
+        }
+      }
+    };
+
+    fetchMeanings();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeTab, videoVocabList]);
+
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
@@ -306,6 +443,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   };
 
   const handleWordPress = async (word: string) => {
+    speakChinese(word);
     setSelectedWord(word);
     setWordInfo(null);
     setIsTranslating(true);
@@ -333,31 +471,37 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   };
 
   const handleReplayPress = (item: any) => {
-    if (videoRef.current) {
-      const seconds = timeToSeconds(String(item.start));
-      videoRef.current.currentTime = seconds;
-      videoRef.current.play().catch((e) => console.log("Play interrupted", e));
+    const seconds = timeToSeconds(String(item.start));
+    if (isYoutubeVideo) {
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.seekTo(seconds);
+        youtubePlayerRef.current.playVideo();
+      }
+    } else {
+      if (videoRef.current) {
+        videoRef.current.currentTime = seconds;
+        videoRef.current.play().catch((e) => console.log("Play interrupted", e));
+      }
     }
   };
 
-  const handleAnswerSubmit = () => {
+  const handleAnswerSubmit = async () => {
     if (selectedAnswer === null || !activeQuestion) return;
 
-    // Tìm options tương ứng từ backend exercises (hoặc mock)
-    const exercise = (exerciseData && exerciseData.find((ex: any) => ex.id === activeQuestion.id)) || MOCK_EXERCISES.find((ex) => ex.id === activeQuestion.id);
-    const options = getOptions(exercise);
-    const option = options.find((opt: any) => opt.id === selectedAnswer);
-
     setIsAnswerChecked(true);
-    setIsAnswerCorrect(!!option?.isCorrect);
 
-    // Gọi hook báo cáo kết quả
-    handleOptionPress(String(selectedAnswer));
+    // Gọi hook báo cáo kết quả và lấy status thực tế từ API server
+    const result = await handleOptionPress(String(selectedAnswer));
+    if (result) {
+      setIsAnswerCorrect(result.status === "Đúng");
+    }
   };
 
   const handleContinueVideo = () => {
     // Play tiếp video
-    if (videoRef.current) {
+    if (isYoutubeVideo) {
+      setYoutubeIsPlaying(true);
+    } else if (videoRef.current) {
       videoRef.current.play().catch((e) => console.log("Play interrupted", e));
     }
     // Chuyển sang câu kế tiếp ở hook
@@ -375,153 +519,181 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const activeEx = (exerciseData && exerciseData.find((ex: any) => ex.id === activeQuestion?.id)) || MOCK_EXERCISES.find((ex) => ex.id === activeQuestion?.id);
 
   return (
-    <div className="flex-1 flex flex-col gap-6 py-6 max-w-6xl mx-auto w-full">
+    <PageContainer maxWidth="full" className="gap-6">
       <PremiumGate
         isOpen={showPremiumGate}
         onClose={() => setShowPremiumGate(false)}
         feature="xem video bài giảng đầy đủ"
       />
+      
       {/* Navigation Header */}
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
+      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4 w-full">
         <BackButton href="/video" label="Danh sách video" />
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-zinc-500">Hiển thị Pinyin:</span>
           <button
             onClick={() => setIsOpenPinyin(!isOpenPinyin)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isOpenPinyin ? "bg-amber-600" : "bg-zinc-250 dark:bg-zinc-700"
-              }`}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+              isOpenPinyin
+                ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-950/30 dark:border-amber-900/50 dark:text-amber-500"
+                : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400"
+            }`}
           >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isOpenPinyin ? "translate-x-5" : "translate-x-0"
-                }`}
-            />
+            {isOpenPinyin ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            {isOpenPinyin ? "Ẩn Pinyin" : "Hiện Pinyin"}
           </button>
         </div>
       </div>
 
-      {/* Main 2-Column Responsive Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Column Left: Video player and Exercises overlay */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-lg border border-zinc-200 dark:border-zinc-800">
-            {/* HTML5 Local video player */}
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video
-              ref={videoRef}
-              src="https://www.w3schools.com/html/mov_bbb.mp4"
-              controls
-              className="h-full w-full object-contain"
-              onTimeUpdate={handleTimeUpdate}
+      {/* Tabs bar */}
+      <div className="border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-6 md:gap-8 font-extrabold text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500 select-none w-full">
+        {[
+          { id: "video", name: "Xem video bài học" },
+          { id: "vocab", name: "Từ vựng" },
+          { id: "shadowing", name: "Shadowing" },
+          { id: "exercise", name: "Bài tập tự luyện" },
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                setSelectedWord(null);
+              }}
+              className={`pb-2 transition-all cursor-pointer bg-transparent border-none ${
+                isActive
+                  ? "border-b-2 border-zinc-900 dark:border-zinc-50 text-zinc-900 dark:text-zinc-50"
+                  : "hover:text-zinc-600 dark:hover:text-zinc-350"
+              }`}
+            >
+              {tab.name}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Main Content Areas based on selected Tab */}
+      <div className="w-full">
+        {/* TAB 1: XEM VIDEO */}
+        {activeTab === "video" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+            {/* Column Left: Video player section */}
+            <VideoPlayerSection
+              isYoutubeVideo={isYoutubeVideo}
+              ytVideoId={ytVideoId}
+              youtubeIsPlaying={youtubeIsPlaying}
+              youtubePlayerRef={youtubePlayerRef}
+              videoRef={videoRef}
+              videoSource={videoSource}
+              handleTimeUpdate={handleTimeUpdate}
+              handleVideoLoaded={handleVideoLoaded}
+              title={videoData?.title}
+              titleTrans={videoData?.title_trans}
             />
 
-            {/* Questions Popup/Overlay when video reaches question timestamp */}
-            {activeQuestion && activeEx && (
-              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-30 flex items-center justify-center p-6">
-                <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-amber-500">
-                    <Lightbulb className="w-5 h-5 inline mr-1.5 text-amber-500" /> Trắc Nghiệm Dừng Video
-                  </span>
-
-                  <div>
-                    <p className="text-md font-bold text-zinc-900 dark:text-white">
-                      {activeEx.question}
-                    </p>
-                  </div>
-
-                  {/* Options List */}
-                  <div className="flex flex-col gap-2">
-                    {getOptions(activeEx).map((opt: any) => {
-                      const isSelected = selectedAnswer === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          onClick={() => !isAnswerChecked && setSelectedAnswer(opt.id)}
-                          disabled={isAnswerChecked}
-                          className={`w-full py-2.5 px-4 rounded-xl border text-left text-sm font-semibold transition-all flex items-center justify-between ${isSelected
-                              ? "bg-amber-600 border-amber-600 text-white"
-                              : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300"
-                            }`}
-                        >
-                          <span>
-                            {opt.hanzi} {opt.pinyin && `(${opt.pinyin})`}
-                          </span>
-                          {isAnswerChecked && opt.isCorrect && (
-                            <span className="text-emerald-500 font-bold">✓</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Result notification */}
-                  {isAnswerChecked && (
-                    <div className={`p-3 rounded-lg text-xs font-semibold ${isAnswerCorrect ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
-                      }`}>
-                      {isAnswerCorrect ? "Chính xác! Bạn học rất tốt." : "Chưa đúng rồi! Ôn tập lại nhé."}
-                    </div>
-                  )}
-
-                  {/* Controls */}
-                  <div className="mt-2 flex justify-end gap-3">
-                    {!isAnswerChecked ? (
-                      <button
-                        onClick={handleAnswerSubmit}
-                        disabled={selectedAnswer === null}
-                        className="rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white px-5 py-2.5 text-xs font-bold transition-all"
-                      >
-                        Nộp câu trả lời
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleContinueVideo}
-                        className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-850 dark:hover:bg-zinc-800 px-5 py-2.5 text-xs font-bold transition-all"
-                      >
-                        Tiếp tục xem video
-                      </button>
-                    )}
-                  </div>
+            {/* Column Right: Subtitles list or Active Quiz Question with Tab Switching */}
+            <div className="lg:col-span-1 flex flex-col gap-4">
+              <div className="flex flex-col h-[400px] lg:h-[480px] rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 justify-between overflow-hidden">
+                
+                {/* Sub-tab header inside the right column */}
+                <div className="flex items-center gap-4 text-xs font-black uppercase tracking-wider text-zinc-400 select-none border-b border-zinc-100 dark:border-zinc-800 pb-2.5 mb-2 shrink-0">
+                  <button
+                    onClick={() => setRightPanelTab("subtitles")}
+                    className={`pb-1 transition-all cursor-pointer bg-transparent border-none ${
+                      rightPanelTab === "subtitles"
+                        ? "border-b-2 border-zinc-900 dark:border-zinc-50 text-zinc-900 dark:text-zinc-50 font-extrabold"
+                        : "hover:text-zinc-600 dark:hover:text-zinc-350"
+                    }`}
+                  >
+                    Phụ đề
+                  </button>
+                  <button
+                    onClick={() => setRightPanelTab("quiz")}
+                    className={`pb-1 transition-all cursor-pointer bg-transparent border-none flex items-center gap-1 ${
+                      rightPanelTab === "quiz"
+                        ? "border-b-2 border-zinc-900 dark:border-zinc-50 text-zinc-900 dark:text-zinc-50 font-extrabold"
+                        : "hover:text-zinc-600 dark:hover:text-zinc-350"
+                    }`}
+                  >
+                    Trắc nghiệm {activeQuestion && <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>}
+                  </button>
                 </div>
+
+                {rightPanelTab === "quiz" ? (
+                  <VideoQuizSection
+                    activeQuestion={activeQuestion}
+                    activeEx={activeEx}
+                    selectedAnswer={selectedAnswer}
+                    setSelectedAnswer={setSelectedAnswer}
+                    isAnswerChecked={isAnswerChecked}
+                    isAnswerCorrect={isAnswerCorrect}
+                    handleAnswerSubmit={handleAnswerSubmit}
+                    handleContinueVideo={handleContinueVideo}
+                    getOptions={getOptions}
+                  />
+                ) : (
+                  // Nội dung Tab Danh sách Phụ đề
+                  <div
+                    ref={subtitleContainerRef}
+                    className="flex-1 overflow-y-auto mt-1 pr-1 scrollbar-thin flex flex-col gap-1"
+                  >
+                    {enrichedSubtitles.map((sub, index) => (
+                      <SubtitleItem
+                        key={sub.id || `sub-${index}`}
+                        item={sub}
+                        index={index}
+                        activeIndex={activeSubtitleIndex}
+                        isOpenPinyin={isOpenPinyin}
+                        onWordPress={handleWordPress}
+                        onReplayPress={handleReplayPress}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-extrabold text-zinc-950 dark:text-white">
-              {videoData?.title || "Video Bài Giảng"}
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              {videoData?.title_trans || "Học tiếng Trung qua bài giảng video song ngữ"}
-            </p>
-          </div>
-        </div>
-
-        {/* Column Right: Subtitles list */}
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="flex flex-col h-[400px] lg:h-[480px] rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-100 dark:border-zinc-800 pb-3">
-              Phụ đề chạy chữ
-            </h2>
-
-            <div
-              ref={subtitleContainerRef}
-              className="flex-1 overflow-y-auto mt-2 pr-1 scrollbar-thin flex flex-col gap-1"
-            >
-              {enrichedSubtitles.map((sub, index) => (
-                <SubtitleItem
-                  key={sub.id || `sub-${index}`}
-                  item={sub}
-                  index={index}
-                  activeIndex={activeSubtitleIndex}
-                  isOpenPinyin={isOpenPinyin}
-                  onWordPress={handleWordPress}
-                  onReplayPress={handleReplayPress}
-                  onVocabularyPress={() => { }}
-                />
-              ))}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* TAB 2: TỪ VỰNG DỊCH NGHĨA */}
+        {activeTab === "vocab" && (
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-150 dark:border-zinc-800 shadow-sm">
+            <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white mb-4">Danh sách từ vựng trong video</h2>
+            <BilingualVocab
+              vocabList={videoVocabList}
+              isLoading={isVocabLoading}
+              onWordPress={handleWordPress}
+            />
+          </div>
+        )}
+
+        {/* TAB 3: LUYỆN NÓI SHADOWING */}
+        {activeTab === "shadowing" && (
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-150 dark:border-zinc-800 shadow-sm">
+            <BilingualShadowing
+              srtData={enrichedSubtitles}
+              onSpeakWord={speakChinese}
+            />
+          </div>
+        )}
+
+        {/* TAB 4: BÀI TẬP TỰ LUYỆN */}
+        {activeTab === "exercise" && (
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-150 dark:border-zinc-800 shadow-sm">
+            <BilingualExercise
+              exerciseList={exerciseData || []}
+              isLoading={false}
+              srtData={enrichedSubtitles}
+              quizSelected={exerciseQuizSelected}
+              setQuizSelected={setExerciseQuizSelected}
+              currentQuestionIndex={exerciseQuestionIndex}
+              setCurrentQuestionIndex={setExerciseQuestionIndex}
+              exerciseType={exerciseTabType}
+              setExerciseType={setExerciseTabType}
+            />
+          </div>
+        )}
       </div>
 
       {/* Dictionary Translation Modal */}
@@ -537,7 +709,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
           wordInfo={wordInfo}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

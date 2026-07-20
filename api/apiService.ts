@@ -568,18 +568,20 @@ export async function translateWord(word: string) {
           "Word translation requires your consent to send text to our AI learning service (OpenAI).",
       },
     );
-  } catch (error) {
+  } catch (error: any) {
     if (isAIConsentRequiredError(error)) {
       throw error;
     }
 
     logger.warn("Error translating word", error);
 
+    const is404 = error?.response?.status === 404 || error?.message?.includes("404") || error?.status === 404;
+
     return [
       {
         word: word,
         pinyin: "N/A",
-        meaning: "Translation service unavailable",
+        meaning: is404 ? "Không tìm thấy từ này trong từ điển" : "Dịch vụ dịch thuật tạm thời không khả dụng",
         pronunciation: "N/A",
       },
     ];

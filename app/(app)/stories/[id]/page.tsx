@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getBookLibraryById, saveReadingProgress, getReadingProgress } from "@/api/stories";
 import { speakChinese } from "@/lib/utils/speech";
 import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
+import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { BackButton } from "@/components/BackButton";
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -101,7 +102,11 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
           const py = segments.map(row => row.map(w => w.pinyin).join(" "));
           setDynamicPinyin(py);
         } catch (error) {
-          console.warn("Failed to fetch pinyin for story", error);
+          if (isAIConsentRequiredError(error)) {
+            console.log("AI consent not granted yet, using local story view fallback.");
+          } else {
+            console.warn("Failed to fetch pinyin for story", error);
+          }
         }
       };
       fetchPinyin();

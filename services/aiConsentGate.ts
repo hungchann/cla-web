@@ -13,13 +13,19 @@ export function unregisterAIConsentPrompt(): void {
   consentPromptHandler = null;
 }
 
-/**
- * Ensures the user has accepted AI data sharing.
- * If not yet accepted, invokes the registered in-app prompt (AIConsentProvider).
- */
 export async function ensureAIConsent(): Promise<boolean> {
   if (await hasAcceptedAIConsent()) {
     return true;
+  }
+
+  // If prompt handler is not registered yet, wait up to 1 second for it (React mounts bottom-up)
+  if (!consentPromptHandler) {
+    for (let i = 0; i < 10; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (consentPromptHandler) {
+        break;
+      }
+    }
   }
 
   if (!consentPromptHandler) {

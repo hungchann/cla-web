@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { translateWord, getVocabularyByIdSection } from "@/api/apiService";
 import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
+import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
 import { parseSRTtoArray } from "@/services/subtitle";
@@ -204,7 +205,11 @@ export default function BilingualDetailPage({
                 });
                 setSrtData(enriched);
             } catch (err) {
-                console.warn("API segment failed, falling back to local segmentation:", err);
+                if (isAIConsentRequiredError(err)) {
+                    console.log("AI consent not granted yet, using local segmentation fallback.");
+                } else {
+                    console.warn("API segment failed, falling back to local segmentation:", err);
+                }
                 const enriched = parsedSubtitles.map((p) => ({
                     ...p,
                     segmentedWords: segmentChineseTextFallback(p.chinese),

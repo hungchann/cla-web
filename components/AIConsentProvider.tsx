@@ -22,15 +22,22 @@ interface AIConsentProviderProps {
 export default function AIConsentProvider({ children }: Readonly<AIConsentProviderProps>) {
   const [isOpen, setIsOpen] = useState(false);
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
+  const pendingPromiseRef = useRef<Promise<boolean> | null>(null);
   const { colors } = useThemeColors();
 
   useEffect(() => {
     // Đăng ký prompt handler với hệ thống kiểm soát consent
     registerAIConsentPrompt(() => {
+      if (pendingPromiseRef.current) {
+        return pendingPromiseRef.current;
+      }
+
       setIsOpen(true);
-      return new Promise<boolean>((resolve) => {
+      const promise = new Promise<boolean>((resolve) => {
         resolverRef.current = resolve;
       });
+      pendingPromiseRef.current = promise;
+      return promise;
     });
 
     return () => {
@@ -43,11 +50,12 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
       await acceptAIConsent();
       if (resolverRef.current) {
         resolverRef.current(true);
-        resolverRef.current = null;
       }
     } catch (error) {
       console.error("[AIConsentProvider] Lỗi lưu chấp thuận:", error);
     } finally {
+      resolverRef.current = null;
+      pendingPromiseRef.current = null;
       setIsOpen(false);
     }
   };
@@ -55,8 +63,9 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
   const handleDecline = () => {
     if (resolverRef.current) {
       resolverRef.current(false);
-      resolverRef.current = null;
     }
+    resolverRef.current = null;
+    pendingPromiseRef.current = null;
     setIsOpen(false);
   };
 
@@ -64,7 +73,15 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
     <>
       {children}
 
-      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <AlertDialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          setIsOpen(open);
+          if (!open) {
+            handleDecline();
+          }
+        }}
+      >
         <AlertDialogContent className="w-full max-w-md p-6 flex flex-col gap-5">
           <AlertDialogHeader>
             <div className="flex items-center gap-4">

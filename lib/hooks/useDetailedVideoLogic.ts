@@ -184,14 +184,18 @@ export const useDetailedVideoLogic = (
   useEffect(() => {
     const getExerciseById = async () => {
       try {
+        logger.debug("[useDetailedVideoLogic] Fetching exercises for id:", videoData.id);
         const response = await bilingualApi.getExerciseById(videoData.id);
+        logger.debug("[useDetailedVideoLogic] Exercise API raw response:", JSON.stringify(response));
         const sortedExercises = Array.isArray(response.exercises)
           ? [...response.exercises].sort(
               (a: any, b: any) => timeToSeconds(a.time_end) - timeToSeconds(b.time_end),
             )
           : response.exercises;
+        logger.debug("[useDetailedVideoLogic] Sorted exercises:", JSON.stringify(sortedExercises));
         setExerciseData(sortedExercises);
       } catch (error: any) {
+        logger.error("[useDetailedVideoLogic] Exercise fetch error:", error.message);
         if (error.message === "Unauthorized" || error.message === "Failed to fetch exercise") {
           router.replace("/sign-in");
         }
@@ -265,6 +269,9 @@ export const useDetailedVideoLogic = (
   }, [isYoutubeVideo, player, opts?.setYoutubeIsPlaying]);
 
   const syncExerciseState = useCallback((currentTime: number) => {
+    if (currentTime <= 0.1) {
+      return;
+    }
     if (isAnswerTransitionRef.current) {
       logger.debug("[syncExerciseState] Skipped - isAnswerTransition");
       return;
@@ -508,6 +515,10 @@ export const useDetailedVideoLogic = (
     speakChinese(String(currentSubtitle.chinese));
   }, [currentSubtitle?.id, currentSubtitle?.chinese, activeQuestion, opts?.enableAutoSpeakSubtitle]);
 
+  const handleVideoLoaded = useCallback(() => {
+    setIsVideoLoaded(true);
+  }, []);
+
   const handleOptionPress = async (key: string) => {
     if (!activeQuestion) return;
     const answerText = activeQuestion[`answer_${key}`];
@@ -607,15 +618,138 @@ export const useDetailedVideoLogic = (
           }
         }
       }, 1500);
+
+      return result;
     } catch (error) {
-      logger.error("[useDetailedVideoLogic] Error submitting exercise:", error);
-      setShowResult(false);
-      isAnswerTransitionRef.current = false;
+      logger.error("[useDetailedVideoLogic] Error submitting exercise, falling back to local verification:", error);
+      
+      // Local fallback calculation if API fails
+      const correctAns = String(
+        activeQuestion.Correct_answer || 
+        activeQuestion.correct_answer || 
+        activeQuestion.Correct_Answer || 
+        activeQuestion.correctAnswer || 
+        activeQuestion.correct || 
+        activeQuestion.answer || 
+        ""
+      ).trim().toUpperCase();
+
+      let isCorrect = false;
+      const keyUpper = key.trim().toUpperCase();
+      if (correctAns) {
+        const cleanAns = correctAns.replace(/[^A-Z0-9\p{L}]/gu, "").toUpperCase();
+        const cleanKey = keyUpper.replace(/[^A-Z0-9\p{L}]/gu, "").toUpperCase();
+        isCorrect = cleanAns === cleanKey || cleanAns === `ANSWER${cleanKey}`;
+      } else if (Array.isArray(activeQuestion.options)) {
+        const selectedOpt = activeQuestion.options.find((opt: any) => String(opt.id) === key);
+        if (selectedOpt) {
+          isCorrect = !!(selectedOpt.isCorrect ?? selectedOpt.is_correct ?? selectedOpt.correct);
+        }
+      }
+
+      const fallbackResult = {
+        status: isCorrect ? "Đúng" : "Sai",
+        correctAnswer: correctAns,
+        isCorrect: isCorrect,
+      };
+
+      setAnswerResults((prev) => [
+        ...prev,
+        {
+          ...fallbackResult,
+          answerText,
+          question: activeQuestion.question,
+          sort_id: activeQuestion.sort_id,
+        },
+      ]);
+      setShowResult(true);
+      playAnswerFeedback(isCorrect);
+
+      const nextAnsweredCount = answeredIds.length + 1;
+      const totalCount = Array.isArray(exerciseData) ? exerciseData.length : 0;
+      setAnsweredIds((prev) => [...prev, activeQuestion.id]);
+
+      setTimeout(() => {
+        setShowResult(false);
+        setActiveQuestion(null);
+        activeQuestionRef.current = null;
+        isAnswerTransitionRef.current = false;
+
+        try {
+          const exercises = exerciseDataRef.current;
+          if (Array.isArray(exercises) && exercises.length > 0) {
+            const nextUnanswered = exercises.find((q) => !answeredIdsRef.current.includes(q.id));
+            const getVirtualOrLocalTime = () => {
+              if (isYoutubeVideo) {
+                const anchor = ytVirtualAnchorRef.current;
+                if (!anchor) return Number.NaN;
+                return ytIsPlayingInternalRef.current
+                  ? anchor.time + (Date.now() - anchor.ts) / 1000
+                  : anchor.time;
+              }
+              const t = (player as any)?.currentTime;
+              return typeof t === "number" ? t : Number.NaN;
+            };
+            const nowT = getVirtualOrLocalTime();
+            if (nextUnanswered && Number.isFinite(nowT)) {
+              const s = timeToSeconds(nextUnanswered.time_start);
+              const e = timeToSeconds(nextUnanswered.time_end);
+              if (nowT >= s && nowT <= e) {
+                activeQuestionRef.current = nextUnanswered;
+                setActiveQuestion(nextUnanswered);
+                pausePlayback();
+                return;
+              }
+            }
+          }
+        } catch {}
+
+        if (totalCount > 0 && nextAnsweredCount === totalCount) {
+          setHasCompletedAll(true);
+          setShowCompletionOverlay(true);
+        } else if (isYoutubeVideo && opts?.setYoutubeIsPlaying && isComponentMounted.current) {
+          try {
+            ytIsPlayingInternalRef.current = true;
+            if (ytVirtualAnchorRef.current) {
+              ytVirtualAnchorRef.current = { ...ytVirtualAnchorRef.current, ts: Date.now() };
+            }
+            opts.setYoutubeIsPlaying(true);
+          } catch (error) {
+            logger.error("[useDetailedVideoLogic] Error resuming YouTube after answer (fallback):", error);
+          }
+        } else if (
+          player &&
+          videoSource &&
+          videoSource !== "" &&
+          typeof player.play === "function" &&
+          isComponentMounted.current
+        ) {
+          try {
+            player.play();
+          } catch (error) {
+            logger.error("[useDetailedVideoLogic] Error playing after answer (fallback):", error);
+          }
+        }
+      }, 1500);
+
+      return fallbackResult;
     }
   };
 
   const handleContinueWatching = useCallback(() => {
     setShowCompletionOverlay(false);
+    
+    // Clear active question so we don't get stuck in a pause loop
+    const activeQ = activeQuestionRef.current;
+    if (activeQ) {
+      if (!answeredIdsRef.current.includes(activeQ.id)) {
+        setAnsweredIds((prev) => [...prev, activeQ.id]);
+      }
+      setActiveQuestion(null);
+      activeQuestionRef.current = null;
+    }
+    isAnswerTransitionRef.current = false;
+
     try {
       if (isYoutubeVideo) {
         ytIsPlayingInternalRef.current = true;
@@ -673,5 +807,6 @@ export const useDetailedVideoLogic = (
     handleContinueWatching,
     handleViewResults,
     ytSavedTime,
+    handleVideoLoaded,
   };
 };
