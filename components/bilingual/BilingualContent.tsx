@@ -37,7 +37,7 @@ export function BilingualContent({
             } space-y-2`}
           >
             {/* Clickable Chinese words */}
-            <div className="flex flex-wrap gap-x-1.5 gap-y-2 text-base md:text-lg font-black text-zinc-800 dark:text-zinc-100 tracking-wide leading-relaxed">
+            <div className="flex flex-wrap items-end gap-x-1.5 gap-y-2 text-base md:text-lg font-black text-zinc-800 dark:text-zinc-100 tracking-wide leading-relaxed">
               {entry.segmentedWords?.map((wItem: any, wordIdx: number) => (
                 <span
                   key={wordIdx}

@@ -1,6 +1,7 @@
 import React from "react";
 import { useThemeColors } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
+import { Undo2, X, RotateCw, Check } from "lucide-react";
 
 interface FlashcardControlsProps {
   onNext: (status: "mastered" | "uncertain" | "learning") => void;
@@ -16,62 +17,56 @@ export const FlashcardControls = React.memo<FlashcardControlsProps>(
 
     return (
       <div
-        className="flex flex-row justify-around items-center py-4 px-2 border-t border-solid w-full bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+        className="flex flex-wrap gap-4 items-center justify-center py-6 px-4 border-t border-solid w-full bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
       >
         {/* Previous Card */}
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-12 w-12 rounded-full cursor-pointer transition-all active:scale-90"
+          variant="outline"
+          className="h-10 px-4 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2 border-zinc-200 dark:border-zinc-850 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-bold font-sans text-zinc-500"
           onClick={onPrevious}
           disabled={isFirst}
-          style={{ color: isFirst ? colors.text.tertiary : colors.text.primary }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-          </svg>
+          <Undo2 className="w-4 h-4" />
+          <span>Quay lại</span>
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-500 rounded border border-zinc-200/60 dark:border-zinc-700 ml-1">↓</kbd>
         </Button>
 
         {/* Don't Know */}
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-12 w-12 rounded-full cursor-pointer transition-all hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-90"
+          variant="outline"
+          className="h-10 px-4 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2 border-rose-250 dark:border-rose-950/30 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 text-rose-600 text-xs font-bold font-sans"
           onClick={() => onNext("learning")}
-          style={{ color: colors.error }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-          </svg>
+          <X className="w-4 h-4" />
+          <span>Chưa thuộc</span>
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-bold text-rose-400 bg-rose-50/50 dark:bg-rose-950/20 rounded border border-rose-200/50 dark:border-rose-900/30 ml-1">← / 2</kbd>
         </Button>
 
         {/* Flip Card / Uncertain */}
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-12 w-12 rounded-full cursor-pointer transition-all hover:bg-amber-50 dark:hover:bg-amber-950/30 active:scale-90"
+          variant="outline"
+          className="h-10 px-5 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2 border-amber-250 dark:border-amber-950/30 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-amber-700 dark:text-amber-500 text-xs font-bold font-sans"
           onClick={onFlip}
-          style={{ color: colors.primary }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-          </svg>
+          <RotateCw className="w-4 h-4" />
+          <span>Lật thẻ</span>
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-bold text-amber-600 bg-amber-50/50 dark:bg-amber-950/20 rounded border border-amber-200/50 dark:border-amber-900/30 ml-1">Space</kbd>
         </Button>
 
         {/* Know It */}
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-12 w-12 rounded-full cursor-pointer transition-all hover:bg-emerald-50 dark:hover:bg-emerald-950/30 active:scale-90"
+          variant="outline"
+          className="h-10 px-4 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2 border-emerald-250 dark:border-emerald-950/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 text-emerald-600 text-xs font-bold font-sans"
           onClick={() => onNext("mastered")}
-          style={{ color: colors.success }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-          </svg>
+          <Check className="w-4 h-4" />
+          <span>Đã thuộc</span>
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-bold text-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 rounded border border-emerald-200/50 dark:border-emerald-900/30 ml-1">→</kbd>
         </Button>
       </div>
     );
   },
 );
+
 FlashcardControls.displayName = "FlashcardControls";
+export default FlashcardControls;

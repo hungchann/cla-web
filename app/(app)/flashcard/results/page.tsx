@@ -32,15 +32,15 @@ function FlashcardResultsContent() {
 
   return (
     <div className="flex-1 flex flex-col gap-6">
-        <div className="flex-1 flex flex-col gap-8 py-10 max-w-md mx-auto w-full items-center text-center px-6">
+        <div className="flex-1 flex flex-col gap-8 py-12 max-w-xl mx-auto w-full items-center text-center px-6">
           {/* Title */}
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-extrabold tracking-tight">Hoàn Thành Ôn Tập!</h1>
-            <p className="text-zinc-500 dark:text-zinc-400">Bạn đã hoàn thành lượt ôn tập từ vựng này.</p>
+            <h1 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-white">Hoàn Thành Ôn Tập!</h1>
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Bạn đã hoàn thành toàn bộ lượt ôn tập từ vựng này.</p>
           </div>
 
           {/* Circle Progress Chart */}
-          <div className="relative flex items-center justify-center h-48 w-48">
+          <div className="relative flex items-center justify-center h-52 w-52 bg-white dark:bg-zinc-900 rounded-full shadow-2xs border border-zinc-100 dark:border-zinc-800/80 p-2">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               {/* Background circle */}
               <circle
@@ -48,9 +48,9 @@ function FlashcardResultsContent() {
                 cy="50"
                 r="42"
                 stroke="currentColor"
-                strokeWidth="8"
+                strokeWidth="7"
                 fill="transparent"
-                className="text-zinc-200 dark:text-zinc-800"
+                className="text-zinc-100 dark:text-zinc-800"
               />
               {/* Progress circle */}
               <circle
@@ -58,47 +58,48 @@ function FlashcardResultsContent() {
                 cy="50"
                 r="42"
                 stroke="currentColor"
-                strokeWidth="8"
+                strokeWidth="7"
                 fill="transparent"
                 strokeDasharray={263.89}
                 strokeDashoffset={263.89 - (263.89 * percent) / 100}
-                className="text-amber-600 transition-all duration-1000 ease-out"
+                className="text-amber-500 transition-all duration-1000 ease-out"
+                strokeLinecap="round"
               />
             </svg>
             {/* Percentage Label */}
             <div className="absolute flex flex-col items-center">
-              <span className="text-4xl font-black text-zinc-900 dark:text-white">{percent}%</span>
-              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Thuộc bài</span>
+              <span className="text-5xl font-black text-zinc-900 dark:text-white">{percent}%</span>
+              <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-1">Độ chính xác</span>
             </div>
           </div>
 
           {/* Stats Breakdown */}
           <div className="w-full grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
-              <p className="text-xs font-semibold text-zinc-500">Thuộc (Mastered)</p>
-              <p className="text-2xl font-bold text-emerald-500 mt-1">{known} từ</p>
+            <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 shadow-2xs hover:shadow-sm transition-all duration-300">
+              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Thuộc (Mastered)</p>
+              <p className="text-3xl font-black text-emerald-500 mt-1.5">{known} từ</p>
             </div>
 
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
-              <p className="text-xs font-semibold text-zinc-500">Cần ôn (Review)</p>
-              <p className="text-2xl font-bold text-rose-500 mt-1">{unknown} từ</p>
+            <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 shadow-2xs hover:shadow-sm transition-all duration-300">
+              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Cần ôn (Review)</p>
+              <p className="text-3xl font-black text-rose-500 mt-1.5">{unknown} từ</p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="w-full flex flex-col gap-3">
+          <div className="w-full flex flex-col sm:flex-row gap-4 pt-2">
             <button
               onClick={handleRestart}
-              className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white py-3 text-sm font-semibold transition-all shadow-md shadow-amber-600/10"
+              className="flex-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white py-3 px-6 text-sm font-bold transition-all shadow-md shadow-amber-600/10 cursor-pointer active:scale-[0.99]"
             >
               Học lại deck này
             </button>
 
             <Link
-              href="/dashboard"
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 py-3 text-sm font-semibold dark:border-zinc-800 dark:bg-zinc-850 dark:hover:bg-zinc-800 dark:text-zinc-300 transition-all"
+              href="/flashcard"
+              className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 py-3 px-6 text-sm font-bold dark:border-zinc-800 dark:bg-zinc-850 dark:hover:bg-zinc-850 dark:text-zinc-300 transition-all text-center flex items-center justify-center cursor-pointer"
             >
-              Quay lại Dashboard
+              Quay lại Flashcard
             </Link>
           </div>
       </div>

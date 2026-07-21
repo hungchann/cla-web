@@ -250,6 +250,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const {
     activeQuestion,
     subtitles,
+    currentSubtitle: hookCurrentSubtitle,
     handleOptionPress,
     handleContinueWatching,
     exerciseData,
@@ -302,16 +303,17 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     enrich();
   }, [subtitles]);
 
-  // Đồng bộ phụ đề chạy chữ theo timeline
-  const currentSubtitle = enrichedSubtitles.find((st) => {
+  // Đồng bộ phụ đề chạy chữ theo timeline (kết hợp hook state & local time)
+  const activeSubtitleIndex = enrichedSubtitles.findIndex((st, idx) => {
+    if (hookCurrentSubtitle) {
+      if (hookCurrentSubtitle.id !== undefined && st.id === hookCurrentSubtitle.id) return true;
+      if ((hookCurrentSubtitle as any).index !== undefined && idx === (hookCurrentSubtitle as any).index) return true;
+      if (st.start === hookCurrentSubtitle.start && st.end === hookCurrentSubtitle.end) return true;
+    }
     const s = timeToSeconds(String(st.start));
     const e = timeToSeconds(String(st.end));
     return currentTime >= s && currentTime <= e;
   });
-
-  const activeSubtitleIndex = enrichedSubtitles.findIndex(
-    (sub) => sub.chinese === currentSubtitle?.chinese
-  );
 
   // Tự động Pause video khi có câu hỏi hoạt động
   useEffect(() => {
@@ -331,14 +333,21 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     }
   }, [activeQuestion, isYoutubeVideo]);
 
-  // Cuộn tự động phụ đề theo timeline video
+  // Cuộn tự động phụ đề như 1 Teleprompter (căn giữa item active trong viewport)
   const subtitleContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (activeSubtitleIndex !== -1 && subtitleContainerRef.current) {
-      const activeEl = subtitleContainerRef.current.children[activeSubtitleIndex] as HTMLElement;
+      const container = subtitleContainerRef.current;
+      const activeEl = container.children[activeSubtitleIndex] as HTMLElement;
       if (activeEl) {
-        subtitleContainerRef.current.scrollTo({
-          top: activeEl.offsetTop - 120,
+        const containerHeight = container.clientHeight;
+        const activeElHeight = activeEl.clientHeight;
+        const activeElTop = activeEl.offsetTop;
+
+        const targetScrollTop = activeElTop - containerHeight / 2 + activeElHeight / 2;
+
+        container.scrollTo({
+          top: Math.max(0, targetScrollTop),
           behavior: "smooth",
         });
       }
@@ -636,7 +645,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                   // Nội dung Tab Danh sách Phụ đề
                   <div
                     ref={subtitleContainerRef}
-                    className="flex-1 overflow-y-auto mt-1 pr-1 scrollbar-thin flex flex-col gap-1"
+                    className="flex-1 overflow-y-auto mt-1 pr-1 scrollbar-thin flex flex-col gap-2"
                   >
                     {enrichedSubtitles.map((sub, index) => (
                       <SubtitleItem

@@ -32,35 +32,38 @@ export const RubyText = ({
         color: textColor,
         fontWeight: bold ? "700" : "500",
         fontSize: fontSize ? `${fontSize}px` : undefined,
+        lineHeight: "1.2",
       }}
     >
       {word}
-      {pinyin && (
+      {pinyin ? (
         <rt
           className="ruby-pinyin select-none text-amber-600"
           style={{
             color: pinyinColor,
             fontSize: pinyinSize ? `${pinyinSize}px` : undefined,
+            lineHeight: "1.2",
           }}
         >
           {pinyin}
         </rt>
-      )}
+      ) : null}
     </ruby>
   );
 
   if (onPress) {
     return (
       <button
+        type="button"
         onClick={onPress}
-        className={`focus:outline-none hover:opacity-80 active:opacity-60 cursor-pointer bg-transparent border-none p-0 inline-flex align-middle ${containerClassName}`}
+        className={`focus:outline-none hover:opacity-80 active:opacity-60 cursor-pointer bg-transparent border-none p-0 inline-flex align-bottom ${containerClassName}`}
       >
         {content}
       </button>
     );
   }
 
-  return <span className={`inline-flex align-middle ${containerClassName}`}>{content}</span>;
+  return <span className={`inline-flex align-bottom ${containerClassName}`}>{content}</span>;
 };
 
 export default RubyText;

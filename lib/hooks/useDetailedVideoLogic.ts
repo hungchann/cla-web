@@ -796,6 +796,7 @@ export const useDetailedVideoLogic = (
     activeQuestion,
     exerciseData,
     subtitles,
+    currentSubtitle,
     nextQuestionId,
     answeredIds,
     answerResults,

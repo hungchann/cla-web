@@ -581,68 +581,77 @@ function FlashcardStudySession({
   }
 
   return (
-    <PageContainer maxWidth="narrow" className="max-w-xl">
-          <div className="bg-amber-500 text-white font-black py-3 px-6 rounded-2xl text-center shadow-xs text-sm uppercase tracking-wide">
+    <PageContainer className="max-w-3xl">
+          <div className="bg-amber-500 text-white font-black py-4 px-6 rounded-2xl text-center shadow-xs text-sm uppercase tracking-wide">
             {fallbackDataActive ? "Thử thách Flashcard" : "Học tập Flashcard"}
           </div>
 
-          <div className="flex justify-between items-center text-xs font-bold text-zinc-400 dark:text-zinc-500 select-none px-2">
-            <span>Tiến trình: {displayIndex + 1} / {totalCards}</span>
-            <button
-              onClick={toggleFavorite}
-              className={`cursor-pointer bg-transparent border-none ${isFavorite ? "text-rose-500" : "text-zinc-300 dark:text-zinc-700"}`}
-            >
-              <Heart className="w-6 h-6" fill={isFavorite ? "currentColor" : "none"} />
-            </button>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-xs font-bold text-zinc-500 dark:text-zinc-400 select-none px-1">
+              <span>Tiến trình học: {displayIndex + 1} / {totalCards}</span>
+              <button
+                onClick={toggleFavorite}
+                className={`cursor-pointer bg-transparent border-none transition-all active:scale-90 ${isFavorite ? "text-rose-500" : "text-zinc-300 dark:text-zinc-700 hover:text-rose-400"}`}
+              >
+                <Heart className="w-6 h-6" fill={isFavorite ? "currentColor" : "none"} />
+              </button>
+            </div>
+            {/* Dynamic Progress Bar */}
+            <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden shadow-inner">
+              <div 
+                className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-500 ease-out" 
+                style={{ width: `${((displayIndex + 1) / totalCards) * 100}%` }}
+              />
+            </div>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-96 w-full mt-2">
             <FlashcardCard
               isFlipped={isCardFlipped}
               onFlip={handleFlipAction}
               frontContent={
-                <div className="flex-1 flex flex-col items-center justify-center p-6 h-full text-center rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                  <span className="text-4xl font-extrabold text-zinc-900 dark:text-white tracking-wider">
+                <div className="flex-1 flex flex-col items-center justify-center p-8 h-full text-center rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  <span className="text-6xl font-black text-zinc-900 dark:text-white tracking-wider">
                     {activeVocab?.name || activeDetail?.word}
                   </span>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-4">Nhấp để xem nghĩa</p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-6 tracking-wide">Nhấp vào thẻ hoặc ấn [Space] để xem nghĩa</p>
                 </div>
               }
               backContent={
-                <div className="flex-1 flex flex-col justify-between p-6 h-full overflow-y-auto scrollbar-thin rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                  <div className="space-y-4">
+                <div className="flex-1 flex flex-col justify-between p-8 h-full overflow-y-auto scrollbar-thin rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="space-y-5">
                     <div className="text-center">
-                      <span className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-wider">
+                      <span className="text-5xl font-black text-zinc-900 dark:text-white tracking-wider">
                         {activeVocab?.name || activeDetail?.word}
                       </span>
-                      <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 font-mono mt-1">
+                      <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 font-mono mt-2">
                         {activeVocab?.pinyin || activeDetail?.pinyin}
                       </p>
                     </div>
 
-                    <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-3 space-y-3">
+                    <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-4 space-y-4">
                       {sensesContent}
                     </div>
 
                     {activeDetail?.note && (
-                      <div className="text-xs text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/85 pt-2">
-                        <span className="font-bold">Ghi chú: </span>
+                      <div className="text-xs text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800/85 pt-3">
+                        <span className="font-bold text-zinc-500">Ghi chú: </span>
                         {activeDetail.note}
                       </div>
                     )}
                   </div>
 
-                  <div className="text-center pt-4">
+                  <div className="text-center pt-6">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         speakChinese(activeVocab?.name || activeDetail?.word || "");
                       }}
-                      className="border border-amber-500/25 text-amber-700 dark:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 justify-center bg-transparent"
+                      className="border border-amber-500/25 text-amber-700 dark:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 justify-center bg-transparent"
                     >
                       🔊 Nghe phát âm
                     </button>
-                    <div className="text-center text-xs text-zinc-400 dark:text-zinc-500 mt-2">
+                    <div className="text-center text-[10px] text-zinc-400 dark:text-zinc-500 mt-3 font-semibold">
                       Nhấp để quay lại mặt trước
                     </div>
                   </div>

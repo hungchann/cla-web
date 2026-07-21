@@ -1,6 +1,7 @@
 import { SubtitleEntry } from "@/lib/types/subtitle";
 import React, { memo, useEffect, useRef } from "react";
 import { RubyText } from "../RubyText";
+import { Play } from "lucide-react";
 
 type SubtitleRowProps = {
   item: SubtitleEntry;
@@ -20,7 +21,7 @@ export const SubtitleRow = memo(function SubtitleRow({
   activeIndex,
   isOpenPinyin,
   onWordPress,
-  colors,
+  colors: _colors,
   onReplay,
   onLayout,
   className = "",
@@ -36,77 +37,73 @@ export const SubtitleRow = memo(function SubtitleRow({
   }, [index, onLayout]);
 
   const isActive = activeIndex === index;
-  const textColor = isActive ? colors.text.inverse : colors.text.primary;
 
   return (
     <div
       ref={rowRef}
-      className={`relative w-full flex flex-row items-center justify-between p-2.5 my-1 rounded-2xl overflow-hidden min-h-[60px] transition-colors duration-200 ${className}`}
-      style={{
-        backgroundColor: isActive ? colors.primary : "transparent",
-      }}
+      onClick={() => onReplay(item, index)}
+      className={`w-full p-3.5 my-1.5 rounded-xl transition-all duration-200 cursor-pointer border-l-4 ${
+        isActive
+          ? "bg-amber-50/90 dark:bg-amber-950/40 border-amber-500 shadow-3xs"
+          : "bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 border-zinc-100 dark:border-zinc-800/60"
+      } ${className}`}
     >
-      <div className="flex-1 flex flex-col items-start pr-10">
-        <div className="flex flex-row flex-wrap items-start">
-          {Array.isArray(item.segmentedWords) ? (
-            item.segmentedWords.map((w: { word: string; pinyin: string }, i: number) => (
+      <div className="flex items-start justify-between gap-3 w-full">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          {/* Chinese + Pinyin */}
+          <div className="flex flex-row flex-wrap items-end gap-x-1.5 gap-y-2 leading-relaxed">
+            {Array.isArray(item.segmentedWords) && item.segmentedWords.length > 0 ? (
+              item.segmentedWords.map((w: { word: string; pinyin: string }, i: number) => (
+                <RubyText
+                  key={`word-${index}-${i}-${w.word}`}
+                  word={w.word}
+                  pinyin={isOpenPinyin ? w.pinyin : undefined}
+                  fontSize={18}
+                  pinyinSize={12}
+                  onPress={() => onWordPress(w.word)}
+                />
+              ))
+            ) : (
               <RubyText
-                key={`word-${index}-${i}-${w.word}`}
-                word={w.word}
-                pinyin={isOpenPinyin ? w.pinyin : undefined}
-                fontSize={20}
-                pinyinSize={14}
-                textColor={textColor}
-                pinyinColor={textColor}
-                onPress={() => onWordPress(w.word)}
-                containerClassName="mr-2 mb-1"
+                word={item.chinese}
+                pinyin={isOpenPinyin ? item.pinyin : undefined}
+                fontSize={18}
+                pinyinSize={12}
               />
-            ))
-          ) : (
-            <RubyText
-              word={item.chinese}
-              pinyin={isOpenPinyin ? item.pinyin : undefined}
-              fontSize={20}
-              pinyinSize={14}
-              textColor={textColor}
-              pinyinColor={textColor}
-              containerClassName="mr-2 mb-1"
-            />
+            )}
+          </div>
+
+          {/* Vietnamese Translation */}
+          {item.vietnamese && (
+            <p
+              className={`text-xs md:text-sm font-medium leading-relaxed ${
+                isActive
+                  ? "text-amber-900 dark:text-amber-200 font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400"
+              }`}
+            >
+              {item.vietnamese}
+            </p>
           )}
         </div>
-        <p
-          className="mt-1 text-[15px] leading-snug text-left self-stretch transition-opacity duration-250"
-          style={{
-            color: textColor,
-            opacity: isActive ? 1 : 0.9,
-          }}
-        >
-          {item.vietnamese}
-        </p>
-      </div>
 
-      <button
-        onClick={() => onReplay(item, index)}
-        className="absolute right-2.5 top-2.5 z-10 w-7 h-7 rounded-full border border-solid flex items-center justify-center cursor-pointer transition-colors"
-        style={{
-          borderColor: isActive ? colors.text.inverse : colors.primary,
-          backgroundColor: isActive ? colors.primary : colors.background.primary,
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="w-3.5 h-3.5"
-          style={{ color: isActive ? colors.text.inverse : colors.primary }}
+        {/* Replay Button in flow */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onReplay(item, index);
+          }}
+          className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors border-none cursor-pointer mt-0.5 ${
+            isActive
+              ? "bg-amber-500 text-white shadow-xs"
+              : "bg-zinc-100 text-zinc-500 hover:bg-amber-100 hover:text-amber-600 dark:bg-zinc-800 dark:text-zinc-400"
+          }`}
+          title="Phát lại đoạn này"
         >
-          <path
-            fillRule="evenodd"
-            d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
+          <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
+        </button>
+      </div>
     </div>
   );
 });

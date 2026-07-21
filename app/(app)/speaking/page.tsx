@@ -320,9 +320,9 @@ export default function SpeakingPage() {
                                         : "bg-amber-600 text-white shadow-xs";
 
                                     const wordHighlightStyle = (detail: any) => {
-                                        if (detail.isCorrect) return "text-emerald-500 dark:text-emerald-450 font-extrabold";
-                                        if (detail.isMissing) return "text-amber-500 dark:text-amber-400 line-through decoration-2 decoration-amber-500";
-                                        return "text-rose-500 font-extrabold"; // Extra / wrong
+                                        if (detail.isCorrect) return "text-emerald-300 font-extrabold";
+                                        if (detail.isMissing) return "text-white/60 line-through decoration-2 decoration-white/40 font-semibold";
+                                        return "text-rose-200 font-extrabold"; // Extra / wrong
                                     };
 
                                     return (

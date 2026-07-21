@@ -400,7 +400,7 @@ export function BilingualShadowing({
       <div className="bg-zinc-50 dark:bg-zinc-950/60 p-4 md:p-5 rounded-2xl border border-zinc-150 dark:border-zinc-800/80 flex items-start justify-between gap-4">
         <div className="space-y-3 flex-1 min-w-0">
           {/* Target Chinese characters with optional interactive words */}
-          <div className="flex flex-wrap gap-x-1.5 gap-y-2 text-lg md:text-xl font-black text-zinc-800 dark:text-zinc-100 leading-relaxed">
+          <div className="flex flex-wrap items-end gap-x-1.5 gap-y-2 text-lg md:text-xl font-black text-zinc-800 dark:text-zinc-100 leading-relaxed">
             {defaultEntry.segmentedWords && defaultEntry.segmentedWords.length > 0 ? (
               defaultEntry.segmentedWords.map((wItem: any, wordIdx: number) => (
                 <span

@@ -50,7 +50,7 @@ export default function HighlightedText({
     <div className="flex-1 w-full">
       {showPinyin && segmentedWords.length > 0 ? (
         // Show segmented words with pinyin
-        <div className="flex flex-row flex-wrap justify-start items-start gap-y-1">
+        <div className="flex flex-row flex-wrap justify-start items-end gap-x-1 gap-y-2">
           {segmentedWords.map((seg, idx) => {
             const highlight = highlightedMap.get(seg.word);
             let textColor = colors.text.primary;
@@ -69,14 +69,13 @@ export default function HighlightedText({
                 pinyinColor={textColor}
                 bold={highlight?.isCorrect || highlight?.isSubstitution}
                 className={highlight?.isSubstitution ? "italic" : ""}
-                containerClassName="mx-1 my-0.5"
               />
             );
           })}
         </div>
       ) : (
         // Show character by character
-        <div className="flex flex-row flex-wrap justify-start items-start gap-y-1">
+        <div className="flex flex-row flex-wrap justify-start items-end gap-x-1 gap-y-2">
           {displayItems.map((item, index) => {
             const charStyle: React.CSSProperties = {
               fontSize: "24px",
