@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Globe2, Map, Clock, Calendar, GraduationCap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -74,7 +75,7 @@ const traditionalCourses = [
     },
 ];
 
-export default function CoursesPage() {
+function CoursesPageContent() {
     const searchParams = useSearchParams();
     const selectedLevel = searchParams.get("level");
     const selectedScript = searchParams.get("script");
@@ -190,5 +191,22 @@ export default function CoursesPage() {
                 </section>
             )}
         </PageContainer>
+    );
+}
+
+export default function CoursesPage() {
+    return (
+        <Suspense fallback={
+            <PageContainer className="gap-9">
+                <PageHeader
+                    title="Khóa Học Tiếng Trung"
+                    description="Hệ thống khóa học bài bản từ Giản thể đến Phồn thể. Chọn khóa học phù hợp với mục tiêu của bạn."
+                    icon={<GraduationCap className="w-7 h-7" />}
+                />
+                <div className="animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800 h-40" />
+            </PageContainer>
+        }>
+            <CoursesPageContent />
+        </Suspense>
     );
 }

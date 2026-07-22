@@ -5,7 +5,7 @@ import { bilingualApi } from "@/api/bilingual";
 import { fetchVideoGenres } from "@/api/video";
 import { getAssetUrl } from "@/lib/utils/assets";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { Suspense, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPills } from "@/components/ui/filter-pills";
@@ -49,7 +49,7 @@ const MOCK_VIDEOS = [
   },
 ];
 
-export default function VideoListPage() {
+function VideoListPageContent() {
   const [page, setPage] = useState(1);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -284,6 +284,23 @@ export default function VideoListPage() {
         className="mt-4 pb-6"
       />
     </PageContainer>
+  );
+}
+
+export default function VideoListPage() {
+  return (
+    <Suspense fallback={
+      <PageContainer className="gap-9">
+        <PageHeader
+          title="Video luyện tập"
+          description="Luyện nghe tiếng Trung qua các video phụ đề song ngữ."
+          icon={<Video className="w-7 h-7" />}
+        />
+        <div className="animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800 h-40" />
+      </PageContainer>
+    }>
+      <VideoListPageContent />
+    </Suspense>
   );
 }
 

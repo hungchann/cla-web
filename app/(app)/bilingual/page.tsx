@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
 import { getAssetUrl } from "@/lib/utils/assets";
@@ -18,7 +18,7 @@ const LIMIT = 6;
 
 const HSK_LEVELS = new Set(["Tất cả", "HSK 1", "HSK 2", "HSK 3", "HSK 4", "HSK 5", "HSK 6"]);
 
-export default function BilingualListPage() {
+function BilingualListPageContent() {
     const [page, setPage] = useState(1);
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -186,5 +186,22 @@ export default function BilingualListPage() {
                 className="mt-4 pb-6"
             />
         </PageContainer>
+    );
+}
+
+export default function BilingualListPage() {
+    return (
+        <Suspense fallback={
+            <PageContainer className="gap-9">
+                <PageHeader
+                    title="Bài đọc song ngữ"
+                    description="Luyện đọc tiếng Trung qua các bài đọc song ngữ Trung - Việt."
+                    icon={<BookOpen className="w-7 h-7" />}
+                />
+                <div className="animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800 h-40" />
+            </PageContainer>
+        }>
+            <BilingualListPageContent />
+        </Suspense>
     );
 }

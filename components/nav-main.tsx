@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { ChevronRight, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
@@ -30,12 +31,7 @@ export type SidebarSubmenuGroup = {
   }[]
 }
 
-/**
- * The app sidebar deliberately contains only controls for the current route.
- * Global navigation lives in SiteHeader so changing sections never turns this
- * into a second navigator.
- */
-export function NavMain({
+function NavMainContent({
   label,
   items,
 }: Readonly<{
@@ -97,5 +93,46 @@ export function NavMain({
         ))}
       </SidebarMenu>
     </SidebarGroup>
+  )
+}
+
+/**
+ * The app sidebar deliberately contains only controls for the current route.
+ * Global navigation lives in SiteHeader so changing sections never turns this
+ * into a second navigator.
+ */
+export function NavMain({
+  label,
+  items,
+}: Readonly<{
+  label: string
+  items: SidebarSubmenuGroup[]
+}>) {
+  return (
+    <Suspense
+      fallback={
+        <SidebarGroup className="px-3 py-2">
+          <SidebarGroupLabel className="px-3 text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500/80">
+            {label}
+          </SidebarGroupLabel>
+          <SidebarMenu className="gap-1">
+            {items.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  className="h-10 rounded-xl px-3 text-sm font-bold text-sidebar-foreground/80 dark:text-sidebar-foreground/90 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <item.icon className="size-4 text-zinc-500" />
+                  <span>{item.title}</span>
+                  <ChevronRight className="ml-auto size-4 transition-transform duration-200" />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+      }
+    >
+      <NavMainContent label={label} items={items} />
+    </Suspense>
   )
 }
