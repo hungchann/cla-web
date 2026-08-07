@@ -438,6 +438,17 @@ export async function getVocabularyByIdSection(idSection: string) {
         meaning: meaningStr || "N/A",
         Example: exampleStr || "",
         example: exampleStr || "",
+        senses: itemMeanings.map((m: any) => ({
+          id: m.id,
+          pos_label: m.pos_id?.label_vi || undefined,
+          meaning: m.meaning_vi,
+          examples: (m.examples || []).map((ex: any) => ({
+            id: ex.id,
+            chinese: ex.chinese,
+            pinyin: ex.pinyin,
+            vietnamese: ex.p_vi,
+          })),
+        })),
       };
     });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Globe2, Map, Clock, Calendar, GraduationCap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,6 +9,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageContainer } from "@/components/PageContainer";
+import { coursesApi } from "@/api/courses";
+import { CourseItem } from "@/lib/types/course";
 
 const featuredCourses = [
     {
@@ -80,10 +82,38 @@ function CoursesPageContent() {
     const selectedLevel = searchParams.get("level");
     const selectedScript = searchParams.get("script");
 
-    const matchesSelectedLevel = (course: { level?: string }) =>
-        !selectedLevel || course.level === selectedLevel;
-    const visibleSimplifiedCourses = simplifiedCourses.filter(matchesSelectedLevel);
-    const visibleTraditionalCourses = traditionalCourses.filter(matchesSelectedLevel);
+    const [courses, setCourses] = useState<CourseItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+        setLoading(true);
+        coursesApi
+            .getCourses({
+                level: selectedLevel || undefined,
+                script: selectedScript || undefined,
+            })
+            .then((res) => {
+                if (isMounted) {
+                    setCourses(res);
+                    setLoading(false);
+                }
+            })
+            .catch(() => {
+                if (isMounted) setLoading(false);
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedLevel, selectedScript]);
+
+    const simplifiedCoursesList = courses.filter(
+        (c) => !c.script_type || c.script_type === "simplified"
+    );
+    const traditionalCoursesList = courses.filter(
+        (c) => c.script_type === "traditional" || c.isBilingual
+    );
+
     const showSimplified = selectedScript !== "traditional";
     const showTraditional = selectedScript !== "simplified";
 
@@ -100,7 +130,7 @@ function CoursesPageContent() {
                         <Globe2 className="text-amber-500 w-6 h-6" /> Giản thể (Trung Quốc đại lục)
                     </h2>
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                        {visibleSimplifiedCourses.map((course) => (
+                        {simplifiedCoursesList.map((course: CourseItem) => (
                             <Link
                                 key={course.id}
                                 href={`/courses/${course.id}`}
@@ -108,15 +138,24 @@ function CoursesPageContent() {
                             >
                                 <Card className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 text-left shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900">
                                     <div className="relative h-40 w-full bg-zinc-100 dark:bg-zinc-800">
-                                        <Image
-                                            src="/images/study_tablet.png"
-                                            alt={course.title}
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                        <Badge className="absolute top-3 left-3 rounded-full bg-amber-500 text-white font-bold hover:bg-amber-600 border-none px-3 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
-                                            {course.level}
-                                        </Badge>
+                                        {course.image_url ? (
+                                            <Image
+                                                src={course.image_url}
+                                                alt={course.title}
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, 33vw"
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">
+                                                No image
+                                            </div>
+                                        )}
+                                        {course.level && (
+                                            <Badge className="absolute top-3 left-3 rounded-full bg-amber-500 text-white font-bold hover:bg-amber-600 border-none px-3 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
+                                                {course.level}
+                                            </Badge>
+                                        )}
                                     </div>
                                     <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                                         <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors duration-200 text-base leading-snug tracking-tight">
@@ -130,7 +169,7 @@ function CoursesPageContent() {
                             </Link>
                         ))}
                     </div>
-                    {visibleSimplifiedCourses.length === 0 && (
+                    {simplifiedCoursesList.length === 0 && !loading && (
                         <p className="rounded-2xl border border-dashed border-amber-950/15 bg-white/55 p-8 text-center text-sm font-semibold text-zinc-500">
                             Chưa có khóa học phù hợp với bộ lọc này.
                         </p>
@@ -144,20 +183,27 @@ function CoursesPageContent() {
                         <Map className="text-amber-500 w-6 h-6" /> Phồn thể (Đài Loan, Hong Kong, Macao)
                     </h2>
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                        {visibleTraditionalCourses.map((course) => (
+                        {traditionalCoursesList.map((course: CourseItem) => (
                             <Link
                                 key={course.id}
-                                href={course.id === "bilingual-pressure" ? "/bilingual/bilingual-pressure" : `/courses/${course.id}`}
+                                href={course.isBilingual ? `/bilingual/${course.id}` : `/courses/${course.id}`}
                                 className="group block"
                             >
                                 <Card className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 text-left shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900">
                                     <div className="relative h-40 w-full bg-zinc-100 dark:bg-zinc-800">
-                                        <Image
-                                            src="/images/study_tablet.png"
-                                            alt={course.title}
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
+                                        {course.image_url ? (
+                                            <Image
+                                                src={course.image_url}
+                                                alt={course.title}
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, 33vw"
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">
+                                                No image
+                                            </div>
+                                        )}
                                         {course.level && (
                                             <Badge className="absolute top-3 left-3 rounded-full bg-amber-500 text-white font-bold hover:bg-amber-600 border-none px-3 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
                                                 {course.level}
@@ -183,7 +229,7 @@ function CoursesPageContent() {
                             </Link>
                         ))}
                     </div>
-                    {visibleTraditionalCourses.length === 0 && (
+                    {traditionalCoursesList.length === 0 && !loading && (
                         <p className="rounded-2xl border border-dashed border-amber-950/15 bg-white/55 p-8 text-center text-sm font-semibold text-zinc-500">
                             Chưa có khóa học phù hợp với bộ lọc này.
                         </p>

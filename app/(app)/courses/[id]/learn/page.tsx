@@ -5,14 +5,38 @@ import { use, useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
 import HighlightedText from "@/components/HighlightedText";
-import { grammarApi } from "@/api/grammar";
+import { coursesApi } from "@/api/courses";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
+import { CourseLesson, CourseLessonType } from "@/lib/types/course";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { speakChinese } from "@/lib/utils/speech";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ASSET_URL } from "@/lib/constants";
 import { Play, Check, Star, Folder, Volume2, Target, XCircle, User, Mic, PartyPopper, Lightbulb } from "lucide-react";
+
+const STEP_TYPE_TO_LEARN: Record<string, CourseLessonType> = {
+  "learn-video-vocab": "video_vocab",
+  "learn-quiz-vocab": "quiz_vocab",
+  "learn-video-grammar": "video_grammar",
+  "learn-quiz-grammar": "quiz_grammar",
+  "learn-dictation": "dictation",
+  "learn-conversation": "conversation",
+  "learn-reading": "reading",
+  "learn-extra": "extra",
+};
+
+const LEARN_TO_STEP_TYPE: Record<string, string> = {
+  "video_vocab": "learn-video-vocab",
+  "quiz_vocab": "learn-quiz-vocab",
+  "video_grammar": "learn-video-grammar",
+  "quiz_grammar": "learn-quiz-grammar",
+  "dictation": "learn-dictation",
+  "conversation": "learn-conversation",
+  "reading": "learn-reading",
+  "extra": "learn-extra",
+};
 
 const MOCK_GRAMMAR_SRT = `1
 00:00:01,000 --> 00:00:05,000
@@ -33,19 +57,91 @@ yǔfǎ: biàndiào thanh 3
 Khi hai âm tiết mang thanh 3 đi liền nhau, âm thứ nhất biến thành thanh 2 (ní hǎo).
 `;
 
+type VocabExample = {
+    chinese: string;
+    pinyin: string;
+    vietnamese: string;
+};
+
+type VocabSense = {
+    id: string | number;
+    pos_label?: string;
+    meaning: string;
+    examples: VocabExample[];
+};
+
+type VocabItem = {
+    id: string | number;
+    word: string;
+    pinyin: string;
+    meaning: string;
+    word_type?: string;
+    senses?: VocabSense[];
+};
+
 function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const courseId = params.id;
-    const currentStep = searchParams.get("step") || "learn-video-vocab";
+    const lessonParam = searchParams.get("lesson");
+    const stepParam = searchParams.get("step");
+    const fallbackType: CourseLessonType = stepParam
+        ? STEP_TYPE_TO_LEARN[stepParam] || "video_vocab"
+        : "video_vocab";
 
-    // Dynamic Grammar Questions state
-    const [grammarQuestions, setGrammarQuestions] = useState<any[]>([]);
-    const [isLoadingGrammar, setIsLoadingGrammar] = useState(false);
-    const [activeGrammarIndex, setActiveGrammarIndex] = useState(0);
+    const [currentLesson, setCurrentLesson] = useState<CourseLesson | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchLesson = async () => {
+            try {
+                if (lessonParam) {
+                    const lesson = await coursesApi.getCourseLessonById(lessonParam);
+                    if (isMounted) setCurrentLesson(lesson);
+                    return;
+                }
+                if (stepParam) {
+                    const chapters = await coursesApi.getCourseChapters(courseId);
+                    if (!isMounted) return;
+                    const match = chapters
+                      .flatMap((c) => c.lessons || [])
+                      .find((l) => l.lesson_type === fallbackType);
+                    if (isMounted) setCurrentLesson(match || null);
+                    return;
+                }
+                const chapters = await coursesApi.getCourseChapters(courseId);
+                if (!isMounted) return;
+                const firstLesson = chapters.flatMap((c) => c.lessons || [])[0];
+                if (isMounted) setCurrentLesson(firstLesson || null);
+            } catch (err) {
+                if (isMounted) setCurrentLesson(null);
+            }
+        };
+        fetchLesson();
+        return () => { isMounted = false; };
+    }, [courseId, lessonParam, stepParam, fallbackType]);
+
+    const currentStep = currentLesson?.lesson_type
+        ? LEARN_TO_STEP_TYPE[currentLesson.lesson_type] || `learn-${currentLesson.lesson_type}`
+        : `learn-${fallbackType}`;
+
+    useEffect(() => {
+        if (currentLesson?.lesson_type === "reading" && currentLesson.resource_id) {
+            router.replace(`/bilingual/${currentLesson.resource_id}`);
+        }
+    }, [currentLesson, router]);
+
+    // Dynamic Quiz Exercises state (vocab + grammar quiz from link_exercise)
+    const [quizExercises, setQuizExercises] = useState<any[]>([]);
+    const [currentQuizIdx, setCurrentQuizIdx] = useState(0);
+    const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
 
     // Dynamic Conversation Shadowing hook
-    const conversationHook = useConversationDetail(courseId || "1");
+    const conversationId =
+        currentLesson?.lesson_type === "conversation" && currentLesson.resource_id
+            ? String(currentLesson.resource_id)
+            : courseId || "1";
+    const conversationHook = useConversationDetail(conversationId);
     const {
         items: convMessages,
         loading: convLoading,
@@ -66,32 +162,36 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         }
     }, [convVisibleMessages.length]);
 
-    // Load dynamic grammar items when active
+    // Load real exercises when quiz step activates
     useEffect(() => {
-        if (currentStep === "learn-quiz-grammar" && grammarQuestions.length === 0) {
-            const loadGrammar = async () => {
-                setIsLoadingGrammar(true);
-                try {
-                    const items = await grammarApi.getRandomGrammarItems();
-                    setGrammarQuestions(items || []);
-                } catch (err) {
-                    console.warn("Lỗi tải ngữ pháp động:", err);
-                } finally {
-                    setIsLoadingGrammar(false);
-                }
-            };
-            loadGrammar();
-        }
-    }, [currentStep, grammarQuestions.length]);
+        const isQuiz = currentStep === "learn-quiz-vocab" || currentStep === "learn-quiz-grammar";
+        if (!isQuiz || !currentLesson?.resource_id || currentLesson.resource_collection !== "link_exercise") return;
+        if (quizExercises.length > 0) return;
+
+        const fetchExercises = async () => {
+            setIsLoadingQuiz(true);
+            try {
+                const { default: api } = await import("@/api/authConfig");
+                const r = await api.get(`/items/exercises?filter[link_exercise_id][_eq]=${currentLesson.resource_id}&sort=sort&fields=id,sort,question,answer_A,answer_B,answer_C,answer_D,Correct_answer,Explanation`);
+                setQuizExercises(r.data?.data || []);
+                setCurrentQuizIdx(0);
+            } catch (e) {
+                setQuizExercises([]);
+            } finally {
+                setIsLoadingQuiz(false);
+            }
+        };
+        fetchExercises();
+    }, [currentStep, currentLesson?.resource_id, currentLesson?.resource_collection, quizExercises.length]);
 
 
+
+    const currentQuiz = quizExercises[currentQuizIdx];
 
     const getVocabSelectedLabel = (selected: string | null) => {
-        if (selected === "A") return "zhi";
-        if (selected === "B") return "ji";
-        if (selected === "C") return "chi";
-        if (selected === "D") return "qi";
-        return "";
+        if (!selected || !currentQuiz) return "";
+        const key = `answer_${selected}` as keyof typeof currentQuiz;
+        return currentQuiz[key] || "";
     };
 
     let courseTitle = "Khóa giao tiếp Tiếng Trung đời sống cho người mới bắt đầu (Giản thể)";
@@ -111,9 +211,38 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         } else if (newStep === "flashcard") {
             router.push("/flashcard");
         } else if (newStep.startsWith("learn")) {
-            router.push(`/courses/${courseId}/learn?step=${newStep}`);
+            if (newStep === "learn-reading") {
+                if (currentLesson?.resource_id) {
+                    router.push(`/bilingual/${currentLesson.resource_id}`);
+                }
+                return;
+            }
+            const lessonType = STEP_TYPE_TO_LEARN[newStep] || newStep.replace(/^learn-/, "");
+            if (currentLesson && currentLesson.lesson_type === lessonType) {
+                router.push(`/courses/${courseId}/learn?lesson=${currentLesson.id}`);
+                return;
+            }
+            coursesApi
+              .getCourseChapters(courseId)
+              .then((chapters) => {
+                const match = chapters
+                  .flatMap((c) => c.lessons || [])
+                  .find((l) => l.lesson_type === lessonType);
+                if (match) {
+                  router.push(`/courses/${courseId}/learn?lesson=${match.id}`);
+                } else {
+                  router.push(`/courses/${courseId}/learn?step=${newStep}`);
+                }
+              })
+              .catch(() => router.push(`/courses/${courseId}/learn?step=${newStep}`));
         }
     };
+
+    // --- Vocab data (Video Vocab step): đọc từ DB theo resource_id ---
+    const [vocabItems, setVocabItems] = useState<VocabItem[]>([]);
+    const [vocabLoading, setVocabLoading] = useState(false);
+    const [selectedVocabIdx, setSelectedVocabIdx] = useState(0);
+    const currentVocab = vocabItems[selectedVocabIdx] || null;
 
     // --- Voice Recording States (Video Vocab step) ---
     const [isSavedToFlashcard, setIsSavedToFlashcard] = useState(false);
@@ -150,9 +279,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         try {
             await notebookApi.createVocabItemInPersonalDeck(
                 deckId,
-                "大方",
-                "dàfang",
-                "Hào phóng, rộng rãi"
+                currentVocab?.word || "",
+                currentVocab?.pinyin || "",
+                currentVocab?.meaning || ""
             );
             setSaveMessage({ type: "success", text: `Đã lưu vào bộ "${deckTitle}"!` });
             setIsSavedToFlashcard(true);
@@ -180,9 +309,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             }
             await notebookApi.createVocabItemInPersonalDeck(
                 deckId,
-                "大方",
-                "dàfang",
-                "Hào phóng, rộng rãi"
+                currentVocab?.word || "",
+                currentVocab?.pinyin || "",
+                currentVocab?.meaning || ""
             );
             setSaveMessage({ type: "success", text: `Đã tạo bộ "${newDeckTitle}" và lưu từ!` });
             setIsSavedToFlashcard(true);
@@ -202,6 +331,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const [recordState, setRecordState] = useState<"idle" | "recording" | "done">("idle");
     const [recordSeconds, setRecordSeconds] = useState(0);
     const [playBackState, setPlayBackState] = useState(false);
+    const [pronounceProcessing, setPronounceProcessing] = useState(false);
+    const [pronounceError, setPronounceError] = useState<string | null>(null);
+    const [pronounceResult, setPronounceResult] = useState<{ text: string; accuracy: number } | null>(null);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
@@ -221,6 +353,78 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         return () => clearInterval(timer);
     }, [recordState]);
 
+    // Bắt đầu ghi âm thật (MediaRecorder) trước khi chuyển UI sang trạng thái "recording"
+    const startPronunciation = async () => {
+        setPronounceResult(null);
+        setPronounceError(null);
+        setPlayBackState(false);
+        try {
+            const { audioRecordingService } = await import("@/services/audioRecordingService");
+            await audioRecordingService.startRecording();
+            setRecordState("recording");
+        } catch (err) {
+            setPronounceError(err instanceof Error ? err.message : "Không thể bắt đầu ghi âm.");
+        }
+    };
+
+    // Reset recorder khi bấm "Ghi lại"
+    const resetPronunciation = async () => {
+        setPronounceResult(null);
+        setPronounceError(null);
+        setPlayBackState(false);
+        try {
+            const { audioRecordingService } = await import("@/services/audioRecordingService");
+            await audioRecordingService.resetRecorder();
+        } catch {
+            // bỏ qua lỗi reset
+        }
+        setRecordState("idle");
+    };
+
+    // Khi trạng thái chuyển sang "done": dừng ghi âm, gửi server transcribe rồi chấm điểm thật
+    useEffect(() => {
+        if (recordState !== "done") return;
+        let cancelled = false;
+        setPronounceProcessing(true);
+        (async () => {
+            try {
+                const { audioRecordingService } = await import("@/services/audioRecordingService");
+                const result = await audioRecordingService.stopRecordingAndTranscribe();
+                if (cancelled) return;
+                if (result.errorType || !result.text || !result.text.trim()) {
+                    setPronounceError(
+                        result.errorType === "empty"
+                            ? "Không nhận dạng được giọng nói, hãy thử nói rõ hơn."
+                            : "Không thể phân tích giọng nói, hãy thử lại.",
+                    );
+                    return;
+                }
+                const { compareTextsAdvanced } = await import("@/services/textComparisonService");
+                const comparison = compareTextsAdvanced(currentVocab?.word || "", result.text);
+                if (cancelled) return;
+                setPronounceResult({ text: result.text, accuracy: Math.round(comparison.accuracy) });
+            } catch (err) {
+                console.warn("Lỗi ghi âm/phân tích phát âm:", err);
+                if (cancelled) return;
+                setPronounceError("Không thể ghi âm/phân tích, hãy thử lại.");
+            } finally {
+                if (!cancelled) setPronounceProcessing(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [recordState]);
+
+    // Dọn dẹp recorder khi rời trang
+    useEffect(() => {
+        return () => {
+            import("@/services/audioRecordingService")
+                .then(({ audioRecordingService }) => audioRecordingService.cleanup().catch(() => {}))
+                .catch(() => {});
+        };
+    }, []);
+
     // --- Vocab Quiz state ---
     const [vocabSelected, setVocabSelected] = useState<string | null>(null);
     const handleVocabSelect = (option: string) => {
@@ -231,21 +435,18 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         setVocabSelected(null);
     };
 
-    // --- Grammar Quiz state ---
-    const [grammarSelected, setGrammarSelected] = useState<string | null>(null);
-    const handleGrammarSelect = (option: string) => {
-        if (grammarSelected) return;
-        setGrammarSelected(option);
-    };
-    const resetGrammarQuiz = () => {
-        setGrammarSelected(null);
-    };
-
     // --- Grammar Video and Subtitle States ---
     const [grammarCurrentTime, setGrammarCurrentTime] = useState(0);
     const [grammarSubtitles, setGrammarSubtitles] = useState<any[]>([]);
+    const [grammarVideoSource, setGrammarVideoSource] = useState<string | null>(null);
+    const [grammarVideoLoading, setGrammarVideoLoading] = useState(false);
     const grammarVideoRef = useRef<HTMLVideoElement | null>(null);
     const grammarSubtitleContainerRef = useRef<HTMLDivElement>(null);
+
+    // --- Video từ vựng (STEP 1): load video thật từ video_section ---
+    const [videoVocabSource, setVideoVocabSource] = useState<string | null>(null);
+    const [videoVocabLoading, setVideoVocabLoading] = useState(false);
+    const vocabVideoRef = useRef<HTMLVideoElement | null>(null);
 
     // Word translation states (for WordInfoModal)
     const [selectedWord, setSelectedWord] = useState<string | null>(null);
@@ -307,27 +508,47 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
     // Load grammar video & subtitles
     useEffect(() => {
+        let cancelled = false;
         const loadGrammarVideo = async () => {
             try {
                 const { bilingualApi } = await import("@/api/bilingual");
                 const videosList = await bilingualApi.getVideoSection();
-                const found = videosList.find(v => {
-                    const titleLower = v.title?.toLowerCase() || "";
-                    const genreLower = (v as any).genre_id?.title?.toLowerCase() || "";
-                    return titleLower.includes("ngữ pháp") || genreLower.includes("ngữ pháp") || genreLower.includes("grammar") || titleLower.includes("grammar");
-                });
+                let found = null;
+
+                // Ưu tiên lấy video theo resource_id trong lesson
+                if (currentLesson?.resource_id) {
+                    found = videosList.find(
+                        (v) => String(v.id) === String(currentLesson.resource_id),
+                    ) || null;
+                }
+                // Fallback: tìm video ngữ pháp theo tiêu đề/genre nếu không có resource_id
+                if (!found) {
+                    found = videosList.find(v => {
+                        const titleLower = v.title?.toLowerCase() || "";
+                        const genreLower = (v as any).genre_id?.title?.toLowerCase() || "";
+                        return titleLower.includes("ngữ pháp") || genreLower.includes("ngữ pháp") || genreLower.includes("grammar") || titleLower.includes("grammar");
+                    }) || null;
+                }
+
+                if (!cancelled) {
+                    setGrammarVideoSource(
+                        found?.video_file?.filename_disk
+                            ? `${ASSET_URL}/${found.video_file.filename_disk}`
+                            : null,
+                    );
+                }
 
                 if (found && found.srt_file?.filename_disk) {
-                    const srtUrl = `https://marutek.space/assets/${found.srt_file.filename_disk}`;
+                    const srtUrl = `${ASSET_URL}/${found.srt_file.filename_disk}`;
                     const res = await fetch(srtUrl);
                     const srtText = await res.text();
                     const { parseSRTtoArray } = await import("@/services/subtitle");
                     const parsed = parseSRTtoArray(srtText);
-                    setGrammarSubtitles(parsed.map(item => ({
+                    if (!cancelled) setGrammarSubtitles(parsed.map(item => ({
                         ...item,
                         segmentedWords: item.chinese ? item.chinese.split("").map(char => ({ word: char, pinyin: "" })) : []
                     })));
-                } else {
+                } else if (!cancelled) {
                     const { parseSRTtoArray } = await import("@/services/subtitle");
                     const parsed = parseSRTtoArray(MOCK_GRAMMAR_SRT);
                     setGrammarSubtitles(parsed.map(item => ({
@@ -337,21 +558,93 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 }
             } catch (err) {
                 console.warn("Lỗi tải video/phụ đề ngữ pháp:", err);
+                if (!cancelled) setGrammarVideoSource(null);
                 try {
                     const { parseSRTtoArray } = await import("@/services/subtitle");
                     const parsed = parseSRTtoArray(MOCK_GRAMMAR_SRT);
-                    setGrammarSubtitles(parsed.map(item => ({
+                    if (!cancelled) setGrammarSubtitles(parsed.map(item => ({
                         ...item,
                         segmentedWords: item.chinese ? item.chinese.split("").map(char => ({ word: char, pinyin: "" })) : []
                     })));
                 } catch { }
+            } finally {
+                if (!cancelled) setGrammarVideoLoading(false);
             }
         };
 
         if (currentStep === "learn-video-grammar") {
+            setGrammarVideoLoading(true);
             loadGrammarVideo();
         }
-    }, [currentStep]);
+        return () => {
+            cancelled = true;
+        };
+    }, [currentStep, currentLesson?.resource_id]);
+
+    // Load video thật của bài video_vocab (theo resource_id trong lesson)
+    useEffect(() => {
+        let cancelled = false;
+        const loadVocabVideo = async () => {
+            if (currentLesson?.lesson_type !== "video_vocab" || !currentLesson.resource_id) {
+                if (!cancelled) setVideoVocabSource(null);
+                return;
+            }
+            if (!cancelled) setVideoVocabLoading(true);
+            try {
+                const { bilingualApi } = await import("@/api/bilingual");
+                const videosList = await bilingualApi.getVideoSection();
+                const found = videosList.find(
+                    (v) => String(v.id) === String(currentLesson.resource_id),
+                );
+                if (!cancelled) {
+                    setVideoVocabSource(
+                        found?.video_file?.filename_disk
+                            ? `${ASSET_URL}/${found.video_file.filename_disk}`
+                            : null,
+                    );
+                }
+            } catch (err) {
+                console.warn("Lỗi tải video từ vựng:", err);
+                if (!cancelled) setVideoVocabSource(null);
+            } finally {
+                if (!cancelled) setVideoVocabLoading(false);
+            }
+        };
+        loadVocabVideo();
+        return () => {
+            cancelled = true;
+        };
+    }, [currentLesson?.lesson_type, currentLesson?.resource_id]);
+
+    // Tải từ vựng của bài video_vocab theo resource_id
+    useEffect(() => {
+        let cancelled = false;
+        const loadVocab = async () => {
+            if (currentStep !== "learn-video-vocab" || !currentLesson?.resource_id) {
+                if (!cancelled) setVocabItems([]);
+                return;
+            }
+            if (!cancelled) setVocabLoading(true);
+            try {
+                const { getVocabularyByIdSection } = await import("@/api/apiService");
+                const res = await getVocabularyByIdSection(String(currentLesson.resource_id));
+                const list: VocabItem[] = res?.data?.vocabulary || [];
+                if (!cancelled) {
+                    setVocabItems(list);
+                    setSelectedVocabIdx(0);
+                }
+            } catch (err) {
+                console.warn("Lỗi tải từ vựng bài học:", err);
+                if (!cancelled) setVocabItems([]);
+            } finally {
+                if (!cancelled) setVocabLoading(false);
+            }
+        };
+        loadVocab();
+        return () => {
+            cancelled = true;
+        };
+    }, [currentStep, currentLesson?.resource_id]);
 
     // Scroll to active grammar subtitle
     useEffect(() => {
@@ -370,18 +663,18 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const [dictationInput, setDictationInput] = useState("");
     const [dictationChecked, setDictationChecked] = useState(false);
     const [dictationScore, setDictationScore] = useState<number | null>(null);
+    const dictationExpected = currentLesson?.content || "你好";
+    const dictationAudioUrl = currentLesson?.resource_id
+        ? `${ASSET_URL}/${currentLesson.resource_id}`
+        : null;
 
     const handleCheckDictation = () => {
         setDictationChecked(true);
+        const expected = dictationExpected.trim().toLowerCase();
         const clean = dictationInput.trim().toLowerCase();
-        if (clean === "你好" || clean === "nǐ hǎo" || clean === "ni hao") {
+        if (expected && clean === expected) {
             setDictationScore(100);
-        } else if (
-            clean.includes("ni") ||
-            clean.includes("hao") ||
-            clean.includes("nǐ") ||
-            clean.includes("hǎo")
-        ) {
+        } else if (expected && clean.includes(expected.slice(0, 2))) {
             setDictationScore(85);
         } else if (clean.length > 0) {
             setDictationScore(45);
@@ -406,7 +699,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                         {courseTitle}
                     </h2>
                     <p className="text-[11px] md:text-xs text-gray-400 font-bold">
-                        Bài 1: Phát âm – Chào hỏi cơ bản (1)
+                        {currentLesson?.title || "Đang tải bài học..."}
                     </p>
                 </div>
                 <button
@@ -425,61 +718,98 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     <div className="max-w-2xl w-full mx-auto space-y-6">
                         <div className="space-y-6">
                             <div className="relative rounded-2xl overflow-hidden shadow-md aspect-video bg-black group border border-gray-200">
-                                <Image
-                                    src="/images/student_cafe.png"
-                                    alt="Lesson Video Stream"
-                                    fill
-                                    className="object-cover opacity-85 group-hover:scale-[1.01] transition-transform duration-500"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                                {videoVocabLoading ? (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                ) : videoVocabSource ? (
+                                    <video
+                                        ref={vocabVideoRef}
+                                        src={videoVocabSource}
+                                        controls
+                                        className="h-full w-full object-contain"
+                                    />
+                                ) : (
+                                    <>
+                                        <Image
+                                            src="/images/student_cafe.png"
+                                            alt="Lesson Video Stream"
+                                            fill
+                                            className="object-cover opacity-50"
+                                        />
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 text-white/70">
+                                                <path d="M8 5v14l11-7z" />
+                                            </svg>
+                                            <p className="text-white text-xs font-bold bg-black/40 px-3 py-1.5 rounded-full">
+                                                Chưa có video cho bài học này
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
 
-                                <button
-                                    onClick={() => speakChinese("大方")}
-                                    className="absolute inset-0 m-auto w-16 h-16 bg-amber-500/90 text-white rounded-full flex items-center justify-center hover:bg-amber-600 transition-all shadow-lg active:scale-95 animate-pulse cursor-pointer"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 ml-1">
-                                        <path d="M8 5v14l11-7z" />
-                                    </svg>
-                                </button>
-
-                                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs select-none bg-black/30 px-3 py-1.5 rounded-lg backdrop-blur-xs font-bold">
-                                    <span className="flex items-center gap-1.5"><Play className="w-4 h-4" /> Đang giảng: Đại từ - Tính từ</span>
-                                    <span>04:12 / 12:45</span>
+                            {vocabLoading ? (
+                                <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-2xs flex items-center justify-center">
+                                    <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
                                 </div>
-                            </div>
-
-                            <div className="bg-white rounded-2xl border border-amber-100 p-5 shadow-2xs space-y-4">
-                                <h4 className="font-extrabold text-amber-700 text-sm border-b border-amber-50 pb-2">
-                                    Giải thích từ 大方 (dàfang) trong tiếng Trung có nghĩa phổ biến:
-                                </h4>
-                                <ul className="space-y-3.5 text-xs text-gray-700 font-semibold leading-relaxed">
-                                    <li className="space-y-1">
-                                        <span className="text-gray-900 block font-bold">1. Hào phóng, rộng rãi (thường nói về tiền bạc hoặc cách đối xử)</span>
-                                        <div className="bg-gray-50 px-3 py-2 rounded-md font-mono flex items-center justify-between">
-                                            <span>他很大方. &rarr; Anh ấy rất hào phóng.</span>
-                                            <button
-                                                onClick={() => speakChinese("他很大方")}
-                                                className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-none font-bold"
-                                            >
-                                                🔊 Nghe
-                                            </button>
+                            ) : !currentVocab ? (
+                                <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-2xs text-center">
+                                    <p className="text-sm font-bold text-zinc-500">
+                                        Chưa có từ vựng cho bài học này
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    {vocabItems.length > 1 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {vocabItems.map((item, i) => (
+                                                <button
+                                                    key={String(item.id)}
+                                                    onClick={() => setSelectedVocabIdx(i)}
+                                                    className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${i === selectedVocabIdx
+                                                        ? "bg-amber-600 border-amber-600 text-white"
+                                                        : "bg-white border-gray-200 text-gray-600 hover:border-amber-300"
+                                                        }`}
+                                                >
+                                                    {item.word}
+                                                </button>
+                                            ))}
                                         </div>
-                                    </li>
-                                    <li className="space-y-1">
-                                        <span className="text-gray-900 block font-bold">2. Tự nhiên, đĩnh đạc, không ngại ngùng</span>
-                                        <div className="bg-gray-50 px-3 py-2 rounded-md font-mono flex items-center justify-between">
-                                            <span>她在台上表现得很大方. &rarr; Cô ấy thể hiện rất tự nhiên và tự tin trên sân khấu.</span>
-                                            <button
-                                                onClick={() => speakChinese("她在台上表现得很大方")}
-                                                className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-none font-bold"
-                                            >
-                                                🔊 Nghe
-                                            </button>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
+                                    )}
 
+                                    <div className="bg-white rounded-2xl border border-amber-100 p-5 shadow-2xs space-y-4">
+                                        <h4 className="font-extrabold text-amber-700 text-sm border-b border-amber-50 pb-2">
+                                            Giải thích từ {currentVocab.word} ({currentVocab.pinyin}) trong tiếng Trung có nghĩa phổ biến:
+                                        </h4>
+                                        <ul className="space-y-3.5 text-xs text-gray-700 font-semibold leading-relaxed">
+                                            {(currentVocab.senses?.length ? currentVocab.senses : [{ id: "fallback", meaning: currentVocab.meaning || "Chưa có nghĩa", examples: [] }]).map((sense, idx) => (
+                                                <li key={String(sense.id ?? idx)} className="space-y-1">
+                                                    <span className="text-gray-900 block font-bold">{idx + 1}. {sense.meaning}</span>
+                                                    {sense.examples?.map((ex, j) => (
+                                                        <div key={j} className="bg-gray-50 px-3 py-2 rounded-md font-mono flex items-center justify-between gap-2">
+                                                            <span>{ex.chinese} &rarr; {ex.vietnamese}</span>
+                                                            <button
+                                                                onClick={() => speakChinese(ex.chinese)}
+                                                                className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-none font-bold shrink-0"
+                                                            >
+                                                                🔊 Nghe
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {!sense.examples?.length && (
+                                                        <div className="bg-gray-50 px-3 py-2 rounded-md font-mono">
+                                                            Chưa có ví dụ cho nghĩa này
+                                                        </div>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </>
+                            )}
+
+                            {currentVocab && (
                             <div className="bg-white rounded-2xl border border-amber-100 p-5 shadow-2xs space-y-5 relative">
                                 <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
                                     {!showDecksList ? (
@@ -557,7 +887,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
                                 <div className="flex items-center gap-3.5 pt-2">
                                     <button
-                                        onClick={() => speakChinese("大方")}
+                                        onClick={() => speakChinese(currentVocab?.word || "")}
                                         className="w-11 h-11 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90 transition-transform"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -565,22 +895,29 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                         </svg>
                                     </button>
                                     <div>
-                                        <h3 className="text-xl font-black text-gray-900 tracking-wide">大方</h3>
-                                        <p className="text-xs text-amber-600 font-bold">dàfang — Hào phóng, rộng rãi</p>
+                                        <h3 className="text-xl font-black text-gray-900 tracking-wide">{currentVocab?.word}</h3>
+                                        <p className="text-xs text-amber-600 font-bold">{currentVocab?.pinyin} — {currentVocab?.meaning}</p>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-col items-center justify-center py-6 bg-gray-50/50 rounded-xl gap-4 border border-dashed border-gray-200">
                                     {recordState === "idle" && (
-                                        <button
-                                            onClick={() => setRecordState("recording")}
-                                            className="w-16 h-16 bg-[#e11d48] text-white rounded-full flex items-center justify-center shadow-md hover:bg-rose-600 active:scale-95 transition-all cursor-pointer"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
-                                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                                                <path d="M19 10a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21a1 1 0 0 0 2 0v-4.08A7 7 0 0 0 19 10Z" />
-                                            </svg>
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={startPronunciation}
+                                                className="w-16 h-16 bg-[#e11d48] text-white rounded-full flex items-center justify-center shadow-md hover:bg-rose-600 active:scale-95 transition-all cursor-pointer"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+                                                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                                                    <path d="M19 10a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21a1 1 0 0 0 2 0v-4.08A7 7 0 0 0 19 10Z" />
+                                                </svg>
+                                            </button>
+                                            {pronounceError && (
+                                                <p className="text-[10px] text-rose-600 font-bold max-w-xs text-center">
+                                                    {pronounceError}
+                                                </p>
+                                            )}
+                                        </>
                                     )}
 
                                     {recordState === "recording" && (
@@ -603,7 +940,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                 <button
                                                     onClick={() => {
                                                         setPlayBackState(true);
-                                                        speakChinese("大方");
+                                                        speakChinese(currentVocab?.word || "");
                                                         setTimeout(() => setPlayBackState(false), 1200);
                                                     }}
                                                     className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer"
@@ -611,28 +948,43 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                     {playBackState ? <><Volume2 className="w-4 h-4 mr-1.5" /> Đang phát...</> : <><Play className="w-4 h-4 mr-1.5" /> Nghe lại</>}
                                                 </button>
                                                 <button
-                                                    onClick={() => setRecordState("idle")}
+                                                    onClick={resetPronunciation}
                                                     className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer"
                                                 >
                                                     🔄 Ghi lại
                                                 </button>
                                             </div>
-                                            <div className="bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-lg flex items-center gap-3 text-emerald-800 font-extrabold text-xs">
-                                                <Target className="w-5 h-5 text-amber-500" />
-                                                <div>
-                                                    <p>Điểm phát âm: 92/100 (Xuất sắc)</p>
-                                                    <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Luyện nói chuẩn âm sắc pinyin!</p>
+                                            {pronounceProcessing ? (
+                                                <div className="flex items-center gap-2 text-xs font-bold text-amber-600 animate-pulse">
+                                                    <span className="w-3.5 h-3.5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></span>
+                                                    Đang phân tích phát âm...
                                                 </div>
-                                            </div>
+                                            ) : pronounceError ? (
+                                                <div className="bg-rose-50 border border-rose-200 px-4 py-2.5 rounded-lg text-rose-700 font-extrabold text-xs max-w-xs text-center">
+                                                    {pronounceError}
+                                                </div>
+                                            ) : pronounceResult ? (
+                                                <div className="bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-lg flex items-center gap-3 text-emerald-800 font-extrabold text-xs">
+                                                    <Target className="w-5 h-5 text-amber-500" />
+                                                    <div>
+                                                        <p>Điểm phát âm: {pronounceResult.accuracy}/100 ({pronounceResult.accuracy >= 85 ? "Xuất sắc" : pronounceResult.accuracy >= 70 ? "Khá tốt" : "Cần luyện thêm"})</p>
+                                                        <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Bạn nói: {pronounceResult.text}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-lg text-emerald-800 font-extrabold text-xs">
+                                                    Đang xử lý...
+                                                </div>
+                                            )}
                                         </div>
                                     )}
+                        </div>
 
                                     {recordState === "idle" && (
                                         <span className="text-xs text-gray-400 font-bold">
                                             Nhấn nút đỏ để bắt đầu ghi âm phát âm của bạn
                                         </span>
                                     )}
-                                </div>
 
                                 <div className="flex justify-end pt-2 border-t border-gray-50">
                                     <button
@@ -643,6 +995,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     </button>
                                 </div>
                             </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -651,15 +1004,26 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 {currentStep === "learn-quiz-vocab" && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
                         <div className="lg:col-span-2 space-y-6">
+                            {isLoadingQuiz && (
+                                <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-xs flex items-center justify-center">
+                                    <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            )}
+                            {!isLoadingQuiz && !currentQuiz && (
+                                <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-xs text-center text-zinc-500 font-bold text-sm">
+                                    {quizExercises.length === 0 ? "Chưa có câu hỏi trắc nghiệm" : "Đang tải..."}
+                                </div>
+                            )}
+                            {!isLoadingQuiz && currentQuiz && (
                             <div className="bg-white rounded-2xl border border-amber-100 p-6 md:p-8 shadow-xs space-y-6">
                                 <div className="flex items-center justify-between border-b border-amber-50 pb-4">
                                     <div className="flex items-center gap-3">
-                                        <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
-                                            Q1
-                                        </span>
-                                        <h3 className="font-extrabold text-gray-900 text-sm md:text-base">
-                                            Câu 1: Chọn từ nghe được trong audio
-                                        </h3>
+                        <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                            Q{currentQuizIdx + 1}
+                        </span>
+                        <h3 className="font-extrabold text-gray-900 text-sm md:text-base">
+                            {currentQuiz?.question || "Câu hỏi"}
+                        </h3>
                                     </div>
                                     <button
                                         onClick={() => speakChinese("chi")}
@@ -672,57 +1036,56 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {[
-                                        { key: "A", val: "zhi" },
-                                        { key: "B", val: "ji" },
-                                        { key: "C", val: "chi" },
-                                        { key: "D", val: "qi" },
-                                    ].map((opt) => {
-                                        const isSelected = vocabSelected === opt.key;
+                                    {currentQuiz && ["A", "B", "C", "D"].map((key) => {
+                                        const answerKey = `answer_${key}` as keyof typeof currentQuiz;
+                                        const val = currentQuiz[answerKey] || "";
+                                        const correctKey = currentQuiz.Correct_answer;
+                                        const isSelected = vocabSelected === key;
                                         let btnStyle = "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50/20";
 
                                         if (isSelected) {
-                                            if (opt.key === "C") {
+                                            if (key === correctKey) {
                                                 btnStyle = "border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500";
                                             } else {
                                                 btnStyle = "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500";
                                             }
-                                        } else if (vocabSelected && opt.key === "C") {
+                                        } else if (vocabSelected && key === correctKey) {
                                             btnStyle = "border-emerald-500 bg-emerald-50 text-emerald-800";
                                         }
 
                                         return (
                                             <button
-                                                key={opt.key}
-                                                onClick={() => handleVocabSelect(opt.key)}
+                                                key={key}
+                                                onClick={() => handleVocabSelect(key)}
+                                                disabled={!currentQuiz}
                                                 className={`flex items-center gap-3 p-4 rounded-xl border-2 font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer ${btnStyle}`}
                                             >
                                                 <span className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-xs shrink-0 select-none text-gray-600 font-black">
-                                                    {opt.key}
+                                                    {key}
                                                 </span>
-                                                <span>{opt.val}</span>
+                                                <span>{val}</span>
                                             </button>
                                         );
                                     })}
                                 </div>
 
-                                {vocabSelected && (
-                                    <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${vocabSelected === "C"
+                                {vocabSelected && currentQuiz && (
+                                    <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${vocabSelected === currentQuiz.Correct_answer
                                         ? "bg-emerald-50 border-emerald-200 text-emerald-900"
                                         : "bg-rose-50 border-rose-200 text-rose-900"
                                         }`}>
                                         <div className="flex items-center gap-1.5 font-bold text-sm">
-                                            {vocabSelected === "C" ? (
+                                            {vocabSelected === currentQuiz.Correct_answer ? (
                                                 <span className="flex items-center gap-1.5"><PartyPopper className="w-4 h-4 text-emerald-500" /> Chính xác!</span>
                                             ) : (
                                                 <span className="flex items-center gap-1.5"><XCircle className="w-4 h-4" /> Sai rồi! Thử lại xem nhé.</span>
                                             )}
                                         </div>
-                                        <p>
-                                            <strong>Giải thích:</strong> trong audio phát âm chữ &quot;chi&quot;, chú ý chữ này khi phát âm sẽ bật hơi mạnh.
-                                        </p>
+                                        {currentQuiz.Explanation && (
+                                            <p><strong>Giải thích:</strong> {currentQuiz.Explanation}</p>
+                                        )}
                                         <p className="text-[10px] text-gray-500">
-                                            Đáp án đúng: <strong className="text-emerald-700">C. chi</strong> | Đáp án của bạn: <strong className={vocabSelected === "C" ? "text-emerald-700" : "text-rose-700"}>{vocabSelected}. {getVocabSelectedLabel(vocabSelected)}</strong>
+                                            Đáp án đúng: <strong className="text-emerald-700">{currentQuiz.Correct_answer}. {currentQuiz[`answer_${currentQuiz.Correct_answer}` as keyof typeof currentQuiz]}</strong> | Đáp án của bạn: <strong className={vocabSelected === currentQuiz.Correct_answer ? "text-emerald-700" : "text-rose-700"}>{vocabSelected}. {getVocabSelectedLabel(vocabSelected)}</strong>
                                         </p>
                                         <button onClick={resetVocabQuiz} className="text-[10px] mt-2 block text-gray-500 hover:text-amber-600 underline font-bold">
                                             Thử lại câu này
@@ -730,7 +1093,21 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     </div>
                                 )}
 
-                                <div className="flex justify-end pt-4 border-t border-gray-50 select-none">
+                                <div className="flex justify-between pt-4 border-t border-gray-50 select-none">
+                                    {quizExercises.length > 1 && (
+                                        <button
+                                            onClick={() => {
+                                                resetVocabQuiz();
+                                                if (currentQuizIdx < quizExercises.length - 1) {
+                                                    setCurrentQuizIdx((p) => p + 1);
+                                                }
+                                            }}
+                                            disabled={currentQuizIdx >= quizExercises.length - 1}
+                                            className="text-xs font-black text-gray-500 hover:text-amber-600 flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-30"
+                                        >
+                                            Câu tiếp →
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => handleSetView("learn-video-grammar")}
                                         className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
@@ -739,6 +1116,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     </button>
                                 </div>
                             </div>
+                            )}
                         </div>
 
                         <div className="space-y-6">
@@ -760,18 +1138,28 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
                         <div className="lg:col-span-2 space-y-6">
                             <div className="relative rounded-2xl overflow-hidden shadow-md aspect-video bg-black group border border-gray-200">
-                                <video
-                                    ref={grammarVideoRef}
-                                    src="https://www.w3schools.com/html/mov_bbb.mp4"
-                                    controls
-                                    className="h-full w-full object-contain"
-                                    onTimeUpdate={handleGrammarTimeUpdate}
-                                />
-
-                                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs select-none bg-black/30 px-3 py-1.5 rounded-lg backdrop-blur-xs font-bold pointer-events-none">
-                                    <span className="flex items-center gap-1.5"><Play className="w-4 h-4" /> Đang phát: Video bài giảng Ngữ pháp</span>
-                                    <span>{Math.floor(grammarCurrentTime)}s</span>
-                                </div>
+                                {grammarVideoLoading ? (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                ) : grammarVideoSource ? (
+                                    <video
+                                        ref={grammarVideoRef}
+                                        src={grammarVideoSource}
+                                        controls
+                                        className="h-full w-full object-contain"
+                                        onTimeUpdate={handleGrammarTimeUpdate}
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 text-white/70">
+                                            <path d="M8 5v14l11-7z" />
+                                        </svg>
+                                        <p className="text-white text-xs font-bold bg-black/40 px-3 py-1.5 rounded-full">
+                                            Chưa có video ngữ pháp cho bài học này
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="bg-white rounded-2xl border border-amber-100 p-6 shadow-2xs space-y-4">
@@ -870,121 +1258,113 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 {/* STEP 4: Bài tập ngữ pháp (learn-quiz-grammar) */}
                 {currentStep === "learn-quiz-grammar" && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-                        <div className="lg:col-span-2 space-y-6">
-                            <div className="bg-white rounded-2xl border border-amber-100 p-6 md:p-8 shadow-xs space-y-6">
-                                {isLoadingGrammar ? (
-                                    <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                                        <div className="w-8 h-8 rounded-full border-4 border-amber-600 border-t-transparent animate-spin"></div>
-                                        <p className="text-xs font-bold text-zinc-500">Đang tải câu hỏi ngữ pháp...</p>
+                            <div className="lg:col-span-2 space-y-6">
+                                {isLoadingQuiz && (
+                                    <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-xs flex items-center justify-center">
+                                        <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
                                     </div>
-                                ) : grammarQuestions.length === 0 ? (
-                                    <div className="text-center py-12 space-y-3">
-                                        <p className="text-sm font-bold text-zinc-500">Không tìm thấy dữ liệu ngữ pháp động.</p>
+                                )}
+                                {!isLoadingQuiz && !currentQuiz && (
+                                    <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-xs text-center text-zinc-500 font-bold text-sm">
+                                        {quizExercises.length === 0 ? "Chưa có câu hỏi trắc nghiệm" : "Đang tải..."}
+                                    </div>
+                                )}
+                                {!isLoadingQuiz && currentQuiz && (
+                                <div className="bg-white rounded-2xl border border-amber-100 p-6 md:p-8 shadow-xs space-y-6">
+                                    <div className="flex items-center justify-between border-b border-amber-50 pb-4">
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                                                Q{currentQuizIdx + 1}
+                                            </span>
+                                            <h3 className="font-extrabold text-gray-900 text-sm md:text-base">
+                                                {currentQuiz?.question || "Câu hỏi"}
+                                            </h3>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {currentQuiz && ["A", "B", "C", "D"].map((key) => {
+                                            const answerKey = `answer_${key}` as keyof typeof currentQuiz;
+                                            const val = currentQuiz[answerKey] || "";
+                                            const correctKey = currentQuiz.Correct_answer;
+                                            const isSelected = vocabSelected === key;
+                                            let btnStyle = "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50/20";
+
+                                            if (isSelected) {
+                                                if (key === correctKey) {
+                                                    btnStyle = "border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500";
+                                                } else {
+                                                    btnStyle = "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500";
+                                                }
+                                            } else if (vocabSelected && key === correctKey) {
+                                                btnStyle = "border-emerald-500 bg-emerald-50 text-emerald-800";
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={key}
+                                                    onClick={() => handleVocabSelect(key)}
+                                                    disabled={!currentQuiz}
+                                                    className={`flex items-center gap-3 p-4 rounded-xl border-2 font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer ${btnStyle}`}
+                                                >
+                                                    <span className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-xs shrink-0 select-none text-gray-600 font-black">
+                                                        {key}
+                                                    </span>
+                                                    <span>{val}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {vocabSelected && currentQuiz && (
+                                        <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${vocabSelected === currentQuiz.Correct_answer
+                                            ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                                            : "bg-rose-50 border-rose-200 text-rose-900"
+                                            }`}>
+                                            <div className="flex items-center gap-1.5 font-bold text-sm">
+                                                {vocabSelected === currentQuiz.Correct_answer ? (
+                                                    <span className="flex items-center gap-1.5"><PartyPopper className="w-4 h-4 text-emerald-500" /> Chính xác!</span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1.5"><XCircle className="w-4 h-4" /> Sai rồi! Thử lại xem nhé.</span>
+                                                )}
+                                            </div>
+                                            {currentQuiz.Explanation && (
+                                                <p><strong>Giải thích:</strong> {currentQuiz.Explanation}</p>
+                                            )}
+                                            <p className="text-[10px] text-gray-500">
+                                                Đáp án đúng: <strong className="text-emerald-700">{currentQuiz.Correct_answer}. {currentQuiz[`answer_${currentQuiz.Correct_answer}` as keyof typeof currentQuiz]}</strong> | Đáp án của bạn: <strong className={vocabSelected === currentQuiz.Correct_answer ? "text-emerald-700" : "text-rose-700"}>{vocabSelected}. {getVocabSelectedLabel(vocabSelected)}</strong>
+                                            </p>
+                                            <button onClick={resetVocabQuiz} className="text-[10px] mt-2 block text-gray-500 hover:text-amber-600 underline font-bold">
+                                                Thử lại câu này
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between pt-4 border-t border-gray-50 select-none">
+                                        {quizExercises.length > 1 && (
+                                            <button
+                                                onClick={() => {
+                                                    resetVocabQuiz();
+                                                    if (currentQuizIdx < quizExercises.length - 1) {
+                                                        setCurrentQuizIdx((p) => p + 1);
+                                                    }
+                                                }}
+                                                disabled={currentQuizIdx >= quizExercises.length - 1}
+                                                className="text-xs font-black text-gray-500 hover:text-amber-600 flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-30"
+                                            >
+                                                Câu tiếp →
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => handleSetView("learn-dictation")}
-                                            className="bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                                            className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
                                         >
-                                            Bỏ qua phần này
+                                            Phần tiếp <span className="text-base font-normal">&rarr;</span>
                                         </button>
                                     </div>
-                                ) : (() => {
-                                    const currentGrammar = grammarQuestions[activeGrammarIndex];
-                                    const correctKey = ["A", "B", "C", "D"][activeGrammarIndex] || "A";
-
-                                    const options = grammarQuestions.map((item, idx) => {
-                                        const key = ["A", "B", "C", "D"][idx] || "A";
-                                        return {
-                                            key,
-                                            val: item.description || "Điểm ngữ pháp cần nghiên cứu",
-                                            title: item.title,
-                                            isCorrect: idx === activeGrammarIndex,
-                                        };
-                                    });
-
-                                    return (
-                                        <>
-                                            <div className="flex items-center justify-between border-b border-amber-50 pb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
-                                                        {activeGrammarIndex + 1}
-                                                    </span>
-                                                    <h3 className="font-extrabold text-gray-900 text-sm md:text-base">
-                                                        Đâu là mô tả định nghĩa đúng của điểm ngữ pháp &quot;{currentGrammar?.title}&quot;?
-                                                    </h3>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {options.map((opt) => {
-                                                    const isSelected = grammarSelected === opt.key;
-                                                    let btnStyle = "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50/20";
-
-                                                    if (isSelected) {
-                                                        if (opt.key === correctKey) {
-                                                            btnStyle = "border-[#f59e0b] bg-amber-50 text-amber-950 ring-2 ring-[#f59e0b]";
-                                                        } else {
-                                                            btnStyle = "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500";
-                                                        }
-                                                    } else if (grammarSelected && opt.key === correctKey) {
-                                                        btnStyle = "border-[#f59e0b] bg-amber-50 text-amber-950";
-                                                    }
-
-                                                    return (
-                                                        <button
-                                                            key={opt.key}
-                                                            onClick={() => handleGrammarSelect(opt.key)}
-                                                            className={`flex items-center gap-3 p-4 rounded-xl border-2 font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer ${btnStyle}`}
-                                                        >
-                                                            <span className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-xs shrink-0 select-none text-gray-600 font-black">
-                                                                {opt.key}
-                                                            </span>
-                                                            <span>{opt.val}</span>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-
-                                            {grammarSelected && (
-                                                <div className={`p-4 rounded-xl border font-semibold text-xs leading-relaxed space-y-2 ${grammarSelected === correctKey
-                                                    ? "bg-amber-50 border-[#f59e0b] text-amber-950"
-                                                    : "bg-rose-50 border-rose-200 text-rose-900"
-                                                    }`}>
-                                                    <div className="flex items-center gap-1.5 font-bold text-sm">
-                                                        {grammarSelected === correctKey ? (
-                                                            <span className="flex items-center gap-1.5"><PartyPopper className="w-4 h-4 text-emerald-500" /> Chính xác!</span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1.5"><XCircle className="w-4 h-4 text-rose-500" /> Chọn chưa đúng rồi!</span>
-                                                        )}
-                                                    </div>
-                                                    <p>
-                                                        <strong>Chi tiết cấu trúc:</strong> {currentGrammar?.content}
-                                                    </p>
-                                                    <button onClick={resetGrammarQuiz} className="text-[10px] mt-2 block text-gray-500 hover:text-amber-600 underline font-bold">
-                                                        Thử lại câu này
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            <div className="flex justify-end pt-4 border-t border-gray-50 select-none">
-                                                <button
-                                                    onClick={() => {
-                                                        if (activeGrammarIndex < grammarQuestions.length - 1) {
-                                                            setActiveGrammarIndex((prev) => prev + 1);
-                                                            setGrammarSelected(null);
-                                                        } else {
-                                                            handleSetView("learn-dictation");
-                                                        }
-                                                    }}
-                                                    className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
-                                                >
-                                                    {activeGrammarIndex < grammarQuestions.length - 1 ? "Câu tiếp" : "Phần tiếp"} <span className="text-base font-normal">&rarr;</span>
-                                                </button>
-                                            </div>
-                                        </>
-                                    );
-                                })()}
+                                </div>
+                                )}
                             </div>
-                        </div>
 
                         <div className="space-y-6">
                             <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold space-y-3 shadow-2xs">
@@ -1006,26 +1386,22 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                         <div className="lg:col-span-2 space-y-6">
                             <div className="bg-white rounded-2xl border border-amber-100 p-6 md:p-8 shadow-xs space-y-6">
                                 <div className="bg-amber-50/40 p-4 rounded-xl border border-amber-100 flex items-center gap-4">
-                                    <button
-                                        onClick={() => speakChinese("你好")}
-                                        className="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center hover:bg-amber-600 active:scale-95 transition-all shadow-xs cursor-pointer shrink-0"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                                            <path d="M8 5v14l11-7z" />
-                                        </svg>
-                                    </button>
+                                    {dictationAudioUrl ? (
+                                        <audio src={dictationAudioUrl} controls preload="metadata" className="w-full h-10" />
+                                    ) : (
+                                        <button
+                                            onClick={() => speakChinese(dictationExpected)}
+                                            className="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center hover:bg-amber-600 active:scale-95 transition-all shadow-xs cursor-pointer shrink-0"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                                <path d="M8 5v14l11-7z" />
+                                            </svg>
+                                        </button>
+                                    )}
 
-                                    <div className="flex-1 space-y-1">
-                                        <div className="flex items-center justify-between text-[10px] text-gray-400 font-bold select-none">
-                                            <span>Nghe phát âm</span>
-                                            <span>0:02 / 0:02</span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden relative">
-                                            <div className="bg-amber-500 h-full rounded-full w-full" />
-                                        </div>
-                                    </div>
-
-                                    <div className="text-amber-500 text-lg animate-pulse">🔊</div>
+                                    {dictationAudioUrl && (
+                                        <div className="text-amber-500 text-lg animate-pulse">🔊</div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">
@@ -1038,7 +1414,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                             type="text"
                                             value={dictationInput}
                                             onChange={(e) => setDictationInput(e.target.value)}
-                                            placeholder="Gợi ý: nhập 'ni hao' hoặc '你好' để chấm điểm"
+                                            placeholder={`Gợi ý: nhập '${dictationExpected}' để chấm điểm`}
                                             disabled={dictationChecked}
                                             className="w-full bg-transparent border-b-2 border-dashed border-amber-300 focus:border-amber-500 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none px-0 py-2 text-sm text-gray-800 font-bold placeholder-gray-400 transition-all font-mono"
                                         />
@@ -1072,7 +1448,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                     Đúng {dictationScore}%
                                                 </h5>
                                                 <p className="text-[10px] text-gray-400 font-bold mt-0.5">
-                                                    Đáp án chuẩn: &quot;你好 (nǐ hǎo)&quot;
+                                                    Đáp án chuẩn: &quot;{dictationExpected}&quot;
                                                 </p>
                                             </div>
                                         </div>
@@ -1257,38 +1633,65 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                             <div className="md:col-span-2 bg-white rounded-2xl border-2 border-dashed border-orange-200 p-8 shadow-xs w-full">
                                 <div className="flex items-center justify-around gap-6">
                                     {/* PDF 1 */}
-                                    <button className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
-                                        <div className="w-14 h-18 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow relative">
-                                            <span className="absolute top-1 text-[8px] font-black text-red-500 tracking-wider">PDF</span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-500 mt-2">
-                                                <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
-                                                <path fillRule="evenodd" d="M3.75 18a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5H4.5A.75.75 0 0 1 3.75 18Z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <span className="text-xs font-bold text-gray-700">Bài tập</span>
-                                    </button>
+                                    {currentLesson?.extra_pdf_id ? (
+                                        <a
+                                            href={`${ASSET_URL}/${currentLesson.extra_pdf_id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95"
+                                        >
+                                            <div className="w-14 h-18 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow relative">
+                                                <span className="absolute top-1 text-[8px] font-black text-red-500 tracking-wider">PDF</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-500 mt-2">
+                                                    <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
+                                                    <path fillRule="evenodd" d="M3.75 18a.75.75 0 0 1 .75.75h15a.75.75 0 0 1 0 1.5H4.5A.75.75 0 0 1 3.75 18Z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-700">Bài tập</span>
+                                        </a>
+                                    ) : (
+                                        <div className="text-xs text-zinc-400 italic">Chưa có file bài tập</div>
+                                    )}
 
                                     {/* PDF 2 */}
-                                    <button className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
-                                        <div className="w-14 h-18 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow relative">
-                                            <span className="absolute top-1 text-[8px] font-black text-red-500 tracking-wider">PDF</span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-500 mt-2">
-                                                <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
-                                                <path fillRule="evenodd" d="M3.75 18a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5H4.5A.75.75 0 0 1 3.75 18Z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <span className="text-xs font-bold text-gray-700">Đáp án</span>
-                                    </button>
+                                    {currentLesson?.extra_answer_id ? (
+                                        <a
+                                            href={`${ASSET_URL}/${currentLesson.extra_answer_id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95"
+                                        >
+                                            <div className="w-14 h-18 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow relative">
+                                                <span className="absolute top-1 text-[8px] font-black text-red-500 tracking-wider">PDF</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-500 mt-2">
+                                                    <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
+                                                    <path fillRule="evenodd" d="M3.75 18a.75.75 0 0 1 .75.75h15a.75.75 0 0 1 0 1.5H4.5A.75.75 0 0 1 3.75 18Z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-700">Đáp án</span>
+                                        </a>
+                                    ) : (
+                                        <div className="text-xs text-zinc-400 italic">Chưa có file đáp án</div>
+                                    )}
 
                                     {/* Audio */}
-                                    <button className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95">
-                                        <div className="w-14 h-18 bg-orange-50 border border-orange-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-orange-500">
-                                                <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
-                                            </svg>
-                                        </div>
-                                        <span className="text-xs font-bold text-gray-700">Audio</span>
-                                    </button>
+                                    {currentLesson?.extra_audio_id ? (
+                                        <a
+                                            href={`${ASSET_URL}/${currentLesson.extra_audio_id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex flex-col items-center gap-2 group cursor-pointer hover:scale-105 transition-transform active:scale-95"
+                                        >
+                                            <div className="w-14 h-18 bg-orange-50 border border-orange-200 rounded-lg flex flex-col items-center justify-center shadow-2xs group-hover:shadow-md transition-shadow">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-orange-500">
+                                                    <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
+                                                </svg>
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-700">Audio</span>
+                                        </a>
+                                    ) : (
+                                        <div className="text-xs text-zinc-400 italic">Chưa có audio</div>
+                                    )}
                                 </div>
                             </div>
 

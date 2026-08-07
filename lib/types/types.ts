@@ -60,6 +60,10 @@ export interface VideoSection {
     id: string;
     filename_disk: string;
   };
+  video_file?: {
+    id: string;
+    filename_disk: string;
+  } | null;
 }
 
 type ExerciseItem = {
