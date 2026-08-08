@@ -96,11 +96,11 @@ async function main() {
 
   try {
     const gql = await request("POST", "/graphql", {
-      query: "query { course_lessons(limit:1) { id title lesson_type resource_id resource_collection } }",
+      query: "query { course_lessons(limit:1) { id title lesson_type resource_collection video_section_id { id } exercise_id { id } audio_id { id } scenario_id { id } } }",
     }, token);
-    console.log("  course_lessons: OK");
+    console.log("  course_lessons (M2O fields included): OK");
   } catch (e) {
-    const errMsg = e.data?.errors?.[0]?.message || e.data?.errors?.[0]?.extensions?.code || e.status || "unknown";
+    const errMsg = e.data?.errors?.[0]?.message || e.status || "unknown";
     console.log("  course_lessons FAIL:", errMsg);
   }
 

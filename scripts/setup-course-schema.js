@@ -128,6 +128,30 @@ const FIELDS_TO_ADD = {
       ] }, display: "raw", readonly: false, hidden: false, sort: 11, width: "half", note: "M2A discriminator: collection của resource_id" },
     },
     {
+      field: "video_section_id",
+      type: "uuid",
+      schema: { name: "video_section_id", table: "course_lessons", data_type: "char", max_length: 36, is_nullable: true, foreign_key_table: "video_section", foreign_key_column: "id" },
+      meta: { interface: "select-dropdown-m2o", options: { template: "{{title}}" }, display: "related-values", display_options: { template: "{{title}}" }, readonly: false, hidden: false, sort: 20, width: "half", note: "🎬 Chọn Bài Giảng Video (video_vocab / video_grammar)" },
+    },
+    {
+      field: "exercise_id",
+      type: "integer",
+      schema: { name: "exercise_id", table: "course_lessons", data_type: "integer", is_nullable: true, foreign_key_table: "link_exercise", foreign_key_column: "id" },
+      meta: { interface: "select-dropdown-m2o", options: { template: "Quiz #{{id}}" }, display: "related-values", display_options: { template: "Quiz #{{id}}" }, readonly: false, hidden: false, sort: 21, width: "half", note: "📝 Chọn Bộ Bài Tập Trắc Nghiệm (quiz_vocab / quiz_grammar)" },
+    },
+    {
+      field: "audio_id",
+      type: "uuid",
+      schema: { name: "audio_id", table: "course_lessons", data_type: "char", max_length: 36, is_nullable: true, foreign_key_table: "directus_files", foreign_key_column: "id" },
+      meta: { interface: "file", options: null, display: "file", readonly: false, hidden: false, sort: 22, width: "half", note: "🔊 File Audio âm thanh bài học (cho Dictation / Bài học nghe)" },
+    },
+    {
+      field: "scenario_id",
+      type: "integer",
+      schema: { name: "scenario_id", table: "course_lessons", data_type: "integer", is_nullable: true, foreign_key_table: "speaking_scenarios", foreign_key_column: "id" },
+      meta: { interface: "select-dropdown-m2o", options: { template: "{{title}}" }, display: "related-values", display_options: { template: "{{title}}" }, readonly: false, hidden: false, sort: 23, width: "half", note: "🗣️ Chọn Kịch Bản Hội Thoại (conversation)" },
+    },
+    {
       field: "extra_pdf_id",
       type: "uuid",
       schema: { name: "extra_pdf_id", table: "course_lessons", data_type: "char", max_length: 36, is_nullable: true, foreign_key_table: "directus_files", foreign_key_column: "id" },
@@ -350,6 +374,29 @@ async function main() {
     } catch (e) {
       log("  ✗", `FAIL M2A relation: ${JSON.stringify(e.data || e.status || e)}`);
     }
+  }
+  console.log("");
+
+  // Step 2b: Set up O2M relation metadata for chapters and lessons
+  log("·", "Setting up O2M alias relations for course.chapters and course_chapters.lessons…");
+  try {
+    await request("PATCH", "/relations/course_chapters/course_id", { meta: { one_field: "chapters", sort_field: "sort" } }, token);
+    log("  ✓", "Updated relation metadata 'course.chapters'");
+  } catch (e) {
+    try {
+      await request("POST", "/relations", { collection: "course_chapters", field: "course_id", related_collection: "course", meta: { one_field: "chapters", sort_field: "sort" } }, token);
+      log("  ✓", "Created relation 'course.chapters'");
+    } catch (postErr) {}
+  }
+
+  try {
+    await request("PATCH", "/relations/course_lessons/chapter_id", { meta: { one_field: "lessons", sort_field: "sort" } }, token);
+    log("  ✓", "Updated relation metadata 'course_chapters.lessons'");
+  } catch (e) {
+    try {
+      await request("POST", "/relations", { collection: "course_lessons", field: "chapter_id", related_collection: "course_chapters", meta: { one_field: "lessons", sort_field: "sort" } }, token);
+      log("  ✓", "Created relation 'course_chapters.lessons'");
+    } catch (postErr) {}
   }
   console.log("");
 

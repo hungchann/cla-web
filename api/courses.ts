@@ -1,10 +1,9 @@
 import apiInstance from "@/api/authConfig";
-import { graphqlRequestRaw } from "@/api/graphql/client";
 import { API_URL } from "@/lib/constants";
 import { CourseChapter, CourseItem, CourseLesson } from "@/lib/types/course";
 import { logger } from "@/services/logger";
 
-const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,content,resource_id,resource_collection,extra_pdf_id,extra_answer_id,extra_audio_id,extra_pdf.id,extra_pdf.filename_disk,extra_answer.id,extra_answer.filename_disk,extra_audio.id,extra_audio.filename_disk,chapter_id";
+const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,content,resource_id,resource_collection,video_section_id,exercise_id,audio_id,audio.id,audio.filename_disk,scenario_id,extra_pdf_id,extra_answer_id,extra_audio_id,extra_pdf.id,extra_pdf.filename_disk,extra_answer.id,extra_answer.filename_disk,extra_audio.id,extra_audio.filename_disk,chapter_id";
 
 function escapeFilterString(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, String.raw`\"`);

@@ -5,7 +5,6 @@ export type CourseLessonType =
   | "quiz_grammar"
   | "dictation"
   | "conversation"
-  | "reading"
   | "extra"
   | string;
 
@@ -20,6 +19,10 @@ export interface CourseLesson {
   content?: string;
   resource_id?: string | number | null;
   resource_collection?: string | null;
+  video_section_id?: string | null;
+  exercise_id?: number | string | null;
+  audio_id?: string | null;
+  scenario_id?: number | string | null;
   extra_pdf_id?: string | null;
   extra_answer_id?: string | null;
   extra_audio_id?: string | null;
