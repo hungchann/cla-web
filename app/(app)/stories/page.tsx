@@ -85,7 +85,7 @@ export default function StoriesPage() {
                               {book.title}
                             </h4>
                             <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
-                              {book.author || "Khuyết danh"}
+                              {book.author || book.author_trans || "Khuyết danh"}
                             </p>
                           </div>
                         </Link>
@@ -133,7 +133,7 @@ export default function StoriesPage() {
                               {book.title}
                             </h4>
                             <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
-                              {book.author || "Khuyết danh"}
+                              {book.author || book.author_trans || "Khuyết danh"}
                             </p>
                           </div>
                         </Link>
@@ -181,7 +181,7 @@ export default function StoriesPage() {
                               {book.title}
                             </h4>
                             <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
-                              {book.author || "Khuyết danh"}
+                              {book.author || book.author_trans || "Khuyết danh"}
                             </p>
                           </div>
                         </Link>

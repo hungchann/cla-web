@@ -74,6 +74,14 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     useEffect(() => {
         let isMounted = true;
         const fetchLesson = async () => {
+            const filterValidLessons = (lessons: CourseLesson[]) =>
+                lessons.filter(
+                    (l) =>
+                        l.lesson_type !== "bilingual" &&
+                        !l.title?.toLowerCase().includes("bài đọc song ngữ") &&
+                        !l.title?.toLowerCase().includes("song ngữ")
+                );
+
             try {
                 if (lessonParam) {
                     const lesson = await coursesApi.getCourseLessonById(lessonParam);
@@ -81,7 +89,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 } else if (stepParam) {
                     const chapters = await coursesApi.getCourseChapters(courseId);
                     if (!isMounted) return;
-                    const flat = chapters.flatMap((c) => c.lessons || []);
+                    const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
                     setAllChapterLessons(flat);
                     const match = flat.find((l) => l.lesson_type === fallbackType);
                     if (isMounted) setCurrentLesson(match || flat[0] || null);
@@ -89,7 +97,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 } else {
                     const chapters = await coursesApi.getCourseChapters(courseId);
                     if (!isMounted) return;
-                    const flat = chapters.flatMap((c) => c.lessons || []);
+                    const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
                     setAllChapterLessons(flat);
                     if (isMounted) setCurrentLesson(flat[0] || null);
                     return;
@@ -98,7 +106,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 // Also load all lessons for pagination
                 const chapters = await coursesApi.getCourseChapters(courseId);
                 if (isMounted) {
-                    setAllChapterLessons(chapters.flatMap((c) => c.lessons || []));
+                    setAllChapterLessons(filterValidLessons(chapters.flatMap((c) => c.lessons || [])));
                 }
             } catch {
                 if (isMounted) setCurrentLesson(null);
@@ -133,8 +141,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
     // Dynamic Conversation Shadowing hook
     const conversationId =
-        currentLesson?.lesson_type === "conversation" && currentLesson.resource_id
-            ? String(currentLesson.resource_id)
+        currentLesson?.lesson_type === "conversation" && currentLesson.scenario_id
+            ? String(currentLesson.scenario_id)
             : courseId || "1";
     const conversationHook = useConversationDetail(conversationId);
     const {
@@ -159,7 +167,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     // Load real exercises when quiz step activates
     useEffect(() => {
         const isQuiz = currentStep === "learn-quiz-vocab" || currentStep === "learn-quiz-grammar";
-        const targetExerciseId = currentLesson?.exercise_id || (currentLesson?.resource_collection === "link_exercise" ? currentLesson?.resource_id : null);
+        const targetExerciseId = currentLesson?.exercise_id;
         if (!isQuiz || !targetExerciseId) return;
 
         let isMounted = true;
@@ -180,7 +188,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         };
         fetchExercises();
         return () => { isMounted = false; };
-    }, [currentStep, currentLesson?.exercise_id, currentLesson?.resource_id, currentLesson?.resource_collection]);
+    }, [currentStep, currentLesson?.exercise_id]);
 
     const currentQuiz = quizExercises[currentQuizIdx];
 
@@ -234,14 +242,14 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const [selectedVocabIdx, setSelectedVocabIdx] = useState(0);
     const currentVocab = vocabItems[selectedVocabIdx] || null;
 
-    // Load vocab details if lesson has video_section_id / resource_id
+    // Load vocab details if lesson has video_section_id
     useEffect(() => {
         if (currentStep !== "learn-video-vocab") return;
         let isMounted = true;
         setVocabLoading(true);
         (async () => {
             try {
-                const videoId = currentLesson?.video_section_id || currentLesson?.resource_id;
+                const videoId = currentLesson?.video_section_id;
                 if (!videoId) {
                     if (isMounted) setVocabItems([]);
                     return;
@@ -271,7 +279,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             }
         })();
         return () => { isMounted = false; };
-    }, [currentStep, currentLesson?.video_section_id, currentLesson?.resource_id]);
+    }, [currentStep, currentLesson?.video_section_id]);
 
     // --- Flashcard Save States ---
     const [isSavedToFlashcard, setIsSavedToFlashcard] = useState(false);
@@ -477,7 +485,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
     // Load video vocab file
     useEffect(() => {
-        const videoId = currentLesson?.video_section_id || (currentLesson?.resource_collection === "video_section" ? currentLesson?.resource_id : null);
+        const videoId = currentLesson?.video_section_id;
         if (!videoId) {
             setVideoVocabSource(null);
             return;
@@ -502,11 +510,11 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             }
         })();
         return () => { isMounted = false; };
-    }, [currentLesson?.video_section_id, currentLesson?.resource_id, currentLesson?.resource_collection]);
+    }, [currentLesson?.video_section_id]);
 
     // Load video grammar file and subtitles
     useEffect(() => {
-        const videoId = currentLesson?.video_section_id || (currentLesson?.resource_collection === "video_section" ? currentLesson?.resource_id : null);
+        const videoId = currentLesson?.video_section_id;
         if (currentLesson?.lesson_type !== "video_grammar" || !videoId) {
             setGrammarVideoSource(null);
             setGrammarSubtitles([]);
@@ -534,7 +542,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             }
         })();
         return () => { isMounted = false; };
-    }, [currentLesson?.video_section_id, currentLesson?.resource_id, currentLesson?.resource_collection, currentLesson?.lesson_type]);
+    }, [currentLesson?.video_section_id, currentLesson?.lesson_type]);
 
     const activeGrammarSub = grammarSubtitles.find(
         (sub) => grammarCurrentTime >= (sub.start || 0) && grammarCurrentTime <= (sub.end || 9999)
@@ -550,8 +558,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         ? `${ASSET_URL}/${currentLesson.audio_id}`
         : currentLesson?.extra_audio_id
         ? `${ASSET_URL}/${currentLesson.extra_audio_id}`
-        : currentLesson?.resource_id
-        ? `${ASSET_URL}/${currentLesson.resource_id}`
         : null;
 
     const normalizeDictationText = (text: string) => {
@@ -591,6 +597,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button
+                            type="button"
                             onClick={() => router.push(`/courses/${courseId}`)}
                             className="text-xs font-bold text-gray-500 hover:text-amber-600 flex items-center gap-1 cursor-pointer"
                         >
@@ -601,29 +608,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                             {courseTitle}
                         </h1>
                     </div>
-
-                    {/* Lesson Pagination Stepper */}
-                    {allChapterLessons.length > 0 && (
-                        <div className="flex items-center gap-2 bg-amber-50/70 border border-amber-200/60 px-3 py-1.5 rounded-full text-xs">
-                            <button
-                                onClick={() => prevLesson && navigateToLesson(prevLesson)}
-                                disabled={!prevLesson}
-                                className="font-bold text-amber-700 hover:text-amber-900 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-                            >
-                                &larr; Bài trước
-                            </button>
-                            <span className="font-extrabold text-amber-900 px-2 border-x border-amber-200">
-                                Bài {currentLessonIdx + 1}/{allChapterLessons.length}: {currentLesson?.title || "Đang tải..."}
-                            </span>
-                            <button
-                                onClick={() => nextLesson && navigateToLesson(nextLesson)}
-                                disabled={!nextLesson}
-                                className="font-bold text-amber-700 hover:text-amber-900 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-                            >
-                                Bài tiếp &rarr;
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -902,14 +886,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                         )}
                                     </div>
 
-                                    <div className="flex justify-end pt-2 border-t border-gray-50">
-                                        <button
-                                            onClick={() => handleSetView("learn-quiz-vocab")}
-                                            className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-                                        >
-                                            Phần tiếp <span className="text-base font-normal">&rarr;</span>
-                                        </button>
-                                    </div>
+
                                 </div>
                             )}
                         </div>
@@ -1024,12 +1001,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                 Câu tiếp →
                                             </button>
                                         )}
-                                        <button
-                                            onClick={() => handleSetView("learn-video-grammar")}
-                                            className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
-                                        >
-                                            Phần tiếp <span className="text-base font-normal">&rarr;</span>
-                                        </button>
+
                                     </div>
                                 </div>
                             )}
@@ -1100,14 +1072,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end pt-2">
-                                <button
-                                    onClick={() => handleSetView("learn-quiz-grammar")}
-                                    className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-                                >
-                                    Phần tiếp <span className="text-base font-normal">&rarr;</span>
-                                </button>
-                            </div>
+
                         </div>
                     </div>
                 )}
@@ -1212,12 +1177,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                 Câu tiếp →
                                             </button>
                                         )}
-                                        <button
-                                            onClick={() => handleSetView("learn-dictation")}
-                                            className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
-                                        >
-                                            Phần tiếp <span className="text-base font-normal">&rarr;</span>
-                                        </button>
+
                                     </div>
                                 </div>
                             )}
@@ -1318,14 +1278,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     </div>
                                 )}
 
-                                <div className="flex justify-end pt-2 border-t border-gray-50">
-                                    <button
-                                        onClick={() => handleSetView("learn-conversation")}
-                                        className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
-                                    >
-                                        Phần tiếp <span className="text-base font-normal">&rarr;</span>
-                                    </button>
-                                </div>
+
                             </div>
                         </div>
 
@@ -1488,12 +1441,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 </button>
                             )}
 
-                            <button
-                                onClick={() => handleSetView("learn-extra")}
-                                className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer ml-auto"
-                            >
-                                Phần tiếp <span className="text-base font-normal">&rarr;</span>
-                            </button>
+
                         </div>
                     </div>
                 )}

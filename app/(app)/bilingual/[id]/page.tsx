@@ -13,6 +13,8 @@ import { getAssetUrl } from "@/lib/utils/assets";
 import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
 import { BookmarkPlus, Eye, EyeOff, Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { useSubtitleSync } from "@/lib/hooks/useSubtitleSync";
+import { timeToSeconds } from "@/lib/utils/subtitleUtils";
 import { BilingualContent } from "@/components/bilingual/BilingualContent";
 import { BilingualVocab } from "@/components/bilingual/BilingualVocab";
 import { BilingualGrammar } from "@/components/bilingual/BilingualGrammar";
@@ -99,6 +101,36 @@ export default function BilingualDetailPage({
     const vocabList = vocabResult?.data?.vocabulary || [];
     const grammarList = grammarResult || [];
     const exerciseList = exerciseResult?.exercises || [];
+
+    const { activeIndex, setActiveIndex, binarySearchSubtitle } = useSubtitleSync({
+        subtitles: srtData,
+        timeToSeconds,
+        leadTimeSeconds: 0.1,
+    });
+
+    useEffect(() => {
+        if (audio && !audio.paused && currentTime > 0) {
+            const idx = binarySearchSubtitle(currentTime);
+            if (idx !== null && idx !== activeIndex) {
+                setActiveIndex(idx);
+            }
+        }
+    }, [currentTime, audio, binarySearchSubtitle, activeIndex, setActiveIndex]);
+
+    const handleReplayLine = (lineItem: any, index: number) => {
+        if (lineItem?.start) {
+            const targetTime = timeToSeconds(String(lineItem.start));
+            if (audio) {
+                audio.currentTime = targetTime;
+                setCurrentTime(targetTime);
+                audio.play().catch((e) => console.log("Play line failed", e));
+                setIsPlaying(true);
+            } else {
+                speakChinese(lineItem.chinese);
+            }
+            setActiveIndex(index);
+        }
+    };
 
     const audioUrl = item?.file_script?.filename_disk
         ? `https://marutek.space/assets/${item.file_script.filename_disk}`
@@ -465,6 +497,8 @@ export default function BilingualDetailPage({
                             isOpenPinyin={isOpenPinyin}
                             onWordPress={handleWordPress}
                             onSpeakParagraph={speakChinese}
+                            activeIndex={activeIndex}
+                            onReplay={handleReplayLine}
                         />
                     )}
 

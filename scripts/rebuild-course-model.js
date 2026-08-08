@@ -377,8 +377,24 @@ async function main() {
 
   console.log("");
 
-  // Step 4: Verification via GraphQL
-  log("·", "Bước 4: Kiểm tra lại GraphQL query…");
+  // Step 4: Delete legacy fields & relations
+  log("·", "Bước 4: Xóa các trường Legacy (`resource_id`, `resource_collection`, `reading_id`) khỏi Directus Schema…");
+  try {
+    await request("DELETE", "/relations/course_lessons/resource_id", null, token);
+    log("  ✓", "Đã xóa relation M2A 'course_lessons.resource_id'");
+  } catch (e) {}
+
+  for (const fieldName of ["resource_id", "resource_collection", "reading_id"]) {
+    try {
+      await request("DELETE", `/fields/course_lessons/${fieldName}`, null, token);
+      log("  ✓", `Đã xóa trường legacy 'course_lessons.${fieldName}'`);
+    } catch (e) {}
+  }
+
+  console.log("");
+
+  // Step 5: Verification via GraphQL
+  log("·", "Bước 5: Kiểm tra lại GraphQL query…");
   try {
     const gql = await request("POST", "/graphql", {
       query: "query { course_chapters(limit:2) { id title lessons { id title lesson_type video_section_id { id title } exercise_id { id } audio_id { id } scenario_id { id title } } } }",

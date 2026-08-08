@@ -70,10 +70,6 @@ export default function CourseDetailPage({
     };
 
     const handleLessonClick = (sub: CourseLesson) => {
-        if (sub.lesson_type === "reading" && sub.resource_id) {
-            router.push(`/bilingual/${sub.resource_id}`);
-            return;
-        }
         handleSubtopicClick(sub.id);
     };
 
@@ -143,18 +139,18 @@ export default function CourseDetailPage({
                 {activeTab === "syllabus" && (
                     <section className="space-y-8">
                         <Card className="bg-white dark:bg-zinc-900 rounded-2xl border-zinc-200/60 dark:border-zinc-800 p-6 flex flex-col md:flex-row gap-6 shadow-2xs">
-<div className="relative w-full md:w-56 h-36 rounded-xl overflow-hidden shrink-0 bg-zinc-100 dark:bg-zinc-800">
-                            {course?.image_url ? (
-                                <Image
+                            <div className="relative w-full md:w-56 h-36 rounded-xl overflow-hidden shrink-0 bg-zinc-100 dark:bg-zinc-800">
+                                {course?.image_url ? (
+                                    <Image
                                         src={course.image_url}
-                                    alt="Student studying in Cafe"
-                                    fill
-                                    sizes="(max-width: 768px) 100vw, 224px"
-                                    className="object-cover"
-                                />
-                            ) : (
-                                <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">No image</div>
-                            )}
+                                        alt="Student studying in Cafe"
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, 224px"
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">No image</div>
+                                )}
                             </div>
                             <div className="space-y-3 flex-1">
                                 <h3 className="font-black text-zinc-900 dark:text-white text-lg">Nội dung bài học</h3>
@@ -172,73 +168,74 @@ export default function CourseDetailPage({
                             <div className="w-full md:w-1/2 space-y-2">
                                 <div className="flex justify-between text-xs font-black text-amber-700 dark:text-amber-400">
                                     <span>Tiến độ học tập</span>
-                                    <span>40%</span>
+                                    <span>0 / {chapters.reduce((acc, c) => acc + (c.lessons?.length || 0), 0)} Bài</span>
                                 </div>
-                                <Progress value={40} className="h-2.5 bg-amber-100 dark:bg-amber-950 [&>div]:bg-amber-500" />
+                                <Progress value={0} className="h-2.5 bg-amber-200/60 dark:bg-amber-950" />
                             </div>
                             <Button
-                                onClick={() => {
-                                    const firstLesson = chapters.flatMap((c) => c.lessons || [])[0];
-                                    if (firstLesson) handleSubtopicClick(firstLesson.id);
-                                }}
-                                className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-6 py-5 rounded-2xl text-sm shadow-xs transition-colors cursor-pointer active:scale-95 shadow-amber-500/10 flex items-center gap-2"
+                                onClick={() => handleSubtopicClick(chapters[0]?.lessons?.[0]?.id || 1)}
+                                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer text-sm w-full md:w-auto justify-center active:scale-95"
                             >
-                                Học tiếp <ArrowRight className="w-4 h-4" />
+                                Bắt đầu học bài 1 <ArrowRight className="w-4 h-4" />
                             </Button>
                         </div>
 
+                        {/* List of chapters */}
                         <div className="space-y-4">
-                            {chapters.map((chapter: CourseChapter) => {
-                                const chapterId = chapter.id;
-                                const isExpanded = !!expandedLessons[chapterId];
-                                const lessonsList = chapter.lessons || [];
+                            {chapters.map((chapter) => {
+                                const isExpanded = !!expandedLessons[chapter.id];
                                 return (
-                                    <Card
-                                        key={chapterId}
-                                        className="bg-white dark:bg-zinc-900 rounded-2xl border-zinc-200/60 dark:border-zinc-800 shadow-2xs overflow-hidden"
+                                    <div
+                                        key={chapter.id}
+                                        className="rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-2xs"
                                     >
                                         <button
-                                            type="button"
-                                            onClick={() => toggleLesson(chapterId)}
-                                            className="w-full flex items-center justify-between p-5 font-black text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all text-left cursor-pointer border-none bg-transparent"
+                                            onClick={() => toggleLesson(chapter.id)}
+                                            className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <span className="text-[15px]">{chapter.title}</span>
-                                                {chapter.tag && (
-                                                    <Badge variant="outline" className="text-[10px] bg-emerald-500/5 text-emerald-600 dark:text-emerald-450 border-emerald-500/20 px-2">
-                                                        {chapter.tag}
-                                                    </Badge>
+                                                {isExpanded ? (
+                                                    <ChevronDown className="w-5 h-5 text-amber-500 shrink-0" />
+                                                ) : (
+                                                    <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
                                                 )}
+                                                <div className="space-y-1">
+                                                    <span className="font-extrabold text-zinc-900 dark:text-white text-base block">
+                                                        {chapter.title}
+                                                    </span>
+                                                    {chapter.title_trans && (
+                                                        <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium block">
+                                                            {chapter.title_trans}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="text-zinc-400 dark:text-zinc-500">
-                                                {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                                            </div>
+                                            {chapter.tag && (
+                                                <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 hover:bg-amber-100 border-none font-bold shrink-0 text-xs">
+                                                    {chapter.tag}
+                                                </Badge>
+                                            )}
                                         </button>
 
-                                        {isExpanded && (
-                                            <div className="px-6 pb-6 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2">
-                                                {lessonsList.length > 0 ? (
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                                        {lessonsList.map((sub: CourseLesson) => (
-                                                            <Button
-                                                                key={sub.id}
-                                                                variant="outline"
-                                                                onClick={() => handleLessonClick(sub)}
-                                                                className="flex justify-between p-3.5 h-auto text-zinc-800 dark:text-zinc-200 hover:text-amber-900 dark:hover:text-amber-400 font-bold rounded-2xl border-amber-500/20 hover:border-amber-500/40 hover:bg-amber-500/5 dark:hover:bg-amber-500/10 cursor-pointer w-full text-left"
-                                                            >
-                                                                <span className="text-xs">{sub.title}</span>
-                                                                <ArrowRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" />
-                                                            </Button>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <p className="text-sm text-zinc-400 dark:text-zinc-500 italic font-semibold">
-                                                        Bài học chưa được mở khóa hoặc đang cập nhật nội dung.
-                                                    </p>
-                                                )}
+                                        {isExpanded && chapter.lessons && chapter.lessons.length > 0 && (
+                                            <div className="border-t border-zinc-100 dark:border-zinc-800/60 divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/30 dark:bg-zinc-950/20">
+                                                {chapter.lessons.map((sub) => (
+                                                    <button
+                                                        key={sub.id}
+                                                        onClick={() => handleLessonClick(sub)}
+                                                        className="w-full py-3.5 px-6 pl-12 text-left flex items-center justify-between hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors group cursor-pointer"
+                                                    >
+                                                        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                                            {sub.title}
+                                                        </span>
+                                                        <span className="text-xs font-bold text-amber-600 dark:text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                                            Vào học <ChevronRight className="w-3.5 h-3.5" />
+                                                        </span>
+                                                    </button>
+                                                ))}
                                             </div>
                                         )}
-                                    </Card>
+                                    </div>
                                 );
                             })}
                         </div>
@@ -246,12 +243,12 @@ export default function CourseDetailPage({
                 )}
 
                 {activeTab === "info" && (
-                    <section className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-200/60 dark:border-zinc-800 text-zinc-600 dark:text-zinc-450 space-y-4 shadow-2xs">
-                        <h3 className="font-black text-zinc-900 dark:text-white text-lg">Mô tả chi tiết khóa học</h3>
-                        <p className="text-sm leading-relaxed font-semibold">
-                            {course?.description || "Đang cập nhật mô tả khóa học..."}
+                    <Card className="bg-white dark:bg-zinc-900 rounded-2xl border-zinc-200/60 dark:border-zinc-800 p-8 shadow-2xs space-y-4">
+                        <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">Giới thiệu khóa học</h2>
+                        <p className="text-sm md:text-base text-zinc-650 dark:text-zinc-400 font-semibold leading-relaxed">
+                            {course?.description || "Khóa học được thiết kế chuyên biệt cho người Việt Nam..."}
                         </p>
-                    </section>
+                    </Card>
                 )}
             </main>
         </div>

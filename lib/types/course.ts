@@ -17,8 +17,6 @@ export interface CourseLesson {
   status?: string;
   sort?: number;
   content?: string;
-  resource_id?: string | number | null;
-  resource_collection?: string | null;
   video_section_id?: string | null;
   exercise_id?: number | string | null;
   audio_id?: string | null;
@@ -29,7 +27,6 @@ export interface CourseLesson {
   extra_pdf?: { id: string; filename_disk?: string; title?: string } | null;
   extra_answer?: { id: string; filename_disk?: string; title?: string } | null;
   extra_audio?: { id: string; filename_disk?: string; title?: string } | null;
-  video_url?: string;
 }
 
 export interface CourseChapter {

@@ -258,7 +258,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
             <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 p-5 shadow-xs space-y-4">
               <h3 className="text-sm font-black text-zinc-900 dark:text-white">Thông tin tác phẩm</h3>
               <div className="space-y-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-                <p><strong>Tác giả:</strong> {book.author || "Khuyết danh"}</p>
+                <p><strong>Tác giả:</strong> {book.author || book.author_trans || "Khuyết danh"}</p>
                 {book.author_trans && <p><strong>Dịch giả:</strong> {book.author_trans}</p>}
                 <p><strong>Lượt đọc:</strong> {book.view_count || 0}</p>
                 <div className="border-t border-zinc-100 dark:border-zinc-800 pt-2 mt-2">

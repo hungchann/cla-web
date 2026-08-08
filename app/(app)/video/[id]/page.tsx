@@ -15,7 +15,6 @@ import { usePremium } from "@/lib/hooks/usePremium";
 import { Lightbulb, Eye, EyeOff } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
 
-// Import components và utility mới
 import { VideoPlayerSection } from "@/components/video/VideoPlayerSection";
 import { VideoQuizSection } from "@/components/video/VideoQuizSection";
 import { videoDataUsesYoutubePlayer, getYoutubeVideoIdFromVideoData } from "@/lib/utils/youtubeVideo";
@@ -23,6 +22,8 @@ import { BilingualVocab } from "@/components/bilingual/BilingualVocab";
 import { BilingualShadowing } from "@/components/bilingual/BilingualShadowing";
 import { BilingualExercise } from "@/components/bilingual/BilingualExercise";
 import { speakChinese } from "@/lib/utils/speech";
+import { useSubtitleSync } from "@/lib/hooks/useSubtitleSync";
+import { timeToSeconds } from "@/lib/utils/subtitleUtils";
 
 // Mock video data chi tiết
 const MOCK_VIDEO_DETAIL = {
@@ -111,15 +112,6 @@ function parseMockSRT() {
     };
   });
 }
-
-const timeToSeconds = (timeStr: string): number => {
-  const parts = timeStr.split(":");
-  const hours = Number(parts[0]) || 0;
-  const minutes = Number(parts[1]) || 0;
-  const secParts = parts[2]?.replace(",", ".") || "0";
-  const seconds = Number(secParts) || 0;
-  return hours * 3600 + minutes * 60 + seconds;
-};
 
 function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -250,7 +242,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const {
     activeQuestion,
     subtitles,
-    currentSubtitle: hookCurrentSubtitle,
     handleOptionPress,
     handleContinueWatching,
     exerciseData,
@@ -303,17 +294,39 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     enrich();
   }, [subtitles]);
 
-  // Đồng bộ phụ đề chạy chữ theo timeline (kết hợp hook state & local time)
-  const activeSubtitleIndex = enrichedSubtitles.findIndex((st, idx) => {
-    if (hookCurrentSubtitle) {
-      if (hookCurrentSubtitle.id !== undefined && st.id === hookCurrentSubtitle.id) return true;
-      if ((hookCurrentSubtitle as any).index !== undefined && idx === (hookCurrentSubtitle as any).index) return true;
-      if (st.start === hookCurrentSubtitle.start && st.end === hookCurrentSubtitle.end) return true;
-    }
-    const s = timeToSeconds(String(st.start));
-    const e = timeToSeconds(String(st.end));
-    return currentTime >= s && currentTime <= e;
+  const { activeIndex: activeSubtitleIndex, setActiveIndex, binarySearchSubtitle } = useSubtitleSync({
+    subtitles: enrichedSubtitles,
+    timeToSeconds,
+    leadTimeSeconds: 0.1,
   });
+
+  // Polling current time for YouTube player
+  useEffect(() => {
+    if (!isYoutubeVideo) return;
+    const interval = setInterval(async () => {
+      if (youtubePlayerRef.current?.getCurrentTime) {
+        try {
+          const t = await youtubePlayerRef.current.getCurrentTime();
+          if (typeof t === "number" && !Number.isNaN(t)) {
+            setCurrentTime(t);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [isYoutubeVideo]);
+
+  // Sync active subtitle index from current time
+  useEffect(() => {
+    if (currentTime > 0 && enrichedSubtitles.length > 0) {
+      const idx = binarySearchSubtitle(currentTime);
+      if (idx !== null && idx !== activeSubtitleIndex) {
+        setActiveIndex(idx);
+      }
+    }
+  }, [currentTime, enrichedSubtitles, binarySearchSubtitle, activeSubtitleIndex, setActiveIndex]);
 
   // Tự động Pause video khi có câu hỏi hoạt động
   useEffect(() => {
@@ -333,24 +346,14 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     }
   }, [activeQuestion, isYoutubeVideo]);
 
-  // Cuộn tự động phụ đề như 1 Teleprompter (căn giữa item active trong viewport)
-  const subtitleContainerRef = useRef<HTMLDivElement>(null);
+  // Teleprompter: Cuộn tự động phụ đề căn giữa viewport
+  const subtitleItemRefs = useRef<(HTMLDivElement | null)[]>([]);
   useEffect(() => {
-    if (activeSubtitleIndex !== -1 && subtitleContainerRef.current) {
-      const container = subtitleContainerRef.current;
-      const activeEl = container.children[activeSubtitleIndex] as HTMLElement;
-      if (activeEl) {
-        const containerHeight = container.clientHeight;
-        const activeElHeight = activeEl.clientHeight;
-        const activeElTop = activeEl.offsetTop;
-
-        const targetScrollTop = activeElTop - containerHeight / 2 + activeElHeight / 2;
-
-        container.scrollTo({
-          top: Math.max(0, targetScrollTop),
-          behavior: "smooth",
-        });
-      }
+    if (activeSubtitleIndex !== null && activeSubtitleIndex !== undefined && activeSubtitleIndex !== -1) {
+      subtitleItemRefs.current[activeSubtitleIndex]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     }
   }, [activeSubtitleIndex]);
 
@@ -643,20 +646,23 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                   />
                 ) : (
                   // Nội dung Tab Danh sách Phụ đề
-                  <div
-                    ref={subtitleContainerRef}
-                    className="flex-1 overflow-y-auto mt-1 pr-1 scrollbar-thin flex flex-col gap-2"
-                  >
+                  <div className="flex-1 overflow-y-auto mt-1 pr-1 scrollbar-thin flex flex-col gap-2">
                     {enrichedSubtitles.map((sub, index) => (
-                      <SubtitleItem
+                      <div
                         key={sub.id || `sub-${index}`}
-                        item={sub}
-                        index={index}
-                        activeIndex={activeSubtitleIndex}
-                        isOpenPinyin={isOpenPinyin}
-                        onWordPress={handleWordPress}
-                        onReplayPress={handleReplayPress}
-                      />
+                        ref={(el) => {
+                          subtitleItemRefs.current[index] = el;
+                        }}
+                      >
+                        <SubtitleItem
+                          item={sub}
+                          index={index}
+                          activeIndex={activeSubtitleIndex}
+                          isOpenPinyin={isOpenPinyin}
+                          onWordPress={handleWordPress}
+                          onReplayPress={handleReplayPress}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}

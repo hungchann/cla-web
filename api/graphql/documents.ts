@@ -324,6 +324,8 @@ export const GET_BOOK_GENRES_WITH_BOOKS_QUERY = gqlTag`
         id
         title
         title_trans
+        author
+        author_trans
         image {
           filename_disk
         }
@@ -348,6 +350,8 @@ export const GET_BOOKS_BY_GENRE_ID_QUERY = gqlTag`
         id
         title
         title_trans
+        author
+        author_trans
         view_count
         image {
           filename_disk
@@ -380,6 +384,8 @@ export const GET_TRENDING_BOOKS_QUERY = gqlTag`
       id
       title
       title_trans
+      author
+      author_trans
       image {
         filename_disk
       }
@@ -396,6 +402,8 @@ export const GET_ALL_BOOKS_QUERY = gqlTag`
       id
       title
       title_trans
+      author
+      author_trans
       image {
         filename_disk
       }
@@ -414,6 +422,8 @@ export const GET_POPULAR_BOOKS_QUERY = gqlTag`
       id
       title
       title_trans
+      author
+      author_trans
       image {
         filename_disk
       }
