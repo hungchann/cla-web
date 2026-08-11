@@ -1,41 +1,42 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { grammarApi } from "@/api/grammar";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, PackageOpen } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
 
-export default function GrammarPage() {
-    const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
-    const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-    const [selectedTopicTitle, setSelectedTopicTitle] = useState<string | null>(null);
+function GrammarPageContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const selectedModuleId = searchParams.get("module");
+    const selectedTopicId = searchParams.get("topic");
 
-    // 1. Fetch modules (Sơ cấp, Trung cấp, ...)
-    const { data: modules, isLoading: modulesLoading } = useQuery({
+    // 1. Fetch modules (Ngữ pháp HSK1, HSK2, ...)
+    const { data: modules } = useQuery({
         queryKey: ["grammar-modules"],
         queryFn: grammarApi.getGrammarModules,
     });
 
-    // Set default selected module when loaded
+    // Mặc định chọn module đầu tiên khi chưa có tham số
     useEffect(() => {
         if (modules && modules.length > 0 && !selectedModuleId) {
-            setSelectedModuleId(modules[0].id);
+            router.replace(`/grammar?module=${encodeURIComponent(modules[0].id)}`);
         }
-    }, [modules, selectedModuleId]);
+    }, [modules, selectedModuleId, router]);
 
-    // 2. Fetch topics under selected module
+    // 2. Fetch topics dưới module đang chọn
     const { data: topicsRaw, isLoading: topicsLoading } = useQuery({
         queryKey: ["grammar-topics", selectedModuleId],
         queryFn: () => grammarApi.getTopicOfGrammarItem(selectedModuleId),
         enabled: !!selectedModuleId,
     });
 
-    // Process unique topics list
+    // Chuẩn hoá danh sách chủ đề duy nhất
     const topics = (() => {
         if (!topicsRaw) return [];
         const normalized = topicsRaw
@@ -57,27 +58,23 @@ export default function GrammarPage() {
         return Array.from(titleMap.values());
     })();
 
-    // Set default selected topic when module changes or topics load
+    // Mặc định chọn topic đầu tiên khi module đổi & chưa có topic
     useEffect(() => {
-        if (topics && topics.length > 0) {
-            // Find if current selected topic exists in the new list, otherwise pick the first
-            const exists = topics.some(t => t.id === selectedTopicId);
-            if (!exists) {
-                setSelectedTopicId(topics[0].id);
-                setSelectedTopicTitle(topics[0].title);
-            }
-        } else {
-            setSelectedTopicId(null);
-            setSelectedTopicTitle(null);
+        if (topics && topics.length > 0 && !selectedTopicId) {
+            router.replace(
+                `/grammar?module=${encodeURIComponent(selectedModuleId || "")}&topic=${encodeURIComponent(topics[0].id)}`,
+            );
         }
-    }, [topics, selectedModuleId]);
+    }, [topics, selectedModuleId, selectedTopicId, router]);
 
-    // 3. Fetch grammar items under selected module & topic
+    // 3. Fetch grammar items theo module & topic
     const { data: grammarItems, isLoading: itemsLoading } = useQuery({
         queryKey: ["grammar-items", selectedModuleId, selectedTopicId],
         queryFn: () => grammarApi.getGrammarDetailById(selectedModuleId, selectedTopicId),
         enabled: !!selectedModuleId && !!selectedTopicId,
     });
+
+    const selectedTopicTitle = topics.find((t: any) => t.id === selectedTopicId)?.title || "Chủ đề";
 
     return (
         <PageContainer>
@@ -87,138 +84,71 @@ export default function GrammarPage() {
                 icon={<FileText className="w-7 h-7" />}
             />
 
-            {/* Module Selector Pill Tabs */}
-            <div id="modules" className="scroll-mt-24 flex flex-wrap items-center gap-2 border-b border-zinc-200 pb-4 shrink-0">
-                {modulesLoading ? (
-                    <div className="h-6 w-32 bg-zinc-200 animate-pulse rounded-lg"></div>
-                ) : (
-                    modules?.map((mod: any) => {
-                        const isActive = selectedModuleId === mod.id;
-                        return (
-                            <Button
-                                key={mod.id}
-                                onClick={() => setSelectedModuleId(mod.id)}
-                                variant={isActive ? "default" : "outline"}
-                                className={`text-xs font-bold rounded-full cursor-pointer ${isActive
-                                        ? "bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-650/20"
-                                        : "bg-white dark:bg-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-amber-600"
-                                    }`}
-                            >
-                                {mod.title}
-                            </Button>
-                        );
-                    })
-                )}
-            </div>
+            {/* Detail Items */}
+            <Card id="details" className="scroll-mt-24 flex-1 min-w-0 flex flex-col rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                {itemsLoading || topicsLoading ? (
+                    <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-600 border-t-transparent"></div>
+                        <p className="text-xs font-bold text-zinc-400">Đang tải cấu trúc ngữ pháp...</p>
+                    </div>
+                ) : selectedTopicId ? (
+                    <div className="flex-1 overflow-y-auto space-y-6">
+                        {/* Active topic info */}
+                        <div className="border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                            <h2 className="text-lg font-black text-zinc-900 dark:text-white">
+                                {selectedTopicTitle}
+                            </h2>
+                            <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-0.5">
+                                Danh sách các điểm ngữ pháp nổi bật
+                            </p>
+                        </div>
 
-            {/* Split Pane: Subcategories Topics (Left) vs Detail Items (Right) */}
-            <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[400px]">
-                {/* Left pane: Topics / Subcategories */}
-                <Card id="topics" className="scroll-mt-24 w-full md:w-64 shrink-0 rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm p-4 flex flex-col gap-3 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 className="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-2">
-                        Chủ đề ngữ pháp
-                    </h2>
+                        {grammarItems && grammarItems.length > 0 ? (
+                            <div className="space-y-8">
+                                {grammarItems.map((item: any) => (
+                                    <article
+                                        key={item.id}
+                                        className="bg-amber-50/20 dark:bg-amber-950/5 border border-amber-100/50 dark:border-amber-900/30 rounded-2xl p-5 md:p-6 space-y-4 shadow-3xs"
+                                    >
+                                        <div className="flex items-start justify-between gap-3 border-b border-amber-100/20 pb-3">
+                                            <h3 className="text-md font-extrabold text-amber-900 dark:text-amber-450 leading-snug">
+                                                {item.title}
+                                            </h3>
+                                            <Badge className="bg-amber-150 text-amber-700 dark:bg-amber-900 dark:text-amber-300 font-black px-2 py-0.5 rounded-full select-none border-none text-[10px]">
+                                                Ngữ pháp
+                                            </Badge>
+                                        </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-1">
-                        {topicsLoading ? (
-                            <div className="space-y-2 p-2">
-                                {[1, 2, 3, 4].map(n => (
-                                    <div key={n} className="h-8 bg-zinc-150 animate-pulse rounded-md"></div>
+                                        {item.description && (
+                                            <p className="text-xs font-medium text-zinc-650 dark:text-zinc-350 leading-relaxed italic">
+                                                {item.description}
+                                            </p>
+                                        )}
+
+                                        {/* HTML detailed explanation */}
+                                        <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-850 dark:text-zinc-200">
+                                            <div
+                                                dangerouslySetInnerHTML={{ __html: item.content }}
+                                                className="text-xs md:text-sm font-medium space-y-3 leading-relaxed grammar-html-renderer"
+                                            />
+                                        </div>
+                                    </article>
                                 ))}
                             </div>
-                        ) : topics.length > 0 ? (
-                            topics.map((topic) => {
-                                const isActive = selectedTopicId === topic.id;
-                                return (
-                                    <button
-                                        key={topic.id}
-                                        onClick={() => {
-                                            setSelectedTopicId(topic.id);
-                                            setSelectedTopicTitle(topic.title);
-                                        }}
-                                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none bg-transparent ${isActive
-                                                 ? "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
-                                                 : "text-zinc-650 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                                             }`}
-                                    >
-                                        {topic.title}
-                                    </button>
-                                );
-                            })
                         ) : (
-                            <p className="text-xs text-zinc-400 text-center py-10 font-bold">
-                                Không có chủ đề nào.
-                            </p>
+                            <div className="flex flex-col items-center justify-center py-20 text-center">
+                                <PackageOpen className="w-10 h-10 text-zinc-300 dark:text-zinc-700" />
+                                <p className="mt-2 text-xs font-bold text-zinc-400">Không tìm thấy nội dung ngữ pháp cho chủ đề này.</p>
+                            </div>
                         )}
                     </div>
-                </Card>
-
-                {/* Right pane: Detailed list of Grammar items */}
-                <Card id="details" className="scroll-mt-24 flex-1 min-w-0 flex flex-col rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                    {itemsLoading ? (
-                        <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20">
-                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-600 border-t-transparent"></div>
-                            <p className="text-xs font-bold text-zinc-400">Đang tải cấu trúc ngữ pháp...</p>
-                        </div>
-                    ) : selectedTopicId ? (
-                        <div className="flex-1 overflow-y-auto space-y-6">
-                            {/* Active topic info */}
-                            <div className="border-b border-zinc-100 dark:border-zinc-800 pb-3">
-                                <h2 className="text-lg font-black text-zinc-900 dark:text-white">
-                                    {selectedTopicTitle || "Chủ đề"}
-                                </h2>
-                                <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-0.5">
-                                    Danh sách các điểm ngữ pháp nổi bật
-                                </p>
-                            </div>
-
-                            {grammarItems && grammarItems.length > 0 ? (
-                                <div className="space-y-8">
-                                    {grammarItems.map((item: any) => (
-                                        <article
-                                            key={item.id}
-                                            className="bg-amber-50/20 dark:bg-amber-950/5 border border-amber-100/50 dark:border-amber-900/30 rounded-2xl p-5 md:p-6 space-y-4 shadow-3xs"
-                                        >
-                                            <div className="flex items-start justify-between gap-3 border-b border-amber-100/20 pb-3">
-                                                <h3 className="text-md font-extrabold text-amber-900 dark:text-amber-450 leading-snug">
-                                                    {item.title}
-                                                </h3>
-                                                <Badge className="bg-amber-150 text-amber-700 dark:bg-amber-900 dark:text-amber-300 font-black px-2 py-0.5 rounded-full select-none border-none text-[10px]">
-                                                    Ngữ pháp
-                                                </Badge>
-                                            </div>
-
-                                            {item.description && (
-                                                <p className="text-xs font-medium text-zinc-650 dark:text-zinc-350 leading-relaxed italic">
-                                                    {item.description}
-                                                </p>
-                                            )}
-
-                                            {/* HTML detailed explanation */}
-                                            <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-850 dark:text-zinc-200">
-                                                <div
-                                                    dangerouslySetInnerHTML={{ __html: item.content }}
-                                                    className="text-xs md:text-sm font-medium space-y-3 leading-relaxed grammar-html-renderer"
-                                                />
-                                            </div>
-                                        </article>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-20 text-center">
-                                    <PackageOpen className="w-10 h-10 text-zinc-300 dark:text-zinc-700" />
-                                    <p className="mt-2 text-xs font-bold text-zinc-400">Không tìm thấy nội dung ngữ pháp cho chủ đề này.</p>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
-                            <FileText className="w-12 h-12 text-zinc-300 dark:text-zinc-800" />
-                            <p className="mt-2 text-xs font-bold text-zinc-400">Vui lòng chọn một chủ đề bên trái để xem nội dung.</p>
-                        </div>
-                    )}
-                </Card>
-            </div>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
+                        <FileText className="w-12 h-12 text-zinc-300 dark:text-zinc-800" />
+                        <p className="mt-2 text-xs font-bold text-zinc-400">Vui lòng chọn một chủ đề để xem nội dung.</p>
+                    </div>
+                )}
+            </Card>
 
             {/* Embedded styles for rendered HTML */}
             <style jsx global>{`
@@ -268,5 +198,22 @@ export default function GrammarPage() {
         }
       `}</style>
         </PageContainer>
+    );
+}
+
+export default function GrammarPage() {
+    return (
+        <Suspense fallback={
+            <PageContainer className="gap-9">
+                <PageHeader
+                    title="Cấu Trúc Ngữ Pháp Tiếng Trung"
+                    description="Tổng hợp đầy đủ cấu trúc ngữ pháp quan trọng theo hệ thống bài giảng và chủ đề."
+                    icon={<FileText className="w-7 h-7" />}
+                />
+                <div className="animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800 h-40" />
+            </PageContainer>
+        }>
+            <GrammarPageContent />
+        </Suspense>
     );
 }

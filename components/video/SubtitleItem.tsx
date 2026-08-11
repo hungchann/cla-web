@@ -46,6 +46,7 @@ export const SubtitleItem = React.memo(
                     pinyin={isOpenPinyin ? w.pinyin : undefined}
                     fontSize={18}
                     pinyinSize={12}
+                    bold={isActive}
                     textColor={isActive ? colors.primary : colors.text.primary}
                     pinyinColor={isActive ? colors.primary : colors.text.secondary}
                     onPress={() => onWordPress(w.word)}
@@ -57,6 +58,7 @@ export const SubtitleItem = React.memo(
                   pinyin={isOpenPinyin ? item.pinyin : undefined}
                   fontSize={18}
                   pinyinSize={12}
+                  bold={isActive}
                   textColor={isActive ? colors.primary : colors.text.primary}
                   pinyinColor={isActive ? colors.primary : colors.text.secondary}
                 />

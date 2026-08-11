@@ -48,14 +48,15 @@ const SAMPLE_CHAPTER = {
 };
 
 const SAMPLE_LESSONS = [
-  { lesson_type: "video_vocab",   title: "Video từ vựng",              sort: 1 },
-  { lesson_type: "quiz_vocab",    title: "Bài tập: từ vựng",           sort: 2 },
-  { lesson_type: "video_grammar", title: "Video ngữ pháp",             sort: 3 },
-  { lesson_type: "quiz_grammar",  title: "Bài tập ngữ pháp",           sort: 4 },
-  { lesson_type: "dictation",     title: "Bài tập: Nghe chép chính tả", sort: 5, content: "你好" },
-  { lesson_type: "conversation",  title: "Thực hành hội thoại",        sort: 6 },
-  { lesson_type: "extra",         title: "Bài tập bổ sung",            sort: 7 },
-  { lesson_type: "reading",       title: "Bài đọc song ngữ",             sort: 8 },
+  { lesson_type: "video_vocab",   title: "Video từ vựng",                sort: 1 },
+  { lesson_type: "vocab_theory",  title: "Lý thuyết: Giải nghĩa từ vựng", sort: 2 },
+  { lesson_type: "quiz_vocab",    title: "Bài tập: từ vựng",             sort: 3 },
+  { lesson_type: "video_grammar", title: "Video ngữ pháp",               sort: 4 },
+  { lesson_type: "quiz_grammar",  title: "Bài tập ngữ pháp",             sort: 5 },
+  { lesson_type: "dictation",     title: "Bài tập: Nghe chép chính tả",   sort: 6, content: "你好" },
+  { lesson_type: "conversation",  title: "Thực hành hội thoại",          sort: 7 },
+  { lesson_type: "extra",         title: "Bài tập bổ sung",              sort: 8 },
+  { lesson_type: "reading",       title: "Bài đọc song ngữ",             sort: 9 },
 ];
 
 function log(icon, msg) { console.log(`${icon} ${msg}`); }
@@ -143,6 +144,7 @@ async function main() {
   let linkExercise = null;
   let speakingScenario = null;
   let audioFile = null;
+  let vocabDisplayMap = null;
 
   try {
     let videos = await listItems("video_section", {
@@ -173,6 +175,12 @@ async function main() {
     audioFile = files[0];
     log("  ", `directus_files: ${audioFile ? `id=${audioFile.id} title='${audioFile.title}'` : "NONE FOUND"}`);
   } catch (e) { log("  !", `directus_files lookup failed: ${JSON.stringify(e.data || e)}`); }
+
+  try {
+    const maps = await listItems("vocab_display_map", { filter: {}, fields: "id,topic_id.name" }, token);
+    vocabDisplayMap = maps[0];
+    log("  ", `vocab_display_map: ${vocabDisplayMap ? `id=${vocabDisplayMap.id}` : "NONE FOUND"}`);
+  } catch (e) { log("  !", `vocab_display_map lookup failed: ${JSON.stringify(e.data || e)}`); }
 
   console.log("");
 
@@ -230,6 +238,17 @@ async function main() {
             log("  ⬈", `  linked → video_section #${videoSection.id}`);
           } else {
             log("  ⚠", `  no video_section available; set manually`);
+          }
+          break;
+
+        case "vocab_theory":
+          if (vocabDisplayMap) {
+            await patch("course_lessons", row.id, {
+              vocab_display_map_id: vocabDisplayMap.id,
+            }, token);
+            log("  ⬈", `  linked → vocab_display_map #${vocabDisplayMap.id}`);
+          } else {
+            log("  ⚠", `  no vocab_display_map available; set manually`);
           }
           break;
 

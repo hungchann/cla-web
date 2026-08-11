@@ -10,6 +10,7 @@ import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
 import { RubyText } from "@/components/RubyText";
+import { PinyinToggle } from "@/components/PinyinToggle";
 import { X } from "lucide-react";
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -213,23 +214,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
             <div className="flex items-center justify-end">
 
               {currentChapter && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-zinc-400">Hiện Pinyin</span>
-                  <button
-                    type="button"
-                    aria-pressed={isOpenPinyin}
-                    onClick={() => setIsOpenPinyin((open) => !open)}
-                    className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
-                      isOpenPinyin ? "bg-amber-500" : "bg-zinc-300 dark:bg-zinc-700"
-                    }`}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-full bg-white transition-transform ${
-                        isOpenPinyin ? "translate-x-4" : "translate-x-0"
-                      }`}
-                    />
-                  </button>
-                </div>
+                <PinyinToggle isOpen={isOpenPinyin} onChange={setIsOpenPinyin} />
               )}
             </div>
 

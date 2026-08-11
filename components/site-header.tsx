@@ -10,11 +10,11 @@ import { useSidebar } from "@/components/ui/sidebar"
 const primaryNavigation = [
   { title: "Khóa học", href: "/courses" },
   { title: "Song ngữ", href: "/bilingual" },
+  { title: "Video", href: "/video" },
   { title: "Sách – Báo", href: "/stories" },
   { title: "AI luyện nói", href: "/speaking" },
   { title: "Từ vựng", href: "/flashcard" },
   { title: "Ngữ pháp", href: "/grammar" },
-  { title: "Video", href: "/video" },
 ]
 
 function isActiveRoute(pathname: string, href: string) {

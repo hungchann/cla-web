@@ -12,7 +12,8 @@ import { speakChinese } from "@/lib/utils/speech";
 import { getAssetUrl } from "@/lib/utils/assets";
 import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
-import { BookmarkPlus, Eye, EyeOff, Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { PinyinToggle } from "@/components/PinyinToggle";
+import { BookmarkPlus, Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import { useSubtitleSync } from "@/lib/hooks/useSubtitleSync";
 import { timeToSeconds } from "@/lib/utils/subtitleUtils";
 import { BilingualContent } from "@/components/bilingual/BilingualContent";
@@ -339,16 +340,7 @@ export default function BilingualDetailPage({
                         </p>
                     </div>
 
-                    <button
-                        onClick={() => setIsOpenPinyin(!isOpenPinyin)}
-                        className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${isOpenPinyin
-                                ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-950/30 dark:border-amber-900/50 dark:text-amber-500"
-                                : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400"
-                            }`}
-                    >
-                        {isOpenPinyin ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                        {isOpenPinyin ? "Ẩn Pinyin" : "Hiện Pinyin"}
-                    </button>
+                    <PinyinToggle isOpen={isOpenPinyin} onChange={setIsOpenPinyin} />
                 </div>
 
                 {/* Banner Image */}

@@ -438,6 +438,12 @@ function FlashcardStudySession({
   const [localIndex, setLocalIndex] = useState(0);
   const [localFlipped, setLocalFlipped] = useState(false);
 
+  // Chế độ học: flashcard (lật thẻ) hoặc quiz (chọn đáp án)
+  const [studyMode, setStudyMode] = useState<"flashcard" | "quiz">("flashcard");
+  const [quizSelected, setQuizSelected] = useState<string | null>(null);
+  const [masteredCount, setMasteredCount] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+
   // Phát âm khi đổi thẻ
   const currentCard = dataVocal[currentIndex] || (fallbackDataActive ? MOCK_FLASHCARDS[localIndex] : null);
   const currentWord = currentCard?.vocab_items_id?.name || "";
@@ -449,13 +455,19 @@ function FlashcardStudySession({
   }, [currentIndex, localIndex, currentWord]);
 
   const handleNextAction = useCallback((status: "mastered" | "uncertain" | "learning") => {
+    const nextKnown = status === "mastered" ? masteredCount + 1 : masteredCount;
+    const nextUnknown = status === "mastered" ? reviewCount : reviewCount + 1;
+    setMasteredCount(nextKnown);
+    setReviewCount(nextUnknown);
+    setQuizSelected(null);
+
     if (fallbackDataActive) {
       const isLast = localIndex >= MOCK_FLASHCARDS.length - 1;
       if (isLast) {
         // Đi tới trang kết quả với tham số mock
         const searchParams = new URLSearchParams({
-          known: String(status === "mastered" ? MOCK_FLASHCARDS.length : MOCK_FLASHCARDS.length - 1),
-          unknown: String(status === "mastered" ? 0 : 1),
+          known: String(nextKnown),
+          unknown: String(nextUnknown),
           total: String(MOCK_FLASHCARDS.length),
         });
         globalThis.location.replace(`/flashcard/results?${searchParams.toString()}`);
@@ -466,7 +478,7 @@ function FlashcardStudySession({
     } else {
       moveToNext(status);
     }
-  }, [fallbackDataActive, localIndex, moveToNext]);
+  }, [fallbackDataActive, localIndex, moveToNext, masteredCount, reviewCount]);
   const handlePrevAction = useCallback(() => {
     if (fallbackDataActive) {
       if (localIndex > 0) {
@@ -521,6 +533,74 @@ function FlashcardStudySession({
       setFallbackDataActive(false);
     }
   }, [isLoadingList, dataVocal]);
+
+  // Danh sách {word, meaning} dùng cho chế độ chọn đáp án
+  const quizWords = useMemo(() => {
+    if (fallbackDataActive) {
+      return MOCK_FLASHCARDS.map((m) => ({
+        word: m.vocab_items_id.name,
+        meaning: m.vocab_items_id.senses[0]?.meaning_vi || "",
+      }));
+    }
+    return dataVocal
+      .map((item: any) => {
+        const vocab = item?.vocab_items_id;
+        return {
+          word: vocab?.name || "",
+          meaning: vocab?.senses?.[0]?.meaning_vi || vocab?.note || "",
+        };
+      })
+      .filter((w) => w.word);
+  }, [fallbackDataActive, dataVocal]);
+
+  const quizIndex = fallbackDataActive ? localIndex : currentIndex;
+  const currentQuizWord = quizWords.length > 0 ? quizWords[quizIndex % quizWords.length] : null;
+
+  // Sinh 4 đáp án (1 đúng + 3 nhiễu) cho từ hiện tại — shuffle xác định theo từ để thuần khiết khi render
+  const quizOptions = useMemo(() => {
+    if (!currentQuizWord) return [];
+    const seededShuffle = (arr: string[], seed: string): string[] => {
+      const result = [...arr];
+      let h = 0;
+      for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      for (let i = result.length - 1; i > 0; i--) {
+        h = (h * 1103515245 + 12345) >>> 0;
+        const j = h % (i + 1);
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    };
+
+    const distractors = quizWords
+      .filter((w) => w.word !== currentQuizWord.word)
+      .map((w) => w.word);
+    const fallbackPool = ["是", "好", "不", "这", "我", "你", "爱", "我们"];
+
+    const picked: string[] = [currentQuizWord.word];
+    for (const candidate of [...seededShuffle(distractors, currentQuizWord.word), ...fallbackPool]) {
+      if (picked.length >= 4) break;
+      if (!picked.includes(candidate)) picked.push(candidate);
+    }
+
+    return seededShuffle(picked, `${currentQuizWord.word}-options`)
+      .map((w, idx) => ({
+        key: ["A", "B", "C", "D"][idx],
+        word: w,
+        isCorrect: w === currentQuizWord.word,
+      }));
+  }, [currentQuizWord, quizWords]);
+
+  const handleQuizSelect = (optionKey: string) => {
+    if (quizSelected || !currentQuizWord) return;
+    const option = quizOptions.find((o) => o.key === optionKey);
+    if (!option) return;
+    setQuizSelected(optionKey);
+    speakChinese(option.word);
+    const isCorrect = option.isCorrect;
+    globalThis.setTimeout(() => {
+      handleNextAction(isCorrect ? "mastered" : "learning");
+    }, isCorrect ? 900 : 1600);
+  };
 
   if (isLoadingList) {
     return (
@@ -586,6 +666,42 @@ function FlashcardStudySession({
             {fallbackDataActive ? "Thử thách Flashcard" : "Học tập Flashcard"}
           </div>
 
+          {/* Stats + Mode Switcher */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-3">
+              <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 font-bold px-3 py-1.5 rounded-xl text-xs">
+                Đã thuộc {masteredCount}
+              </span>
+              <span className="bg-rose-500/10 text-rose-600 dark:text-rose-500 font-bold px-3 py-1.5 rounded-xl text-xs">
+                Cần ôn {reviewCount}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setStudyMode("flashcard")}
+                className={`px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none ${
+                  studyMode === "flashcard"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "bg-transparent text-zinc-400 hover:text-zinc-650"
+                }`}
+              >
+                Flashcard
+              </button>
+              <button
+                type="button"
+                onClick={() => setStudyMode("quiz")}
+                className={`px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none ${
+                  studyMode === "quiz"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "bg-transparent text-zinc-400 hover:text-zinc-650"
+                }`}
+              >
+                Chọn đáp án
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-3">
             <div className="flex justify-between items-center text-xs font-bold text-zinc-500 dark:text-zinc-400 select-none px-1">
               <span>Tiến trình học: {displayIndex + 1} / {totalCards}</span>
@@ -598,75 +714,113 @@ function FlashcardStudySession({
             </div>
             {/* Dynamic Progress Bar */}
             <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden shadow-inner">
-              <div 
-                className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-500 ease-out" 
+              <div
+                className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${((displayIndex + 1) / totalCards) * 100}%` }}
               />
             </div>
           </div>
 
-          <div className="h-96 w-full mt-2">
-            <FlashcardCard
-              isFlipped={isCardFlipped}
-              onFlip={handleFlipAction}
-              frontContent={
-                <div className="flex-1 flex flex-col items-center justify-center p-8 h-full text-center rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                  <span className="text-6xl font-black text-zinc-900 dark:text-white tracking-wider">
-                    {activeVocab?.name || activeDetail?.word}
-                  </span>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-6 tracking-wide">Nhấp vào thẻ hoặc ấn [Space] để xem nghĩa</p>
-                </div>
-              }
-              backContent={
-                <div className="flex-1 flex flex-col justify-between p-8 h-full overflow-y-auto scrollbar-thin rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                  <div className="space-y-5">
-                    <div className="text-center">
-                      <span className="text-5xl font-black text-zinc-900 dark:text-white tracking-wider">
+          {studyMode === "quiz" ? (
+            <div className="border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 bg-white dark:bg-zinc-900 shadow-sm flex flex-col gap-6 min-h-[340px]">
+              <h3 className="font-black text-zinc-800 dark:text-zinc-200 text-sm tracking-wide text-center">
+                Từ nào có nghĩa là &quot;{currentQuizWord?.meaning || "?"}&quot;?
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 content-center">
+                {quizOptions.map((opt) => {
+                  const isSelected = quizSelected === opt.key;
+                  let btnStyle = "border-zinc-250 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:border-amber-300 hover:bg-amber-50/10";
+
+                  if (isSelected) {
+                    btnStyle = opt.isCorrect
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 ring-2 ring-emerald-500"
+                      : "border-rose-500 bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 ring-2 ring-rose-500";
+                  } else if (quizSelected && opt.isCorrect) {
+                    btnStyle = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300";
+                  }
+
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      disabled={!!quizSelected}
+                      onClick={() => handleQuizSelect(opt.key)}
+                      className={`flex items-center gap-3.5 p-5 rounded-2xl border font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer shadow-xs disabled:cursor-default ${btnStyle}`}
+                    >
+                      <span className="font-black px-2.5 py-1 text-xs rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">{opt.key}</span>
+                      <span className="text-zinc-850 dark:text-zinc-150 font-extrabold text-lg">{opt.word}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="h-96 w-full mt-2">
+                <FlashcardCard
+                  isFlipped={isCardFlipped}
+                  onFlip={handleFlipAction}
+                  frontContent={
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 h-full text-center rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                      <span className="text-6xl font-black text-zinc-900 dark:text-white tracking-wider">
                         {activeVocab?.name || activeDetail?.word}
                       </span>
-                      <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 font-mono mt-2">
-                        {activeVocab?.pinyin || activeDetail?.pinyin}
-                      </p>
+                      <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-6 tracking-wide">Nhấp vào thẻ hoặc ấn [Space] để xem nghĩa</p>
                     </div>
+                  }
+                  backContent={
+                    <div className="flex-1 flex flex-col justify-between p-8 h-full overflow-y-auto scrollbar-thin rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="space-y-5">
+                        <div className="text-center">
+                          <span className="text-5xl font-black text-zinc-900 dark:text-white tracking-wider">
+                            {activeVocab?.name || activeDetail?.word}
+                          </span>
+                          <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 font-mono mt-2">
+                            {activeVocab?.pinyin || activeDetail?.pinyin}
+                          </p>
+                        </div>
 
-                    <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-4 space-y-4">
-                      {sensesContent}
-                    </div>
+                        <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-4 space-y-4">
+                          {sensesContent}
+                        </div>
 
-                    {activeDetail?.note && (
-                      <div className="text-xs text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800/85 pt-3">
-                        <span className="font-bold text-zinc-500">Ghi chú: </span>
-                        {activeDetail.note}
+                        {activeDetail?.note && (
+                          <div className="text-xs text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800/85 pt-3">
+                            <span className="font-bold text-zinc-500">Ghi chú: </span>
+                            {activeDetail.note}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="text-center pt-6">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        speakChinese(activeVocab?.name || activeDetail?.word || "");
-                      }}
-                      className="border border-amber-500/25 text-amber-700 dark:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 justify-center bg-transparent"
-                    >
-                      🔊 Nghe phát âm
-                    </button>
-                    <div className="text-center text-[10px] text-zinc-400 dark:text-zinc-500 mt-3 font-semibold">
-                      Nhấp để quay lại mặt trước
+                      <div className="text-center pt-6">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            speakChinese(activeVocab?.name || activeDetail?.word || "");
+                          }}
+                          className="border border-amber-500/25 text-amber-700 dark:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 justify-center bg-transparent"
+                        >
+                          🔊 Nghe phát âm
+                        </button>
+                        <div className="text-center text-[10px] text-zinc-400 dark:text-zinc-500 mt-3 font-semibold">
+                          Nhấp để quay lại mặt trước
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              }
-            />
-          </div>
+                  }
+                />
+              </div>
 
-          <FlashcardControls
-            onNext={handleNextAction}
-            onPrevious={handlePrevAction}
-            onFlip={handleFlipAction}
-            currentIndex={displayIndex}
-            isFirst={displayIndex === 0}
-          />
+              <FlashcardControls
+                onNext={handleNextAction}
+                onPrevious={handlePrevAction}
+                onFlip={handleFlipAction}
+                currentIndex={displayIndex}
+                isFirst={displayIndex === 0}
+              />
+            </>
+          )}
 
           <div className="flex justify-start w-full pt-4">
             <Link

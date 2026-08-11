@@ -1,6 +1,7 @@
 export type CourseLessonType =
   | "video_vocab"
   | "quiz_vocab"
+  | "vocab_theory"
   | "video_grammar"
   | "quiz_grammar"
   | "dictation"
@@ -18,6 +19,7 @@ export interface CourseLesson {
   sort?: number;
   content?: string;
   video_section_id?: string | null;
+  vocab_display_map_id?: string | null;
   exercise_id?: number | string | null;
   audio_id?: string | null;
   scenario_id?: number | string | null;

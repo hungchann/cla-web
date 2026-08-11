@@ -134,6 +134,12 @@ const FIELDS_TO_ADD = {
       meta: { interface: "select-dropdown-m2o", options: { template: "{{title}}" }, display: "related-values", display_options: { template: "{{title}}" }, readonly: false, hidden: false, sort: 20, width: "half", note: "🎬 Chọn Bài Giảng Video (video_vocab / video_grammar)" },
     },
     {
+      field: "vocab_display_map_id",
+      type: "uuid",
+      schema: { name: "vocab_display_map_id", table: "course_lessons", data_type: "char", max_length: 36, is_nullable: true, foreign_key_table: "vocab_display_map", foreign_key_column: "id" },
+      meta: { interface: "select-dropdown-m2o", options: { template: "{{id}} — {{topic_id.name}}" }, display: "related-values", display_options: { template: "{{topic_id.name}}" }, readonly: false, hidden: false, sort: 20.5, width: "half", note: "📖 Chọn Nhóm Từ Vựng (Lý thuyết / Giải nghĩa từ vựng)" },
+    },
+    {
       field: "exercise_id",
       type: "integer",
       schema: { name: "exercise_id", table: "course_lessons", data_type: "integer", is_nullable: true, foreign_key_table: "link_exercise", foreign_key_column: "id" },

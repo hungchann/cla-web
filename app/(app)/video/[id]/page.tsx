@@ -12,13 +12,12 @@ import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { BackButton } from "@/components/BackButton";
 import { PremiumGate } from "@/components/PremiumGate";
 import { usePremium } from "@/lib/hooks/usePremium";
-import { Lightbulb, Eye, EyeOff } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
+import { PinyinToggle } from "@/components/PinyinToggle";
 
 import { VideoPlayerSection } from "@/components/video/VideoPlayerSection";
 import { VideoQuizSection } from "@/components/video/VideoQuizSection";
 import { videoDataUsesYoutubePlayer, getYoutubeVideoIdFromVideoData } from "@/lib/utils/youtubeVideo";
-import { BilingualVocab } from "@/components/bilingual/BilingualVocab";
 import { BilingualShadowing } from "@/components/bilingual/BilingualShadowing";
 import { BilingualExercise } from "@/components/bilingual/BilingualExercise";
 import { speakChinese } from "@/lib/utils/speech";
@@ -134,9 +133,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const [enrichedSubtitles, setEnrichedSubtitles] = useState<any[]>([]);
 
   // Tab states học tập mới
-  const [activeTab, setActiveTab] = useState<"video" | "vocab" | "shadowing" | "exercise">("video");
-  const [videoVocabList, setVideoVocabList] = useState<any[]>([]);
-  const [isVocabLoading, setIsVocabLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"video" | "shadowing" | "exercise">("video");
   const [rightPanelTab, setRightPanelTab] = useState<"subtitles" | "quiz">("subtitles");
 
   // States dành cho BilingualExercise trong tab Bài tập
@@ -249,13 +246,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     handleVideoLoaded,
   } = hookData;
 
-  // Tự động chuyển tab bên phải sang "quiz" khi có câu hỏi dừng video được kích hoạt
-  useEffect(() => {
-    if (activeQuestion) {
-      setRightPanelTab("quiz");
-    }
-  }, [activeQuestion]);
-
   // Phân tách từ Hán ngữ phụ đề tự động bằng API AI
   useEffect(() => {
     const enrich = async () => {
@@ -328,9 +318,9 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     }
   }, [currentTime, enrichedSubtitles, binarySearchSubtitle, activeSubtitleIndex, setActiveIndex]);
 
-  // Tự động Pause video khi có câu hỏi hoạt động
+  // Tự động Pause video khi có câu hỏi hoạt động (chỉ khi ngưởi dùng đang ở tab Trắc nghiệm)
   useEffect(() => {
-    if (activeQuestion) {
+    if (activeQuestion && rightPanelTab === "quiz") {
       if (isYoutubeVideo) {
         setYoutubeIsPlaying(false);
       } else {
@@ -339,12 +329,12 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
           video.pause();
         }
       }
-      // Reset trạng thái chọn câu trả lời
+      // Reset trạng thái chọn câu trả lởi
       setSelectedAnswer(null);
       setIsAnswerChecked(false);
       setIsAnswerCorrect(null);
     }
-  }, [activeQuestion, isYoutubeVideo]);
+  }, [activeQuestion, isYoutubeVideo, rightPanelTab]);
 
   // Teleprompter: Cuộn tự động phụ đề căn giữa viewport
   const subtitleItemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -356,97 +346,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
       });
     }
   }, [activeSubtitleIndex]);
-
-  // 1. Trích xuất danh sách từ vựng độc nhất từ phụ đề (chỉ phụ thuộc vào phụ đề)
-  useEffect(() => {
-    if (enrichedSubtitles.length === 0) {
-      setVideoVocabList([]);
-      return;
-    }
-
-    const wordMap = new Map<string, string>();
-    enrichedSubtitles.forEach((sub) => {
-      if (Array.isArray(sub.segmentedWords)) {
-        sub.segmentedWords.forEach((sw: any) => {
-          const w = sw.word?.trim();
-          // Lọc ra các từ chứa chữ Hán, bỏ qua dấu câu
-          if (w && /[\u4e00-\u9fa5]/.test(w)) {
-            if (!wordMap.has(w) || (sw.pinyin && !wordMap.get(w))) {
-              wordMap.set(w, sw.pinyin || "");
-            }
-          }
-        });
-      }
-    });
-
-    const uniqueWords = Array.from(wordMap.entries()).map(([word, pinyin]) => ({
-      word,
-      pinyin,
-      Pinyin: pinyin,
-      word_type: "Từ vựng",
-      meaning: "Bấm vào chữ Hán để xem chi tiết",
-      example: "",
-    }));
-
-    setVideoVocabList(uniqueWords);
-  }, [enrichedSubtitles]);
-
-  // 2. Kích hoạt dịch nghĩa tự động khi chuyển sang Tab từ vựng
-  useEffect(() => {
-    if (activeTab !== "vocab" || videoVocabList.length === 0) {
-      return;
-    }
-
-    let isCancelled = false;
-    const fetchMeanings = async () => {
-      // Chỉ dịch các từ đang hiển thị trạng thái chờ dịch để tránh dịch lặp lại
-      const needsTranslation = videoVocabList.some(
-        (v) => v.meaning === "Bấm vào chữ Hán để xem chi tiết" || v.meaning === "Đang tải nghĩa..."
-      );
-      if (!needsTranslation) return;
-
-      setIsVocabLoading(true);
-      const withMeanings = [...videoVocabList];
-
-      try {
-        // Dịch tuần tự từng từ một để tránh nghẽn luồng API
-        for (let i = 0; i < videoVocabList.length; i++) {
-          if (isCancelled) return;
-          const vocab = videoVocabList[i];
-
-          if (vocab.meaning === "Bấm vào chữ Hán để xem chi tiết" || vocab.meaning === "Đang tải nghĩa...") {
-            try {
-              const res = await translateWord(vocab.word);
-              const translated = res?.[0];
-              if (translated && !isCancelled) {
-                withMeanings[i] = {
-                  ...vocab,
-                  pinyin: translated.pinyin || vocab.pinyin,
-                  Pinyin: translated.pinyin || vocab.Pinyin,
-                  meaning: translated.meaning || translated.meanings || "Không tìm thấy nghĩa.",
-                };
-                setVideoVocabList([...withMeanings]);
-              }
-            } catch (err) {
-              console.warn("Failed to fetch meaning for", vocab.word, err);
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("Sequential translation failed:", err);
-      } finally {
-        if (!isCancelled) {
-          setIsVocabLoading(false);
-        }
-      }
-    };
-
-    fetchMeanings();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [activeTab, videoVocabList]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
@@ -543,17 +442,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
         <BackButton href="/video" label="Danh sách video" />
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsOpenPinyin(!isOpenPinyin)}
-            className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-              isOpenPinyin
-                ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-950/30 dark:border-amber-900/50 dark:text-amber-500"
-                : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400"
-            }`}
-          >
-            {isOpenPinyin ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-            {isOpenPinyin ? "Ẩn Pinyin" : "Hiện Pinyin"}
-          </button>
+          <PinyinToggle isOpen={isOpenPinyin} onChange={setIsOpenPinyin} />
         </div>
       </div>
 
@@ -561,7 +450,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
       <div className="border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-6 md:gap-8 font-extrabold text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500 select-none w-full">
         {[
           { id: "video", name: "Xem video bài học" },
-          { id: "vocab", name: "Từ vựng" },
           { id: "shadowing", name: "Shadowing" },
           { id: "exercise", name: "Bài tập tự luyện" },
         ].map((tab) => {
@@ -671,19 +559,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
           </div>
         )}
 
-        {/* TAB 2: TỪ VỰNG DỊCH NGHĨA */}
-        {activeTab === "vocab" && (
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-150 dark:border-zinc-800 shadow-sm">
-            <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white mb-4">Danh sách từ vựng trong video</h2>
-            <BilingualVocab
-              vocabList={videoVocabList}
-              isLoading={isVocabLoading}
-              onWordPress={handleWordPress}
-            />
-          </div>
-        )}
-
-        {/* TAB 3: LUYỆN NÓI SHADOWING */}
+        {/* TAB 2: LUYỆN NÓI SHADOWING */}
         {activeTab === "shadowing" && (
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-150 dark:border-zinc-800 shadow-sm">
             <BilingualShadowing

@@ -18,6 +18,7 @@ const defaultSyllabusLessons = [
         title: "Bài 1: Phát âm - Chào hỏi cơ bản (1)",
         lessons: [
             { id: "learn-video-vocab", title: "Video từ vựng", lesson_type: "video_vocab" },
+            { id: "learn-vocab-theory", title: "Lý thuyết: Giải nghĩa từ vựng", lesson_type: "vocab_theory" },
             { id: "learn-quiz-vocab", title: "Bài tập: từ vựng", lesson_type: "quiz_vocab" },
             { id: "learn-video-grammar", title: "Video ngữ pháp", lesson_type: "video_grammar" },
             { id: "learn-quiz-grammar", title: "Bài tập ngữ pháp", lesson_type: "quiz_grammar" },
@@ -159,7 +160,7 @@ export default function CourseDetailPage({
                                     <br />
                                     Gồm {chapters.length} chương.
                                     <br />
-                                    Mỗi chương bao gồm các phần: video từ vựng, bài tập từ vựng, video ngữ pháp, bài tập ngữ pháp, nghe chép chính tả, thực hành hội thoại, bài tập bổ sung.
+                                    Mỗi chương bao gồm các phần: video từ vựng, lý thuyết giải nghĩa từ vựng, bài tập từ vựng, video ngữ pháp, bài tập ngữ pháp, nghe chép chính tả, thực hành hội thoại, bài tập bổ sung.
                                 </p>
                             </div>
                         </Card>

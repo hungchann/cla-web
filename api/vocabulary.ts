@@ -59,6 +59,83 @@ export const vocabularyApi = {
     }
   },
 
+  /**
+   * Lấy danh sách từ vựng + nghĩa + ví dụ của một "bài học từ vựng" (Lý thuyết)
+   * thông qua vocab_display_map (junction level ↔ topic ↔ vocab_items).
+   */
+  getVocabByDisplayMap: async (displayMapId: string | number): Promise<any[]> => {
+    try {
+      const itemsRes = await apiInstance.get(
+        `/items/vocab_display_map_vocab_items?filter[vocab_display_map_id][_eq]=${displayMapId}&fields=id,vocab_items_id.id,vocab_items_id.name,vocab_items_id.pinyin,vocab_items_id.note`,
+      );
+      const rawItems: any[] = itemsRes.data?.data || [];
+      const vocabItems = rawItems
+        .map((r: any) => r.vocab_items_id)
+        .filter((v: any) => v && v.id);
+
+      if (vocabItems.length === 0) return [];
+
+      const itemIds = vocabItems.map((v: any) => v.id).join(",");
+
+      const meaningsRes = await apiInstance.get(
+        `/items/vocab_meanings?filter[item_id][_in]=${itemIds}&fields=id,meaning_vi,pos_id.id,pos_id.label_vi,item_id.id`,
+      );
+      const meanings: any[] = meaningsRes.data?.data || [];
+
+      const meaningIds = meanings.map((m: any) => m.id).join(",");
+      let examples: any[] = [];
+      if (meaningIds) {
+        const examplesRes = await apiInstance.get(
+          `/items/vocab_examples?filter[meaning_id][_in]=${meaningIds}&fields=id,chinese,pinyin,p_vi,meaning_id.id`,
+        );
+        examples = examplesRes.data?.data || [];
+      }
+
+      const examplesByMeaningId: Record<string, any[]> = {};
+      for (const ex of examples) {
+        const mId = String(ex.meaning_id?.id || "");
+        if (!mId) continue;
+        if (!examplesByMeaningId[mId]) examplesByMeaningId[mId] = [];
+        examplesByMeaningId[mId].push(ex);
+      }
+
+      const meaningsByItemId: Record<string, any[]> = {};
+      for (const m of meanings) {
+        const itemId = String(m.item_id?.id || "");
+        if (!itemId) continue;
+        if (!meaningsByItemId[itemId]) meaningsByItemId[itemId] = [];
+        meaningsByItemId[itemId].push({
+          ...m,
+          examples: examplesByMeaningId[String(m.id)] || [],
+        });
+      }
+
+      return vocabItems.map((item: any) => {
+        const itemMeanings = meaningsByItemId[String(item.id)] || [];
+        return {
+          id: item.id,
+          word: item.name || "",
+          pinyin: item.pinyin || "",
+          note: item.note || "",
+          senses: itemMeanings.map((m: any) => ({
+            id: m.id,
+            pos_label: m.pos_id?.label_vi || undefined,
+            meaning: m.meaning_vi || "",
+            examples: (m.examples || []).map((ex: any) => ({
+              id: ex.id,
+              chinese: ex.chinese,
+              pinyin: ex.pinyin,
+              vietnamese: ex.p_vi,
+            })),
+          })),
+        };
+      });
+    } catch (error) {
+      logger.error("Error fetching vocabulary by display map:", error);
+      return [];
+    }
+  },
+
   getDetailVocabulary: async (idVocab: string): Promise<any[]> => {
     //Lay user tu secureStore
     const user = await getUser();

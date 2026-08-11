@@ -70,15 +70,15 @@ async function main() {
 
   // Fetch ALL lessons for all chapters
   const allChapterIds = chapters.map(c => c.id);
-  const lessonsRes = await request("GET", `/items/course_lessons?filter[chapter_id][_in]=${allChapterIds.join(",")}&sort=sort&fields=id,sort,title,lesson_type,status,video_section_id,exercise_id,scenario_id,audio_id,content,chapter_id`, null, token);
+  const lessonsRes = await request("GET", `/items/course_lessons?filter[chapter_id][_in]=${allChapterIds.join(",")}&sort=sort&fields=id,sort,title,lesson_type,status,video_section_id,vocab_display_map_id,exercise_id,scenario_id,audio_id,content,chapter_id`, null, token);
   const lessons = lessonsRes.data?.data || [];
 
   console.log(`=== LESSONS (${lessons.length}) ===`);
-  const UI_EXPECTED = ["video_vocab", "quiz_vocab", "video_grammar", "quiz_grammar", "dictation", "conversation", "extra"];
+  const UI_EXPECTED = ["video_vocab", "vocab_theory", "quiz_vocab", "video_grammar", "quiz_grammar", "dictation", "conversation", "extra"];
 
   for (const l of lessons) {
     const inUI = UI_EXPECTED.includes(l.lesson_type) ? "✓" : "✗ UNKNOWN TYPE";
-    const target = l.video_section_id ? `video_section #${l.video_section_id}` : l.exercise_id ? `link_exercise #${l.exercise_id}` : l.scenario_id ? `scenario #${l.scenario_id}` : l.audio_id ? `audio #${l.audio_id}` : "NO FK";
+    const target = l.video_section_id ? `video_section #${l.video_section_id}` : l.vocab_display_map_id ? `vocab_display_map #${l.vocab_display_map_id}` : l.exercise_id ? `link_exercise #${l.exercise_id}` : l.scenario_id ? `scenario #${l.scenario_id}` : l.audio_id ? `audio #${l.audio_id}` : "NO FK";
     console.log(`  ${inUI} id=${l.id} sort=${l.sort} type='${l.lesson_type}' chapter=${l.chapter_id} | relation: ${target}`);
     if (l.content) console.log(`       content: '${l.content}'`);
   }
@@ -99,6 +99,7 @@ async function main() {
   for (const l of lessons) {
     let hasFK = true;
     if (["video_vocab", "video_grammar"].includes(l.lesson_type)) hasFK = !!l.video_section_id;
+    if (l.lesson_type === "vocab_theory") hasFK = !!l.vocab_display_map_id;
     if (["quiz_vocab", "quiz_grammar"].includes(l.lesson_type)) hasFK = !!l.exercise_id;
     if (l.lesson_type === "conversation") hasFK = !!l.scenario_id;
     if (l.lesson_type === "dictation") hasFK = !!l.content || !!l.audio_id;

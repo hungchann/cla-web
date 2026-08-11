@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import {
   BookOpen,
@@ -24,6 +24,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -34,6 +36,8 @@ import { SunChineseLogo } from "@/components/SunChineseLogo"
 import { bilingualApi } from "@/api/bilingual"
 import { fetchVideoGenres } from "@/api/video"
 import { getBookGenres } from "@/api/stories"
+import { grammarApi } from "@/api/grammar"
+import { Suspense } from "react"
 
 type RouteSidebar = {
   label: string
@@ -158,9 +162,7 @@ const routeSidebars: Record<string, RouteSidebar> = {
         title: "Khám phá ngữ pháp",
         icon: BookText,
         items: [
-          { title: "Cấp độ", url: "/grammar#modules" },
-          { title: "Chủ đề ngữ pháp", url: "/grammar#topics" },
-          { title: "Danh sách cấu trúc", url: "/grammar#details" },
+          { title: "Tất cả cấp độ", url: "/grammar" },
         ],
       },
     ],
@@ -187,6 +189,98 @@ function getRouteSidebar(pathname: string): RouteSidebar {
     .find((route) => pathname === route || pathname.startsWith(`${route}/`))
 
   return routeSidebars[matchingRoute ?? "/dashboard"]
+}
+
+/** Sidebar động cho trang Ngữ pháp: Trình độ HSK + Chủ đề ngữ pháp. */
+function GrammarNavMain({ label }: { label: string }) {
+  return (
+    <Suspense
+      fallback={
+        <SidebarGroup className="px-3 py-2">
+          <SidebarGroupLabel className="px-3 text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500/80">
+            {label}
+          </SidebarGroupLabel>
+          <SidebarMenu className="gap-1">
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Đang tải..." className="h-10 rounded-xl px-3 text-sm font-bold">
+                <SlidersHorizontal className="size-4" />
+                <span>Đang tải...</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+      }
+    >
+      <GrammarNavContent label={label} />
+    </Suspense>
+  )
+}
+
+function GrammarNavContent({ label }: { label: string }) {
+  const pathname = usePathname() ?? ""
+  const searchParams = useSearchParams()
+  const isGrammar = pathname === "/grammar" || pathname.startsWith("/grammar/")
+
+  const selectedModuleId = searchParams.get("module") || ""
+
+  const { data: modules } = useQuery({
+    queryKey: ["sidebar-grammar-modules"],
+    queryFn: grammarApi.getGrammarModules,
+    enabled: isGrammar,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data: topicsRaw } = useQuery({
+    queryKey: ["sidebar-grammar-topics", selectedModuleId],
+    queryFn: () => grammarApi.getTopicOfGrammarItem(selectedModuleId),
+    enabled: isGrammar && !!selectedModuleId,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const topics = (() => {
+    if (!topicsRaw) return []
+    const normalized = topicsRaw
+      .map((item: any) => {
+        const topic = item?.topic_of_grammarModule_id ?? item?.topic_id ?? item
+        return {
+          id: String(topic?.id ?? ""),
+          title: topic?.title ?? topic?.name ?? "",
+        }
+      })
+      .filter((t: any) => t.title)
+
+    const titleMap = new Map<string, any>()
+    normalized.forEach((t: any) => {
+      if (!titleMap.has(t.title)) titleMap.set(t.title, t)
+    })
+    return Array.from(titleMap.values())
+  })()
+
+  const groups: SidebarSubmenuGroup[] = [
+    {
+      title: "Trình độ HSK",
+      icon: SlidersHorizontal,
+      items: [
+        { title: "Tất cả cấp độ", url: "/grammar" },
+        ...(modules ?? []).map((mod: any) => ({
+          title: String(mod?.title || "").replace(/^Ngữ pháp\s*/i, ""),
+          url: `/grammar?module=${encodeURIComponent(mod.id)}`,
+        })),
+      ],
+    },
+    {
+      title: "Chủ đề ngữ pháp",
+      icon: ListFilter,
+      items: topics.length > 0
+        ? topics.map((topic: any) => ({
+            title: topic.title,
+            url: `/grammar?module=${encodeURIComponent(selectedModuleId)}&topic=${encodeURIComponent(topic.id)}`,
+          }))
+        : [{ title: "Chọn cấp độ HSK trước", url: "/grammar" }],
+    },
+  ]
+
+  return <NavMain label={label} items={groups} />
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -322,7 +416,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <div className="px-6 pb-1 pt-2 text-xs font-black uppercase tracking-[0.16em] text-sidebar-foreground/60">
           {routeSidebar.label}
         </div>
-        <NavMain label="Danh mục" items={sidebarGroups} />
+        {pathname === "/grammar" || pathname.startsWith("/grammar/") ? (
+          <GrammarNavMain label="Danh mục" />
+        ) : (
+          <NavMain label="Danh mục" items={sidebarGroups} />
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/50 p-3">
         <NavUser user={user} />

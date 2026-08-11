@@ -14,14 +14,15 @@ Mỗi khóa học được tổ chức theo cấu trúc 3 cấp:
       └── 📝 Course Lesson (Các phần bài học nhỏ trong chương)
 ```
 
-Một Chương chuẩn bao gồm **7 phần bài học**:
+Một Chương chuẩn bao gồm **8 phần bài học**:
 1. 🎬 **Video từ vựng** (`video_vocab`)
-2. 📝 **Bài tập từ vựng** (`quiz_vocab`)
-3. 🎥 **Video ngữ pháp** (`video_grammar`)
-4. 📝 **Bài tập ngữ pháp** (`quiz_grammar`)
-5. 🎧 **Nghe chép chính tả** (`dictation`)
-6. 🗣️ **Thực hành hội thoại** (`conversation`)
-7. 📥 **Bài tập bổ sung** (`extra`)
+2. 📖 **Lý thuyết: Giải nghĩa từ vựng** (`vocab_theory`)
+3. 📝 **Bài tập từ vựng** (`quiz_vocab`)
+4. 🎥 **Video ngữ pháp** (`video_grammar`)
+5. 📝 **Bài tập ngữ pháp** (`quiz_grammar`)
+6. 🎧 **Nghe chép chính tả** (`dictation`)
+7. 🗣️ **Thực hành hội thoại** (`conversation`)
+8. 📥 **Bài tập bổ sung** (`extra`)
 
 ---
 
@@ -45,7 +46,15 @@ Dưới đây là cách chọn các trường dữ liệu đặc thù cho từng
 
 ---
 
-### 2️⃣ Bài Tập Từ Vựng (`lesson_type = quiz_vocab`)
+### 2️⃣ Lý Thuyết: Giải Nghĩa Từ Vựng (`lesson_type = vocab_theory`)
+- **Mục đích**: Hiển thị danh sách từ vựng của bài học dạng lý thuyết — từng từ kèm phiên âm, loại từ, nghĩa tiếng Việt, ví dụ cụ thể và ghi chú cách viết/bộ chữ Hán (giống giao diện STUY4).
+- **Cách nhập**:
+  - `lesson_type`: Chọn **`vocab_theory`**.
+  - `vocab_display_map_id`: Nhấp chọn 1 nhóm từ vựng từ danh sách **`vocab_display_map`** (mỗi `vocab_display_map` = 1 chủ đề từ vựng gắn với level + topic; hệ thống tự nạp các `vocab_items` + nghĩa + ví dụ).
+
+---
+
+### 3️⃣ Bài Tập Từ Vựng (`lesson_type = quiz_vocab`)
 - **Mục đích**: Hiển thị các câu hỏi trắc nghiệm A/B/C/D từ vựng.
 - **Cách nhập**:
   - `lesson_type`: Chọn **`quiz_vocab`**.
@@ -53,7 +62,7 @@ Dưới đây là cách chọn các trường dữ liệu đặc thù cho từng
 
 ---
 
-### 3️⃣ Video Ngữ Pháp (`lesson_type = video_grammar`)
+### 4️⃣ Video Ngữ Pháp (`lesson_type = video_grammar`)
 - **Mục đích**: Hiển thị video bài giảng ngữ pháp kèm dòng giải thích/phụ đề chạy theo thời gian thực của video.
 - **Cách nhập**:
   - `lesson_type`: Chọn **`video_grammar`**.
@@ -61,7 +70,7 @@ Dưới đây là cách chọn các trường dữ liệu đặc thù cho từng
 
 ---
 
-### 4️⃣ Bài Tập Ngữ Pháp (`lesson_type = quiz_grammar`)
+### 5️⃣ Bài Tập Ngữ Pháp (`lesson_type = quiz_grammar`)
 - **Mục đích**: Hiển thị các câu hỏi trắc nghiệm ngữ pháp.
 - **Cách nhập**:
   - `lesson_type`: Chọn **`quiz_grammar`**.
@@ -69,7 +78,7 @@ Dưới đây là cách chọn các trường dữ liệu đặc thù cho từng
 
 ---
 
-### 5️⃣ Nghe Chép Chính Tả (`lesson_type = dictation`) 🔥 *(Đặc thù)*
+### 6️⃣ Nghe Chép Chính Tả (`lesson_type = dictation`) 🔥 *(Đặc thù)*
 - **Mục đích**: Học viên nghe âm thanh và chép lại chính xác câu tiếng Trung. Hệ thống tự động chấm điểm dựa trên đáp án nhập sẵn.
 - **Cách nhập**:
   - `lesson_type`: Chọn **`dictation`**.
@@ -80,7 +89,7 @@ Dưới đây là cách chọn các trường dữ liệu đặc thù cho từng
 
 ---
 
-### 6️⃣ Thực Hành Hội Thoại (`lesson_type = conversation`)
+### 7️⃣ Thực Hành Hội Thoại (`lesson_type = conversation`)
 - **Mục đích**: Luyện nói mẫu hội thoại với AI, nhận phản hồi phát âm theo từng nhân vật A/B.
 - **Cách nhập**:
   - `lesson_type`: Chọn **`conversation`**.
@@ -88,7 +97,7 @@ Dưới đây là cách chọn các trường dữ liệu đặc thù cho từng
 
 ---
 
-### 7️⃣ Bài Tập Bổ Sung (`lesson_type = extra`)
+### 8️⃣ Bài Tập Bổ Sung (`lesson_type = extra`)
 - **Mục đích**: Cung cấp giao diện tải 3 file tài liệu về máy cho học viên ôn tập thêm.
 - **Cách nhập**:
   - `lesson_type`: Chọn **`extra`**.
@@ -103,6 +112,7 @@ Dưới đây là cách chọn các trường dữ liệu đặc thù cho từng
 | Loại Bài Học (`lesson_type`) | Trường Bắt Buộc Cần Điền | Ghi Chú |
 | :--- | :--- | :--- |
 | **Video từ vựng** (`video_vocab`) | `video_section_id` | Select dropdown trỏ tới `video_section` |
+| **Lý thuyết: Giải nghĩa từ vựng** (`vocab_theory`) | `vocab_display_map_id` | Select dropdown trỏ tới `vocab_display_map` (tự nạp từ vựng + nghĩa + ví dụ) |
 | **Bài tập từ vựng** (`quiz_vocab`) | `exercise_id` | Select dropdown trỏ tới `link_exercise` |
 | **Video ngữ pháp** (`video_grammar`) | `video_section_id` | Select dropdown trỏ tới `video_section` |
 | **Bài tập ngữ pháp** (`quiz_grammar`) | `exercise_id` | Select dropdown trỏ tới `link_exercise` |

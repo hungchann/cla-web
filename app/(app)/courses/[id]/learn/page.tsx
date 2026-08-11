@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
 import HighlightedText from "@/components/HighlightedText";
 import { coursesApi } from "@/api/courses";
+import { vocabularyApi } from "@/api/vocabulary";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import { CourseLesson, CourseLessonType } from "@/lib/types/course";
@@ -18,6 +19,7 @@ import { Play, Check, Star, Folder, Volume2, Target, XCircle, User, Mic, PartyPo
 
 const STEP_TYPE_TO_LEARN: Record<string, CourseLessonType> = {
   "learn-video-vocab": "video_vocab",
+  "learn-vocab-theory": "vocab_theory",
   "learn-quiz-vocab": "quiz_vocab",
   "learn-video-grammar": "video_grammar",
   "learn-quiz-grammar": "quiz_grammar",
@@ -28,6 +30,7 @@ const STEP_TYPE_TO_LEARN: Record<string, CourseLessonType> = {
 
 const LEARN_TO_STEP_TYPE: Record<string, string> = {
   "video_vocab": "learn-video-vocab",
+  "vocab_theory": "learn-vocab-theory",
   "quiz_vocab": "learn-quiz-vocab",
   "video_grammar": "learn-video-grammar",
   "quiz_grammar": "learn-quiz-grammar",
@@ -280,6 +283,48 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         })();
         return () => { isMounted = false; };
     }, [currentStep, currentLesson?.video_section_id]);
+
+    // --- Vocab Theory state (Lý thuyết: Giải nghĩa từ vựng) ---
+    const [vocabTheoryItems, setVocabTheoryItems] = useState<any[]>([]);
+    const [vocabTheoryLoading, setVocabTheoryLoading] = useState(false);
+    const [vocabTheoryIdx, setVocabTheoryIdx] = useState(0);
+    const [showHanziWrite, setShowHanziWrite] = useState(false);
+
+    const currentTheoryVocab = vocabTheoryItems[vocabTheoryIdx] || null;
+
+    useEffect(() => {
+        if (currentStep !== "learn-vocab-theory") return;
+        let isMounted = true;
+        setVocabTheoryLoading(true);
+        setVocabTheoryItems([]);
+        setVocabTheoryIdx(0);
+        (async () => {
+            try {
+                const lessonId = currentLesson?.id;
+                if (!lessonId) {
+                    if (isMounted) setVocabTheoryItems([]);
+                    return;
+                }
+                const { default: api } = await import("@/api/authConfig");
+                const detailRes = await api.get(`/items/course_lessons/${lessonId}?fields=id,vocab_display_map_id`);
+                const displayMapId = detailRes.data?.data?.vocab_display_map_id;
+                if (!displayMapId) {
+                    if (isMounted) setVocabTheoryItems([]);
+                    return;
+                }
+                const items = await vocabularyApi.getVocabByDisplayMap(displayMapId);
+                if (isMounted) {
+                    setVocabTheoryItems(items);
+                    setVocabTheoryIdx(0);
+                }
+            } catch {
+                if (isMounted) setVocabTheoryItems([]);
+            } finally {
+                if (isMounted) setVocabTheoryLoading(false);
+            }
+        })();
+        return () => { isMounted = false; };
+    }, [currentStep, currentLesson?.id]);
 
     // --- Flashcard Save States ---
     const [isSavedToFlashcard, setIsSavedToFlashcard] = useState(false);
@@ -890,6 +935,138 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 </div>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {/* STEP 1.5: Lý thuyết: Giải nghĩa từ vựng (learn-vocab-theory) */}
+                {currentStep === "learn-vocab-theory" && (
+                    <div className="max-w-3xl w-full mx-auto space-y-6">
+                        {vocabTheoryLoading ? (
+                            <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-2xs flex items-center justify-center">
+                                <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        ) : vocabTheoryItems.length === 0 ? (
+                            <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-2xs text-center">
+                                <p className="text-sm font-bold text-zinc-500">
+                                    Chưa có từ vựng cho bài học này
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                {vocabTheoryItems.length > 1 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {vocabTheoryItems.map((item, i) => (
+                                            <button
+                                                key={String(item.id)}
+                                                onClick={() => setVocabTheoryIdx(i)}
+                                                className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${i === vocabTheoryIdx
+                                                    ? "bg-amber-600 border-amber-600 text-white"
+                                                    : "bg-white border-gray-200 text-gray-600 hover:border-amber-300"
+                                                    }`}
+                                            >
+                                                {item.word}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {currentTheoryVocab && (
+                                    <div className="bg-white rounded-2xl border border-amber-100 p-6 md:p-8 shadow-2xs space-y-6">
+                                        <div className="flex items-center justify-between flex-wrap gap-4 border-b border-amber-50 pb-5">
+                                            <div className="flex items-center gap-4">
+                                                <button
+                                                    onClick={() => speakChinese(currentTheoryVocab.word || "")}
+                                                    className="w-12 h-12 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90 transition-transform shrink-0"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                                                        <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
+                                                    </svg>
+                                                </button>
+                                                <div>
+                                                    <h3 className="text-2xl font-black text-gray-900 tracking-wide">{currentTheoryVocab.word}</h3>
+                                                    <p className="text-sm text-amber-600 font-bold">{currentTheoryVocab.pinyin}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                {(currentTheoryVocab.senses?.length > 1 || currentTheoryVocab.senses?.[0]?.pos_label) && (
+                                                    <div className="flex flex-wrap gap-1.5 justify-end">
+                                                        {currentTheoryVocab.senses.map((sense: any, idx: number) => (
+                                                            sense.pos_label ? (
+                                                                <span key={idx} className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 dark:bg-amber-950/40 px-2 py-1 rounded-md">
+                                                                    {sense.pos_label}
+                                                                </span>
+                                                            ) : null
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {currentTheoryVocab.note && (
+                                                    <button
+                                                        onClick={() => setShowHanziWrite((prev) => !prev)}
+                                                        className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all active:scale-95 cursor-pointer ${showHanziWrite
+                                                            ? "bg-amber-600 border-amber-600 text-white"
+                                                            : "bg-white border-gray-200 text-gray-600 hover:text-amber-500 hover:border-amber-200"
+                                                            }`}
+                                                    >
+                                                        {showHanziWrite ? "Ẩn cách viết" : "Hiện cách viết hanzi"}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {showHanziWrite && currentTheoryVocab.note && (
+                                            <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 space-y-2">
+                                                <h5 className="text-xs font-black text-amber-700 uppercase tracking-wider">
+                                                    Ghi chú cách viết & bộ chữ Hán
+                                                </h5>
+                                                <p className="text-sm font-semibold text-gray-700 leading-relaxed">
+                                                    {currentTheoryVocab.note}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-3.5">
+                                            <h4 className="font-extrabold text-amber-700 text-sm">
+                                                Giải nghĩa từ {currentTheoryVocab.word} ({currentTheoryVocab.pinyin}) trong tiếng Trung có nghĩa phổ biến:
+                                            </h4>
+                                            {(currentTheoryVocab.senses?.length ? currentTheoryVocab.senses : [{ id: "fallback", meaning: "Chưa có nghĩa", examples: [] }]).map((sense: any, idx: number) => (
+                                                <div key={String(sense.id ?? idx)} className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50/30">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center text-amber-700 font-black text-xs shrink-0">
+                                                            {idx + 1}
+                                                        </span>
+                                                        {sense.pos_label && (
+                                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded">
+                                                                {sense.pos_label}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-sm font-bold text-gray-900">{sense.meaning}</span>
+                                                    </div>
+                                                    {sense.examples?.map((ex: any, j: number) => (
+                                                        <div key={j} className="bg-white px-4 py-3 rounded-lg border border-gray-100 font-mono space-y-1">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <span className="text-sm text-gray-800 font-semibold">{ex.chinese}</span>
+                                                                <button
+                                                                    onClick={() => speakChinese(ex.chinese)}
+                                                                    className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-none font-bold shrink-0"
+                                                                >
+                                                                    🔊 Nghe
+                                                                </button>
+                                                            </div>
+                                                            {ex.pinyin && <p className="text-xs text-amber-600 font-semibold">{ex.pinyin}</p>}
+                                                            {ex.vietnamese && <p className="text-xs text-gray-500 font-medium">&rarr; {ex.vietnamese}</p>}
+                                                        </div>
+                                                    ))}
+                                                    {!sense.examples?.length && (
+                                                        <p className="text-xs text-zinc-400 italic">Chưa có ví dụ cho nghĩa này</p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 )}
 
