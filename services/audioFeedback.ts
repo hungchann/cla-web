@@ -57,8 +57,7 @@ export async function playAnswerFeedback(isCorrect: boolean) {
  * Used for: Video exercise results, Bilingual exercise results, Bài tập results
  */
 export async function playQuizResultSound(score: number) {
-  const sound = SOUNDS.correct;
-  await playSound(sound);
+  await playTranslationResultSound(score);
 }
 
 /**

@@ -256,18 +256,24 @@ export function compareTextsAdvanced(targetText: string, userText: string): Comp
     isSubstitution?: boolean; // New: track if this is a substitution
   }[] = [];
 
+  // Map user index → target index cho các cặp LCS match (index có thể bị lệch).
+  const userToTargetMatch = new Map<number, number>();
+  matchedPairs.forEach((p) => userToTargetMatch.set(p.user, p.target));
+
   // Combine target and user words with their match status - improved logic
   const maxLength = Math.max(targetWords.length, userWords.length);
   for (let i = 0; i < maxLength; i++) {
     const targetWord = targetWords[i] || "";
     const userWord = userWords[i] || "";
-    const isMatched = matchedTarget.has(i) && matchedUser.has(i);
-    const isSubstitution = targetWord && userWord && targetWord !== userWord && !isMatched;
+    const matchedTargetIndex = userToTargetMatch.get(i);
+    const isMatched = matchedTargetIndex !== undefined && userWord !== "";
 
     if (targetWord && userWord) {
+      const expected = matchedTargetIndex !== undefined ? targetWords[matchedTargetIndex] : targetWord;
+      const isSubstitution = !isMatched && targetWord !== userWord;
       wordDetails.push({
         word: userWord,
-        expected: targetWord,
+        expected,
         isCorrect: isMatched,
         isMissing: false,
         isExtra: false,

@@ -48,20 +48,23 @@ export function getYoutubeVideoIdFromUrl(url: string | null | undefined): string
   const parseHref = (href: string): string | null => {
     try {
       const u = new URL(href);
+      const ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
+      const isValidId = (id: string | undefined): id is string => !!id && ID_REGEX.test(id);
+
       const host = u.hostname.replace(/^www\./, "").toLowerCase();
       if (host === "youtu.be" || host.endsWith(".youtu.be")) {
         const id = u.pathname.split("/").filter(Boolean)[0];
-        return id || null;
+        return isValidId(id) ? id : null;
       }
       const v = u.searchParams.get("v");
-      if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
+      if (v && ID_REGEX.test(v)) return v;
       const parts = u.pathname.split("/").filter(Boolean);
       const shortsIdx = parts.indexOf("shorts");
-      if (shortsIdx >= 0 && parts[shortsIdx + 1]) return parts[shortsIdx + 1] || null;
+      if (shortsIdx >= 0 && isValidId(parts[shortsIdx + 1])) return parts[shortsIdx + 1];
       const embedIdx = parts.indexOf("embed");
-      if (embedIdx >= 0 && parts[embedIdx + 1]) return parts[embedIdx + 1] || null;
+      if (embedIdx >= 0 && isValidId(parts[embedIdx + 1])) return parts[embedIdx + 1];
       const liveIdx = parts.indexOf("live");
-      if (liveIdx >= 0 && parts[liveIdx + 1]) return parts[liveIdx + 1] || null;
+      if (liveIdx >= 0 && isValidId(parts[liveIdx + 1])) return parts[liveIdx + 1];
       return null;
     } catch {
       return null;

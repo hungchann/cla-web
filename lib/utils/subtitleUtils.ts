@@ -12,7 +12,8 @@ export const timeToSeconds = (timeString: string): number => {
     const separator = timeString.includes(",") ? "," : ".";
     const [time, ms] = timeString.split(separator);
     const [hours, minutes, seconds] = time.split(":").map(Number);
-    return hours * 3600 + minutes * 60 + seconds + Number(ms) / 1000;
+    const total = hours * 3600 + minutes * 60 + seconds + Number(ms) / 1000;
+    return Number.isNaN(total) ? 0 : total;
   } catch (error) {
     logger.error("Error parsing time:", timeString, error);
     return 0;
