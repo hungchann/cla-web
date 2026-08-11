@@ -2,13 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
-import { fetchVideoGenres } from "@/api/video";
 import { getAssetUrl } from "@/lib/utils/assets";
 import Link from "next/link";
 import { Suspense, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
-import { FilterPills } from "@/components/ui/filter-pills";
 import { Video, ArrowRight, AlertCircle, PackageOpen } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
 import { Pagination } from "@/components/ui/pagination";
@@ -77,20 +75,6 @@ function VideoListPageContent() {
     retry: 1,
   });
 
-  const { data: genres } = useQuery({
-    queryKey: ["video-genres"],
-    queryFn: async () => {
-      try {
-        const res = await fetchVideoGenres();
-        return res;
-      } catch (err) {
-        console.warn("Failed to fetch video genres", err);
-        return [];
-      }
-    },
-    retry: 1,
-  });
-
   const displayVideos = useMemo(() => {
     const list = videos && videos.length > 0 ? videos : MOCK_VIDEOS;
     if (!selectedGenreId) return list;
@@ -108,33 +92,12 @@ function VideoListPageContent() {
     return displayVideos.slice(offset, offset + LIMIT);
   }, [displayVideos, page]);
 
-  const genreOptions = useMemo(() => {
-    const allOption = { id: "__all__", title: "📂 Tất cả" };
-    const genreItems = (genres ?? []).map((g) => ({ id: String(g.id), title: `🏷️ ${g.title}` }));
-    return [allOption, ...genreItems];
-  }, [genres]);
-
-  const selectedGenreValue = selectedGenreId ?? "__all__";
-
-  const handleGenreChange = (val: string) => {
-    setPage(1);
-    router.push(val === "__all__" ? "/video" : `/video?genre=${encodeURIComponent(val)}`);
-  };
-
   return (
     <PageContainer>
       <PageHeader
         title="Học Tiếng Trung Qua Video"
         description="Xem các video bài giảng chất lượng với phụ đề chạy chữ song ngữ. Trả lời câu hỏi trắc nghiệm tương tác để ôn tập từ vựng ngay trong quá trình xem."
         icon={<Video className="w-7 h-7 text-amber-600" />}
-      />
-
-      <FilterPills
-        options={genreOptions.map((g) => g.id)}
-        value={selectedGenreValue}
-        onChange={handleGenreChange}
-        getId={(id) => id}
-        getLabel={(id) => genreOptions.find((g) => g.id === id)?.title ?? id}
       />
 
       {/* Loading State */}
@@ -268,7 +231,10 @@ function VideoListPageContent() {
           <p className="mt-2 text-zinc-500 font-medium">Không tìm thấy video nào phù hợp với bộ lọc.</p>
           {selectedGenreId && (
             <Button
-              onClick={() => handleGenreChange("__all__")}
+              onClick={() => {
+                setPage(1);
+                router.push("/video");
+              }}
               className="mt-4 bg-amber-600 text-white hover:bg-amber-700 font-bold rounded-xl shadow-sm"
             >
               Xem tất cả video

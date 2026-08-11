@@ -23,15 +23,17 @@ function BilingualListPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const requestedLevel = searchParams.get("level");
+    const selectedGenre = searchParams.get("genre")?.trim() || "";
     const selectedLevel = requestedLevel && HSK_LEVELS.has(requestedLevel)
         ? requestedLevel
         : "Tất cả";
 
     // Reset page to 1 when filter level changes
-    const [prevLevel, setPrevLevel] = useState(selectedLevel);
-    if (selectedLevel !== prevLevel) {
+    const filterKey = `${selectedLevel}:${selectedGenre}`;
+    const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+    if (filterKey !== prevFilterKey) {
         setPage(1);
-        setPrevLevel(selectedLevel);
+        setPrevFilterKey(filterKey);
     }
 
     const offset = (page - 1) * LIMIT;
@@ -39,12 +41,13 @@ function BilingualListPageContent() {
 
     // Query chính thức từ API Directus
     const { data, isLoading, error } = useQuery({
-        queryKey: ["bilingual-list", page, selectedLevel],
+        queryKey: ["bilingual-list", page, selectedLevel, selectedGenre],
         queryFn: async () => {
             const res = await bilingualApi.getBilingualItemsPaged({
                 limit: LIMIT,
                 offset,
                 level: levelQueryParam,
+                topicTitle: selectedGenre || undefined,
             });
             return res;
         },

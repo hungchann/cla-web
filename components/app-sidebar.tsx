@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import {
   BookOpen,
   BookText,
@@ -30,6 +31,8 @@ import {
 } from "@/components/ui/sidebar"
 import { tokenUtils } from "@/lib/utils/tokenUtils"
 import { SunChineseLogo } from "@/components/SunChineseLogo"
+import { bilingualApi } from "@/api/bilingual"
+import { fetchVideoGenres } from "@/api/video"
 
 type RouteSidebar = {
   label: string
@@ -188,11 +191,59 @@ function getRouteSidebar(pathname: string): RouteSidebar {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname() ?? "/dashboard"
   const routeSidebar = getRouteSidebar(pathname)
+  const { data: bilingualGenres } = useQuery({
+    queryKey: ["sidebar-bilingual-genres"],
+    queryFn: bilingualApi.getTopics,
+    enabled: pathname === "/bilingual" || pathname.startsWith("/bilingual/"),
+    staleTime: 5 * 60 * 1000,
+  })
+  const { data: videoGenres } = useQuery({
+    queryKey: ["sidebar-video-genres"],
+    queryFn: fetchVideoGenres,
+    enabled: pathname === "/video" || pathname.startsWith("/video/"),
+    staleTime: 5 * 60 * 1000,
+  })
   const [user, setUser] = React.useState({
     name: "Bạn học",
     email: "",
     avatar: "",
   })
+
+  const sidebarGroups = React.useMemo(() => {
+    if (pathname === "/bilingual" || pathname.startsWith("/bilingual/")) {
+      const genreItems = (bilingualGenres ?? []).map((genre: { title: string }) => ({
+        title: genre.title,
+        url: `/bilingual?genre=${encodeURIComponent(genre.title)}`,
+      }))
+      const genreGroup = {
+        title: "Thể loại",
+        icon: ListFilter,
+        items: [
+          { title: "Tất cả thể loại", url: "/bilingual" },
+          ...genreItems,
+        ],
+      }
+      return routeSidebar.groups.flatMap((group) =>
+        group.title === "Trình độ HSK" ? [group, genreGroup] : [group],
+      )
+    }
+
+    if (pathname === "/video" || pathname.startsWith("/video/")) {
+      return routeSidebar.groups.concat({
+        title: "Thể loại",
+        icon: ListFilter,
+        items: [
+          { title: "Tất cả video", url: "/video" },
+          ...(videoGenres ?? []).map((genre: { id: string; title: string }) => ({
+            title: genre.title,
+            url: `/video?genre=${encodeURIComponent(genre.id)}`,
+          })),
+        ],
+      })
+    }
+
+    return routeSidebar.groups
+  }, [bilingualGenres, pathname, routeSidebar.groups, videoGenres])
 
   React.useEffect(() => {
     const loadUser = async () => {
@@ -250,7 +301,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <div className="px-6 pb-1 pt-2 text-xs font-black uppercase tracking-[0.16em] text-sidebar-foreground/60">
           {routeSidebar.label}
         </div>
-        <NavMain label="Danh mục" items={routeSidebar.groups} />
+        <NavMain label="Danh mục" items={sidebarGroups} />
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/50 p-3">
         <NavUser user={user} />
