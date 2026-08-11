@@ -33,6 +33,7 @@ import { tokenUtils } from "@/lib/utils/tokenUtils"
 import { SunChineseLogo } from "@/components/SunChineseLogo"
 import { bilingualApi } from "@/api/bilingual"
 import { fetchVideoGenres } from "@/api/video"
+import { getBookGenres } from "@/api/stories"
 
 type RouteSidebar = {
   label: string
@@ -203,6 +204,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     enabled: pathname === "/video" || pathname.startsWith("/video/"),
     staleTime: 5 * 60 * 1000,
   })
+  const { data: storyGenres } = useQuery({
+    queryKey: ["sidebar-story-genres"],
+    queryFn: getBookGenres,
+    enabled: pathname === "/stories" || pathname.startsWith("/stories/"),
+    staleTime: 5 * 60 * 1000,
+  })
   const [user, setUser] = React.useState({
     name: "Bạn học",
     email: "",
@@ -228,6 +235,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       )
     }
 
+    if (pathname === "/stories" || pathname.startsWith("/stories/")) {
+      return routeSidebar.groups.concat({
+        title: "Thể loại",
+        icon: ListFilter,
+        items: [
+          { title: "Tất cả sách", url: "/stories" },
+          ...(storyGenres ?? []).map((genre: { id: string; title: string }) => ({
+            title: genre.title,
+            url: `/stories?genre=${encodeURIComponent(genre.id)}`,
+          })),
+        ],
+      })
+    }
+
     if (pathname === "/video" || pathname.startsWith("/video/")) {
       return routeSidebar.groups.concat({
         title: "Thể loại",
@@ -243,7 +264,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
 
     return routeSidebar.groups
-  }, [bilingualGenres, pathname, routeSidebar.groups, videoGenres])
+  }, [bilingualGenres, pathname, routeSidebar.groups, storyGenres, videoGenres])
 
   React.useEffect(() => {
     const loadUser = async () => {

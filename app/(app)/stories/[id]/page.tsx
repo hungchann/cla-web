@@ -1,13 +1,16 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { getBookLibraryById, saveReadingProgress, getReadingProgress } from "@/api/stories";
-import { speakChinese } from "@/lib/utils/speech";
-import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
+import { translateWord } from "@/api/apiService";
+import { segmentChineseText as apiSegmentChineseText, type SegmentResult } from "@/api/segment";
 import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { BackButton } from "@/components/BackButton";
+import { PageContainer } from "@/components/PageContainer";
+import { RubyText } from "@/components/RubyText";
+import { X } from "lucide-react";
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -15,7 +18,10 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   
   const [selectedChapterIndex, setSelectedChapterIndex] = useState<number | null>(null);
   const [isOpenPinyin, setIsOpenPinyin] = useState(true);
-  const [dynamicPinyin, setDynamicPinyin] = useState<string[]>([]);
+  const [segmentedLines, setSegmentedLines] = useState<SegmentResult[][]>([]);
+  const [segmentedChapterId, setSegmentedChapterId] = useState<string | null>(null);
+  const [selectedWord, setSelectedWord] = useState<{ word: string; pinyin: string; meaning: string } | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   // Fetch book detail
   const { data: book, isLoading } = useQuery({
@@ -31,7 +37,10 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   });
 
   // Sort chapters by sort_id descending or ascending (we want ascending)
-  const chapters = book?.chapters_id ? [...book.chapters_id].sort((a: any, b: any) => a.sort_id - b.sort_id) : [];
+  const chapters = useMemo(
+    () => (book?.chapters_id ? [...book.chapters_id].sort((a: any, b: any) => a.sort_id - b.sort_id) : []),
+    [book],
+  );
   const currentChapter = selectedChapterIndex !== null ? chapters[selectedChapterIndex] : null;
 
   // Split content by newline to display lines nicely
@@ -64,11 +73,21 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
       vietnameseLines = getLines(currentChapter.content).map(line => line.replace(/<[^>]*>?/gm, ''));
     }
 
-    // Merge dynamic pinyin if it exists and backend is missing it
-    if (dynamicPinyin.length === chineseLines.length) {
-      pinyinLines = pinyinLines.map((p, i) => p || dynamicPinyin[i] || "");
-    }
   }
+
+  const fallbackSegments = (line: string): SegmentResult[] =>
+    Array.from(line).map((word) => ({ word, pinyin: "" }));
+
+  const storyContent = chineseLines.map((chinese, index) => ({
+    id: index,
+    chinese,
+    vietnamese: vietnameseLines[index] || "",
+    pinyin: pinyinLines[index] || "",
+    segmentedWords:
+      segmentedChapterId === currentChapter?.id
+        ? segmentedLines[index] || fallbackSegments(chinese)
+        : fallbackSegments(chinese),
+  }));
 
   const saveProgressMutation = useMutation({
     mutationFn: ({ chapterId, percentage }: { chapterId: number; percentage: number }) =>
@@ -89,29 +108,67 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
     }
   }, [book, progressList, id, selectedChapterIndex, chapters]);
 
-  // Fetch Pinyin if the backend data is missing it
+  // Segment each line so pinyin is rendered above its matching word.
   useEffect(() => {
     if (!currentChapter) return;
-    
-    // Check if we need to fetch pinyin (all pinyinLines are empty)
-    const hasPinyin = pinyinLines.some(p => p && p.trim().length > 0);
-    if (!hasPinyin && chineseLines.length > 0) {
-      const fetchPinyin = async () => {
-        try {
-          const segments = await apiSegmentChineseText(chineseLines);
-          const py = segments.map(row => row.map(w => w.pinyin).join(" "));
-          setDynamicPinyin(py);
-        } catch (error) {
-          if (isAIConsentRequiredError(error)) {
-            console.log("AI consent not granted yet, using local story view fallback.");
-          } else {
-            console.warn("Failed to fetch pinyin for story", error);
-          }
+
+    setSegmentedLines([]);
+    setSegmentedChapterId(null);
+    setSelectedWord(null);
+    let cancelled = false;
+
+    apiSegmentChineseText(chineseLines)
+      .then((segments) => {
+        if (!cancelled) {
+          setSegmentedLines(segments.map((line, index) => {
+            const isUnsegmented =
+              line.length === 0 || (line.length === 1 && line[0].word === chineseLines[index] && !line[0].pinyin);
+            return isUnsegmented ? fallbackSegments(chineseLines[index]) : line;
+          }));
+          setSegmentedChapterId(currentChapter.id ?? null);
         }
-      };
-      fetchPinyin();
+      })
+      .catch((error) => {
+        if (isAIConsentRequiredError(error)) {
+          console.log("AI consent not granted yet, using local story view fallback.");
+        } else {
+          console.warn("Failed to segment story content", error);
+        }
+        if (!cancelled) {
+          setSegmentedLines(chineseLines.map(fallbackSegments));
+          setSegmentedChapterId(currentChapter.id ?? null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentChapter]);
+
+  const handleWordPress = async (word: string) => {
+    setSelectedWord({ word, pinyin: "Đang tải...", meaning: "Đang dịch nghĩa..." });
+    setIsTranslating(true);
+
+    const formatMeaning = (raw: unknown): string => {
+      if (Array.isArray(raw)) return raw.join(", ");
+      return String(raw || "");
+    };
+
+    try {
+      const translated = (await translateWord(word))?.[0];
+      const meaning = formatMeaning(translated?.meaning) || formatMeaning(translated?.meanings);
+      setSelectedWord({
+        word: translated?.word || word,
+        pinyin: translated?.pinyin || "N/A",
+        meaning: meaning || "Không tìm thấy nghĩa.",
+      });
+    } catch (error) {
+      console.warn("Failed to translate story word", error);
+      setSelectedWord({ word, pinyin: "N/A", meaning: "Dịch vụ tạm thời không khả dụng." });
+    } finally {
+      setIsTranslating(false);
     }
-  }, [currentChapter, chineseLines, pinyinLines]);
+  };
 
   if (isLoading) {
     return (
@@ -148,24 +205,20 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   return (
-    <div className="flex-1 flex flex-col gap-6">
+    <PageContainer maxWidth="full" className="gap-6">
       <BackButton href="/stories" label="Danh sách sách" />
-        <main className="flex-1 overflow-y-auto p-6 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <main className="flex-1 overflow-y-auto max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Cột trái: Nội dung chương đang đọc */}
           <div className="lg:col-span-3 space-y-6">
-            <div className="flex items-center justify-between">
-              <Link
-                href="/stories"
-                className="text-xs font-bold text-amber-600 hover:underline flex items-center gap-1"
-              >
-                &larr; Quay lại Thư viện
-              </Link>
+            <div className="flex items-center justify-end">
 
               {currentChapter && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-zinc-400">Hiện Pinyin</span>
                   <button
-                    onClick={() => setIsOpenPinyin(!isOpenPinyin)}
+                    type="button"
+                    aria-pressed={isOpenPinyin}
+                    onClick={() => setIsOpenPinyin((open) => !open)}
                     className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
                       isOpenPinyin ? "bg-amber-500" : "bg-zinc-300 dark:bg-zinc-700"
                     }`}
@@ -189,43 +242,82 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                   </h2>
                 </div>
 
-                {/* Chapter Lines */}
-                <div className="space-y-6">
-                  {chineseLines.map((chi, idx) => {
-                    const vie = vietnameseLines[idx] || "";
+                {/* Chapter Lines – book reading style */}
+                <div className="space-y-8 text-lg leading-loose text-zinc-800 dark:text-zinc-200">
+                  {storyContent.map((line: any, idx: number) => {
+                    const words = Array.isArray(line.segmentedWords) && line.segmentedWords.length > 0
+                      ? line.segmentedWords
+                      : fallbackSegments(line.chinese);
+
                     return (
-                      <div
-                        key={idx}
-                        className="group flex flex-col gap-1.5 p-3 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
-                      >
-                        {/* Chinese Line */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <div className="flex flex-col">
-                            {isOpenPinyin && pinyinLines[idx] && (
-                              <p className="text-sm font-medium text-zinc-400 mb-0.5">
-                                {pinyinLines[idx]}
-                              </p>
-                            )}
-                            <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 leading-relaxed">
-                              {chi}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => speakChinese(chi)}
-                            className="w-6 h-6 rounded-full bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900 flex items-center justify-center text-xs text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                          >
-                            🔊
-                          </button>
-                        </div>
+                      <div key={idx} className="space-y-2">
+                        {/* Chinese + Pinyin inline */}
+                        <p className="leading-relaxed">
+                          {words.map((w: { word: string; pinyin: string }, i: number) => (
+                            <RubyText
+                              key={`ruby-${idx}-${i}`}
+                              word={w.word}
+                              pinyin={isOpenPinyin ? w.pinyin : undefined}
+                              fontSize={24}
+                              pinyinSize={13}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                handleWordPress(w.word);
+                              }}
+                              containerClassName="mr-0.5"
+                            />
+                          ))}
+                        </p>
 
                         {/* Vietnamese Translation */}
-                        <p className="text-xs text-amber-700 dark:text-amber-500 font-bold leading-relaxed">
-                          {vie}
-                        </p>
+                        {line.vietnamese && (
+                          <p className="text-sm font-semibold text-amber-700 dark:text-amber-500 leading-relaxed">
+                            {line.vietnamese}
+                          </p>
+                        )}
                       </div>
                     );
                   })}
                 </div>
+
+                {selectedWord && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+                    onClick={() => setSelectedWord(null)}
+                  >
+                    <div
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label={`Tra từ ${selectedWord.word}`}
+                      className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-zinc-900"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-extrabold text-amber-700 dark:text-amber-500">
+                              {selectedWord.word}
+                            </span>
+                            <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+                              {isTranslating ? "Đang tải..." : selectedWord.pinyin}
+                            </span>
+                          </div>
+                          <p className="mt-3 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                            {selectedWord.meaning}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label="Đóng tra từ"
+                          onClick={() => setSelectedWord(null)}
+                          className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Chapter Navigation Buttons */}
                 <div className="flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800 pt-6">
@@ -293,6 +385,6 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
         </main>
-    </div>
+    </PageContainer>
   );
 }

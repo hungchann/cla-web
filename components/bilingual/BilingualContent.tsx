@@ -10,6 +10,7 @@ interface BilingualContentProps {
   onSpeakParagraph?: (chinese: string) => void;
   activeIndex?: number | null;
   onReplay?: (item: any, index: number) => void;
+  showReplay?: boolean;
 }
 
 export function BilingualContent({
@@ -19,6 +20,7 @@ export function BilingualContent({
   onSpeakParagraph,
   activeIndex = null,
   onReplay,
+  showReplay = true,
 }: BilingualContentProps) {
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -57,6 +59,7 @@ export function BilingualContent({
               onWordPress={onWordPress}
               colors={{}}
               onReplay={handleReplayItem}
+              showReplay={showReplay}
             />
           </div>
         ))}

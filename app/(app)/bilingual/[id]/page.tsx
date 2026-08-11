@@ -291,11 +291,16 @@ export default function BilingualDetailPage({
             const res = await translateWord(word);
             const translated = res?.[0];
             if (translated) {
+                const formatMeaning = (raw: any): string => {
+                    if (Array.isArray(raw)) return raw.join(", ");
+                    return String(raw || "");
+                };
+                const meaning = formatMeaning(translated.meaning) || formatMeaning(translated.meanings);
                 setSelectedWord({
                     id: translated.id,
                     word: translated.word || word,
                     pinyin: translated.pinyin || "N/A",
-                    meaning: translated.meaning || translated.meanings || "Không tìm thấy nghĩa."
+                    meaning: meaning || "Không tìm thấy nghĩa."
                 });
             } else {
                 setSelectedWord({

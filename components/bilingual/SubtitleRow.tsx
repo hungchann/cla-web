@@ -11,6 +11,7 @@ type SubtitleRowProps = {
   onWordPress: (word: string) => void;
   colors: any;
   onReplay: (item: any, index: number) => void;
+  showReplay?: boolean;
   onLayout?: (index: number, y: number, height: number) => void;
   className?: string;
 };
@@ -23,6 +24,7 @@ export const SubtitleRow = memo(function SubtitleRow({
   onWordPress,
   colors: _colors,
   onReplay,
+  showReplay = true,
   onLayout,
   className = "",
 }: SubtitleRowProps) {
@@ -60,7 +62,10 @@ export const SubtitleRow = memo(function SubtitleRow({
                   pinyin={isOpenPinyin ? w.pinyin : undefined}
                   fontSize={18}
                   pinyinSize={12}
-                  onPress={() => onWordPress(w.word)}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    onWordPress(w.word);
+                  }}
                 />
               ))
             ) : (
@@ -88,21 +93,23 @@ export const SubtitleRow = memo(function SubtitleRow({
         </div>
 
         {/* Replay Button in flow */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReplay(item, index);
-          }}
-          className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors border-none cursor-pointer mt-0.5 ${
-            isActive
-              ? "bg-amber-500 text-white shadow-xs"
-              : "bg-zinc-100 text-zinc-500 hover:bg-amber-100 hover:text-amber-600 dark:bg-zinc-800 dark:text-zinc-400"
-          }`}
-          title="Phát lại đoạn này"
-        >
-          <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
-        </button>
+        {showReplay && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onReplay(item, index);
+            }}
+            className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors border-none cursor-pointer mt-0.5 ${
+              isActive
+                ? "bg-amber-500 text-white shadow-xs"
+                : "bg-zinc-100 text-zinc-500 hover:bg-amber-100 hover:text-amber-600 dark:bg-zinc-800 dark:text-zinc-400"
+            }`}
+            title="Phát lại đoạn này"
+          >
+            <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
+          </button>
+        )}
       </div>
     </div>
   );
