@@ -5,6 +5,11 @@
  * and renumbers the survivors. Pass --create-missing to add empty published
  * lesson rows for missing types; content/resources still need to be filled in
  * through Directus.
+ *
+ * Flags:
+ *   --create-missing   create shell lesson rows for missing types
+ *   --delete-unknown   remove lessons whose type is not in the guide
+ *   --delete-orphans   remove published lessons with chapter_id = null
  */
 
 const https = require("node:https");
@@ -13,6 +18,7 @@ const readline = require("node:readline");
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://marutek.space";
 const CREATE_MISSING = process.argv.includes("--create-missing");
 const DELETE_UNKNOWN = process.argv.includes("--delete-unknown");
+const DELETE_ORPHANS = process.argv.includes("--delete-orphans");
 const LESSONS = [
   ["video_vocab", "Video từ vựng"],
   ["vocab_theory", "Lý thuyết: Giải nghĩa từ vựng"],
@@ -69,6 +75,15 @@ async function main() {
   if (!token) throw new Error("Directus did not return an access token");
 
   const chapters = (await request("GET", "/items/course_chapters?filter[status][_eq]=published&sort=course_id,sort&fields=id,course_id,title", null, token))?.data || [];
+
+  if (DELETE_ORPHANS) {
+    const orphans = (await request("GET", "/items/course_lessons?filter[chapter_id][_null]=true&fields=id,title,lesson_type,status", null, token))?.data || [];
+    for (const orphan of orphans) {
+      await request("DELETE", `/items/course_lessons/${orphan.id}`, null, token);
+      console.log(`deleted orphan lesson ${orphan.id} (${orphan.lesson_type}) chapter_id=null`);
+    }
+  }
+
   for (const chapter of chapters) {
     const lessons = (await request("GET", `/items/course_lessons?filter[chapter_id][_eq]=${chapter.id}&filter[status][_eq]=published&sort=sort,id&fields=id,lesson_type,title,sort`, null, token))?.data || [];
     const byType = new Map();

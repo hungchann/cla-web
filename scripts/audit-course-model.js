@@ -78,8 +78,7 @@ function relationStatus(lesson) {
     case "conversation":
       return Boolean(lesson.scenario_id);
     case "extra":
-      return Boolean(lesson.extra_pdf_id || lesson.extra_answer_id || lesson.extra_audio_id);
-    default:
+      return Boolean(lesson.extra_pdf_id || lesson.extra_answer_id || lesson.extra_audio_id);    default:
       return false;
   }
 }
@@ -114,12 +113,17 @@ async function main() {
       for (const lesson of lessons) counts[lesson.lesson_type] = (counts[lesson.lesson_type] || 0) + 1;
       const missing = EXPECTED_TYPES.filter((type) => counts[type] !== 1);
       const unknown = lessons.filter((lesson) => !EXPECTED_TYPES.includes(lesson.lesson_type));
-      const badRelations = lessons.filter((lesson) => EXPECTED_TYPES.includes(lesson.lesson_type) && !relationStatus(lesson));
-      const ok = missing.length === 0 && unknown.length === 0 && badRelations.length === 0;
+      const badRelations = lessons.filter((lesson) => EXPECTED_TYPES.includes(lesson.lesson_type) && lesson.lesson_type !== "extra" && !relationStatus(lesson));
+      // Content gaps (e.g. no files on the extra lesson) are warnings, not
+      // structural model errors: the lesson still renders and can be filled later.
+      const noFiles = lessons.filter((lesson) => lesson.lesson_type === "extra" && !relationStatus(lesson));
+      const structuralOk = missing.length === 0 && unknown.length === 0 && badRelations.length === 0;
+      const ok = structuralOk;
       console.log(`  ${ok ? "OK" : "FAIL"} chapter ${chapter.id} ${chapter.title}: ${lessons.length} lesson(s)`);
       if (missing.length) console.log(`    missing/duplicate: ${missing.map((type) => `${type}(${counts[type] || 0})`).join(", ")}`);
       if (unknown.length) console.log(`    unknown types: ${unknown.map((lesson) => `${lesson.id}:${lesson.lesson_type}`).join(", ")}`);
       if (badRelations.length) console.log(`    missing typed relation: ${badRelations.map((lesson) => `${lesson.id}:${lesson.lesson_type}`).join(", ")}`);
+      if (noFiles.length) console.log(`    warning (no files yet, add in Directus): ${noFiles.map((lesson) => `${lesson.id}:${lesson.lesson_type}`).join(", ")}`);
       if (!ok) failures++;
     }
   }

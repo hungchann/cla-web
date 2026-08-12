@@ -37,6 +37,8 @@ import { bilingualApi } from "@/api/bilingual"
 import { fetchVideoGenres } from "@/api/video"
 import { getBookGenres } from "@/api/stories"
 import { grammarApi } from "@/api/grammar"
+import { coursesApi } from "@/api/courses"
+import type { CourseLesson } from "@/lib/types/course"
 import { Suspense } from "react"
 
 type RouteSidebar = {
@@ -283,9 +285,87 @@ function GrammarNavContent({ label }: { label: string }) {
   return <NavMain label={label} items={groups} />
 }
 
+const COURSE_LESSON_STEPS: Record<string, string> = {
+  video_vocab: "learn-video-vocab",
+  vocab_theory: "learn-vocab-theory",
+  quiz_vocab: "learn-quiz-vocab",
+  video_grammar: "learn-video-grammar",
+  quiz_grammar: "learn-quiz-grammar",
+  dictation: "learn-dictation",
+  conversation: "learn-conversation",
+  extra: "learn-extra",
+}
+
+const COURSE_LESSON_FALLBACKS = [
+  ["video_vocab", "Video từ vựng"],
+  ["vocab_theory", "Lý thuyết: Giải nghĩa từ vựng"],
+  ["quiz_vocab", "Bài tập: từ vựng"],
+  ["video_grammar", "Video ngữ pháp"],
+  ["quiz_grammar", "Bài tập ngữ pháp"],
+  ["dictation", "Bài tập: Nghe chép chính tả"],
+  ["conversation", "Thực hành hội thoại"],
+  ["extra", "Bài tập bổ sung"],
+] as const
+
+function CourseNavMain({ label, courseId }: { label: string; courseId: string }) {
+  return (
+    <Suspense
+      fallback={
+        <SidebarGroup className="px-3 py-2">
+          <SidebarGroupLabel className="px-3 text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500/80">{label}</SidebarGroupLabel>
+          <SidebarMenu className="gap-1"><SidebarMenuItem><SidebarMenuButton className="h-10 rounded-xl px-3 text-sm font-bold">Đang tải bài học...</SidebarMenuButton></SidebarMenuItem></SidebarMenu>
+        </SidebarGroup>
+      }
+    >
+      <CourseNavContent label={label} courseId={courseId} />
+    </Suspense>
+  )
+}
+
+function CourseNavContent({ label, courseId }: { label: string; courseId: string }) {
+  const { data: chapters, isLoading } = useQuery({
+    queryKey: ["sidebar-course-lessons", courseId],
+    queryFn: () => coursesApi.getCourseChapters(courseId),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const groups: SidebarSubmenuGroup[] = (chapters || []).map((chapter, index) => {
+    const lessons = (chapter.lessons || []).filter(
+      (lesson) => COURSE_LESSON_STEPS[lesson.lesson_type],
+    )
+    const items = lessons.length > 0
+      ? lessons.map((lesson) => ({
+          title: lesson.title,
+          url: `/courses/${courseId}/learn?lesson=${lesson.id}`,
+        }))
+      : COURSE_LESSON_FALLBACKS.map(([type, title]) => ({
+          title,
+          url: `/courses/${courseId}/learn?step=${COURSE_LESSON_STEPS[type]}`,
+        }))
+    return {
+      title: chapter.title || `Chương ${index + 1}`,
+      icon: BookOpen,
+      defaultOpen: index === 0,
+      items,
+    }
+  })
+
+  const fallbackGroup: SidebarSubmenuGroup = {
+    title: isLoading ? "Đang tải chương..." : "Nội dung bài học",
+    icon: BookOpen,
+    items: COURSE_LESSON_FALLBACKS.map(([type, title]) => ({
+      title,
+      url: `/courses/${courseId}/learn?step=${COURSE_LESSON_STEPS[type]}`,
+    })),
+  }
+
+  return <NavMain label={label} items={groups.length > 0 ? groups : [fallbackGroup]} />
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname() ?? "/dashboard"
   const routeSidebar = getRouteSidebar(pathname)
+  const courseId = pathname.match(/^\/courses\/([^/]+)/)?.[1] ?? ""
   const { data: bilingualGenres } = useQuery({
     queryKey: ["sidebar-bilingual-genres"],
     queryFn: bilingualApi.getTopics,
@@ -416,7 +496,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <div className="px-6 pb-1 pt-2 text-xs font-black uppercase tracking-[0.16em] text-sidebar-foreground/60">
           {routeSidebar.label}
         </div>
-        {pathname === "/grammar" || pathname.startsWith("/grammar/") ? (
+        {courseId ? (
+          <CourseNavMain label="Bài học" courseId={decodeURIComponent(courseId)} />
+        ) : pathname === "/grammar" || pathname.startsWith("/grammar/") ? (
           <GrammarNavMain label="Danh mục" />
         ) : (
           <NavMain label="Danh mục" items={sidebarGroups} />

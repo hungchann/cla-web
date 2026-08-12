@@ -58,8 +58,86 @@ type VocabItem = {
     pinyin: string;
     meaning: string;
     word_type?: string;
+    note?: string;
     senses?: VocabSense[];
 };
+
+function VocabTheoryCards({ items, loading }: { items: VocabItem[]; loading: boolean }) {
+    const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
+
+    if (loading) {
+        return (
+            <div className="max-w-4xl w-full mx-auto rounded-2xl border border-amber-100 bg-white p-12 shadow-2xs dark:bg-zinc-900">
+                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-amber-600 border-t-transparent" />
+            </div>
+        );
+    }
+
+    if (items.length === 0) {
+        return (
+            <div className="max-w-4xl w-full mx-auto rounded-2xl border border-amber-100 bg-white p-12 text-center shadow-2xs dark:bg-zinc-900">
+                <p className="text-sm font-bold text-zinc-500">Chưa có từ vựng cho bài học này</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-4xl w-full mx-auto space-y-5">
+            <div className="px-1">
+                <h3 className="text-lg font-black text-zinc-900 dark:text-white">Giải nghĩa từ vựng</h3>
+                <p className="text-xs font-semibold text-zinc-500">Danh sách {items.length} từ trong bài học</p>
+            </div>
+            {items.map((item, itemIndex) => {
+                const key = String(item.id ?? itemIndex);
+                const senses = item.senses?.length ? item.senses : [{ id: "fallback", meaning: "Chưa có nghĩa", examples: [] }];
+                const noteOpen = !!openNotes[key];
+                return (
+                    <article key={key} className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:p-6">
+                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-100 pb-4 dark:border-zinc-800">
+                            <div className="flex items-center gap-3">
+                                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-xs font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">{itemIndex + 1}</span>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="text-xl font-black tracking-wide text-zinc-900 dark:text-white">{item.word}</h4>
+                                        <button type="button" onClick={() => speakChinese(item.word || "")} className="text-amber-600 hover:text-amber-700" aria-label={`Nghe ${item.word}`}>
+                                            <Volume2 className="size-4" />
+                                        </button>
+                                    </div>
+                                    <p className="text-sm font-bold text-amber-600">{item.pinyin || "Chưa có pinyin"}</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap justify-end gap-1.5">
+                                {Array.from(new Set(senses.map((sense) => sense.pos_label).filter((pos): pos is string => Boolean(pos)))).map((pos) => (
+                                    <span key={pos} className="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">{pos}</span>
+                                ))}
+                                {item.note && (
+                                    <button type="button" onClick={() => setOpenNotes((prev) => ({ ...prev, [key]: !prev[key] }))} className="rounded-full border border-zinc-200 px-3 py-1 text-[11px] font-bold text-zinc-600 hover:border-amber-300 hover:text-amber-600 dark:border-zinc-700 dark:text-zinc-300">
+                                        {noteOpen ? "Ẩn cách viết hanzi" : "Hiện cách viết hanzi"}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        {noteOpen && item.note && <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50/60 p-4 text-sm font-semibold leading-relaxed text-zinc-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-zinc-300">{item.note}</div>}
+                        <div className="mt-4 space-y-3">
+                            {senses.map((sense, senseIndex) => (
+                                <div key={String(sense.id ?? senseIndex)} className="space-y-2">
+                                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100"><span className="mr-2 text-amber-600">{senseIndex + 1}.</span>{sense.meaning}</p>
+                                    {sense.examples?.length ? sense.examples.map((example, exampleIndex) => (
+                                        <div key={exampleIndex} className="rounded-lg bg-zinc-50 px-3 py-2.5 dark:bg-zinc-950/40">
+                                            <div className="flex items-start justify-between gap-3"><span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{example.chinese}</span><button type="button" onClick={() => speakChinese(example.chinese)} className="shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700">🔊 Nghe</button></div>
+                                            {example.pinyin && <p className="mt-0.5 text-xs font-semibold text-amber-600">{example.pinyin}</p>}
+                                            {example.vietnamese && <p className="mt-0.5 text-xs font-medium text-zinc-500">&rarr; {example.vietnamese}</p>}
+                                        </div>
+                                    )) : <p className="text-xs italic text-zinc-400">Chưa có ví dụ cho nghĩa này</p>}
+                                </div>
+                            ))}
+                        </div>
+                    </article>
+                );
+            })}
+        </div>
+    );
+}
 
 function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const router = useRouter();
@@ -72,7 +150,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         : "video_vocab";
 
     const [currentLesson, setCurrentLesson] = useState<CourseLesson | null>(null);
-    const [allChapterLessons, setAllChapterLessons] = useState<CourseLesson[]>([]);
 
     useEffect(() => {
         let isMounted = true;
@@ -93,7 +170,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     const chapters = await coursesApi.getCourseChapters(courseId);
                     if (!isMounted) return;
                     const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
-                    setAllChapterLessons(flat);
                     const match = flat.find((l) => l.lesson_type === fallbackType);
                     if (isMounted) setCurrentLesson(match || flat[0] || null);
                     return;
@@ -101,16 +177,10 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     const chapters = await coursesApi.getCourseChapters(courseId);
                     if (!isMounted) return;
                     const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
-                    setAllChapterLessons(flat);
                     if (isMounted) setCurrentLesson(flat[0] || null);
                     return;
                 }
 
-                // Also load all lessons for pagination
-                const chapters = await coursesApi.getCourseChapters(courseId);
-                if (isMounted) {
-                    setAllChapterLessons(filterValidLessons(chapters.flatMap((c) => c.lessons || [])));
-                }
             } catch {
                 if (isMounted) setCurrentLesson(null);
             }
@@ -118,20 +188,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         fetchLesson();
         return () => { isMounted = false; };
     }, [courseId, lessonParam, stepParam, fallbackType]);
-
-    const currentLessonIdx = allChapterLessons.findIndex(
-        (l) => String(l.id) === String(currentLesson?.id)
-    );
-    const prevLesson = currentLessonIdx > 0 ? allChapterLessons[currentLessonIdx - 1] : null;
-    const nextLesson =
-        currentLessonIdx >= 0 && currentLessonIdx < allChapterLessons.length - 1
-            ? allChapterLessons[currentLessonIdx + 1]
-            : null;
-
-    const navigateToLesson = (lesson: CourseLesson) => {
-        setCurrentLesson(lesson);
-        router.push(`/courses/${courseId}/learn?lesson=${lesson.id}`);
-    };
 
     const currentStep = currentLesson?.lesson_type
         ? LEARN_TO_STEP_TYPE[currentLesson.lesson_type] || `learn-${currentLesson.lesson_type}`
@@ -207,37 +263,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     } else if (courseId === "marketing-traditional") {
         courseTitle = "Tiếng Trung Marketing (Phồn thể)";
     }
-
-    const handleSetView = (newStep: string) => {
-        if (newStep === "home") {
-            router.push("/dashboard");
-        } else if (newStep === "courses") {
-            router.push("/courses");
-        } else if (newStep === "bilingual-list") {
-            router.push("/bilingual");
-        } else if (newStep === "flashcard") {
-            router.push("/flashcard");
-        } else if (newStep.startsWith("learn")) {
-            const lessonType = STEP_TYPE_TO_LEARN[newStep] || newStep.replace(/^learn-/, "");
-            if (currentLesson && currentLesson.lesson_type === lessonType) {
-                router.push(`/courses/${courseId}/learn?lesson=${currentLesson.id}`);
-                return;
-            }
-            coursesApi
-              .getCourseChapters(courseId)
-              .then((chapters) => {
-                const match = chapters
-                  .flatMap((c) => c.lessons || [])
-                  .find((l) => l.lesson_type === lessonType);
-                if (match) {
-                  router.push(`/courses/${courseId}/learn?lesson=${match.id}`);
-                } else {
-                  router.push(`/courses/${courseId}/learn?step=${newStep}`);
-                }
-              })
-              .catch(() => router.push(`/courses/${courseId}/learn?step=${newStep}`));
-        }
-    };
 
     // --- Vocab data (Video Vocab step) ---
     const [vocabItems, setVocabItems] = useState<VocabItem[]>([]);
@@ -939,7 +964,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 )}
 
                 {/* STEP 1.5: Lý thuyết: Giải nghĩa từ vựng (learn-vocab-theory) */}
-                {currentStep === "learn-vocab-theory" && (
+                {currentStep === "learn-vocab-theory" && <VocabTheoryCards items={vocabTheoryItems} loading={vocabTheoryLoading} />}
+                {false && currentStep === "learn-vocab-theory" && (
                     <div className="max-w-3xl w-full mx-auto space-y-6">
                         {vocabTheoryLoading ? (
                             <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-2xs flex items-center justify-center">
@@ -1710,13 +1736,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                             </div>
                         </div>
 
-                        <div className="flex justify-between w-full pt-6 border-t border-gray-150 mt-8 max-w-3xl">
-                            <button
-                                onClick={() => handleSetView("learn-conversation")}
-                                className="text-xs font-black text-gray-500 hover:text-amber-600 flex items-center gap-1 transition-colors cursor-pointer"
-                            >
-                                &larr; Phần trước
-                            </button>
+                        <div className="flex justify-end w-full pt-6 border-t border-gray-150 mt-8 max-w-3xl">
                             <button
                                 onClick={() => router.push(`/courses/${courseId}`)}
                                 className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer"
@@ -1724,44 +1744,6 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 Về lộ trình học &rarr;
                             </button>
                         </div>
-                    </div>
-                )}
-
-                {/* Bottom Pagination Bar for Course Lessons */}
-                {allChapterLessons.length > 0 && (
-                    <div className="w-full max-w-2xl mt-8 pt-4 border-t border-gray-200 flex items-center justify-between gap-4">
-                        <button
-                            onClick={() => prevLesson && navigateToLesson(prevLesson)}
-                            disabled={!prevLesson}
-                            className="bg-white border border-gray-200 hover:border-amber-400 text-gray-700 hover:text-amber-600 px-4 py-2 rounded-xl text-xs font-extrabold shadow-2xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            &larr; Bài trước
-                        </button>
-
-                        <div className="flex items-center gap-2">
-                            <select
-                                value={currentLesson?.id ? String(currentLesson.id) : ""}
-                                onChange={(e) => {
-                                    const selected = allChapterLessons.find((l) => String(l.id) === e.target.value);
-                                    if (selected) navigateToLesson(selected);
-                                }}
-                                className="bg-amber-50 border border-amber-200 text-amber-900 text-xs font-extrabold px-3 py-2 rounded-xl focus:ring-0 focus:outline-hidden cursor-pointer"
-                            >
-                                {allChapterLessons.map((lesson, idx) => (
-                                    <option key={String(lesson.id)} value={String(lesson.id)}>
-                                        Bài {idx + 1}: {lesson.title}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <button
-                            onClick={() => nextLesson && navigateToLesson(nextLesson)}
-                            disabled={!nextLesson}
-                            className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-extrabold shadow-2xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            Bài tiếp &rarr;
-                        </button>
                     </div>
                 )}
 
