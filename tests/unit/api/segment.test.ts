@@ -82,6 +82,30 @@ describe("segmentChineseText", () => {
     expect(result).toEqual([[{ word: "你好", pinyin: "" }]]);
   });
 
+  it("handles non-array API response gracefully", async () => {
+    server.use(
+      http.post("/api/chinese/segment", () => {
+        return HttpResponse.json({ error: "upstream AI error" });
+      }),
+    );
+
+    const result = await segmentChineseText(["你好"]);
+
+    expect(result).toEqual([[{ word: "你好", pinyin: "" }]]);
+  });
+
+  it("handles malformed segment items gracefully", async () => {
+    server.use(
+      http.post("/api/chinese/segment", () => {
+        return HttpResponse.json([[null, { word: "你好", pinyin: "nǐ hǎo" }]]);
+      }),
+    );
+
+    const result = await segmentChineseText(["你好"]);
+
+    expect(result[0]).toEqual([{ word: "你好", pinyin: "nǐ hǎo" }]);
+  });
+
   it("throws AIConsentRequiredError when consent declined", async () => {
     localStorage.clear(); // không có consent
     server.use(

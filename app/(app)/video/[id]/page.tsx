@@ -4,7 +4,6 @@ import { use, useEffect, useRef, useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { bilingualApi } from "@/api/bilingual";
 import { useDetailedVideoLogic } from "@/lib/hooks/useDetailedVideoLogic";
-import { SubtitleItem } from "@/components/video/SubtitleItem";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { translateWord } from "@/api/apiService";
 import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
@@ -16,7 +15,8 @@ import { PageContainer } from "@/components/PageContainer";
 import { PinyinToggle } from "@/components/PinyinToggle";
 
 import { VideoPlayerSection } from "@/components/video/VideoPlayerSection";
-import { VideoQuizSection } from "@/components/video/VideoQuizSection";
+import { VideoQuizPanel } from "@/components/video/VideoQuizPanel";
+import { VideoTeleprompterPanel } from "@/components/video/VideoTeleprompterPanel";
 import { videoDataUsesYoutubePlayer, getYoutubeVideoIdFromVideoData } from "@/lib/utils/youtubeVideo";
 import { BilingualShadowing } from "@/components/bilingual/BilingualShadowing";
 import { BilingualExercise } from "@/components/bilingual/BilingualExercise";
@@ -121,11 +121,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const [isOpenPinyin, setIsOpenPinyin] = useState(true);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
-
-  // Custom states hỗ trợ trắc nghiệm video
-  const [selectedAnswer, setSelectedAnswer] = useState<string | number | null>(null);
-  const [isAnswerChecked, setIsAnswerChecked] = useState(false);
-  const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
 
   // AI Translation & Segmentation states
   const [wordInfo, setWordInfo] = useState<any>(null);
@@ -234,6 +229,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     enableAutoSpeakSubtitle: false,
     youtubePlayerRef,
     setYoutubeIsPlaying,
+    fallbackExercises: MOCK_EXERCISES,
   });
 
   const {
@@ -318,9 +314,10 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     }
   }, [currentTime, enrichedSubtitles, binarySearchSubtitle, activeSubtitleIndex, setActiveIndex]);
 
-  // Tự động Pause video khi có câu hỏi hoạt động (chỉ khi ngưởi dùng đang ở tab Trắc nghiệm)
+  // Tự động Pause video + chuyển sang tab Trắc nghiệm khi có câu hỏi hoạt động.
+  // Ngược lại về Phụ đề (teleprompter) khi hết câu hỏi.
   useEffect(() => {
-    if (activeQuestion && rightPanelTab === "quiz") {
+    if (activeQuestion) {
       if (isYoutubeVideo) {
         setYoutubeIsPlaying(false);
       } else {
@@ -329,23 +326,11 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
           video.pause();
         }
       }
-      // Reset trạng thái chọn câu trả lởi
-      setSelectedAnswer(null);
-      setIsAnswerChecked(false);
-      setIsAnswerCorrect(null);
+      setRightPanelTab("quiz");
+    } else {
+      setRightPanelTab("subtitles");
     }
-  }, [activeQuestion, isYoutubeVideo, rightPanelTab]);
-
-  // Teleprompter: Cuộn tự động phụ đề căn giữa viewport
-  const subtitleItemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  useEffect(() => {
-    if (activeSubtitleIndex !== null && activeSubtitleIndex !== undefined && activeSubtitleIndex !== -1) {
-      subtitleItemRefs.current[activeSubtitleIndex]?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, [activeSubtitleIndex]);
+  }, [activeQuestion, isYoutubeVideo]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
@@ -396,16 +381,10 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     }
   };
 
-  const handleAnswerSubmit = async () => {
-    if (selectedAnswer === null || !activeQuestion) return;
-
-    setIsAnswerChecked(true);
-
+  const handleQuizSubmit = async (answer: string) => {
     // Gọi hook báo cáo kết quả và lấy status thực tế từ API server
-    const result = await handleOptionPress(String(selectedAnswer));
-    if (result) {
-      setIsAnswerCorrect(result.status === "Đúng");
-    }
+    const result = await handleOptionPress(answer);
+    return result;
   };
 
   const handleContinueVideo = () => {
@@ -520,39 +499,27 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                   </button>
                 </div>
 
+                {/* Teleprompter: hiển thị phụ đề to, tự nhảy theo video trong lúc video chạy.
+                    Trắc nghiệm chỉ được bật khi có câu hỏi hoạt động (activeQuestion). */}
                 {rightPanelTab === "quiz" ? (
-                  <VideoQuizSection
+                  <VideoQuizPanel
+                    key={activeQuestion?.id ?? "no-question"}
                     activeQuestion={activeQuestion}
                     activeEx={activeEx}
-                    selectedAnswer={selectedAnswer}
-                    setSelectedAnswer={setSelectedAnswer}
-                    isAnswerChecked={isAnswerChecked}
-                    isAnswerCorrect={isAnswerCorrect}
-                    handleAnswerSubmit={handleAnswerSubmit}
-                    handleContinueVideo={handleContinueVideo}
                     getOptions={getOptions}
+                    onSubmit={handleQuizSubmit}
+                    onContinue={handleContinueVideo}
                   />
                 ) : (
-                  // Nội dung Tab Danh sách Phụ đề
-                  <div className="flex-1 overflow-y-auto mt-1 pr-1 scrollbar-thin flex flex-col gap-2">
-                    {enrichedSubtitles.map((sub, index) => (
-                      <div
-                        key={sub.id || `sub-${index}`}
-                        ref={(el) => {
-                          subtitleItemRefs.current[index] = el;
-                        }}
-                      >
-                        <SubtitleItem
-                          item={sub}
-                          index={index}
-                          activeIndex={activeSubtitleIndex}
-                          isOpenPinyin={isOpenPinyin}
-                          onWordPress={handleWordPress}
-                          onReplayPress={handleReplayPress}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  // Teleprompter: hiển thị 1 dòng phụ đề to, tự nhảy theo video
+                  <VideoTeleprompterPanel
+                    items={enrichedSubtitles}
+                    activeIndex={activeSubtitleIndex}
+                    isOpenPinyin={isOpenPinyin}
+                    onWordPress={handleWordPress}
+                    onReplayPress={handleReplayPress}
+                    onSpeak={speakChinese}
+                  />
                 )}
               </div>
             </div>

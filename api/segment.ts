@@ -67,12 +67,30 @@ export async function segmentChineseText(chineseTexts: string[]): Promise<Segmen
     );
 
     // Save to results array and cache for future use
+    if (!Array.isArray(fetchedResults)) {
+      logger.warn("Segment API returned an invalid response shape, using fallback segments.");
+      indexesToFetch.forEach((index) => {
+        results[index] = [{ word: chineseTexts[index], pinyin: "" }];
+      });
+      return results;
+    }
     fetchedResults.forEach((segmentResult, i) => {
       const originalIndex = indexesToFetch[i];
       const originalText = textsToFetch[i];
 
-      results[originalIndex] = segmentResult;
-      segmentCache.set(originalText, segmentResult);
+      const safeSegments = Array.isArray(segmentResult)
+        ? segmentResult.filter(
+            (s): s is SegmentResult =>
+              !!s && typeof s === "object" && typeof (s as SegmentResult).word === "string",
+          )
+        : [];
+      const fallbackSegments =
+        safeSegments.length > 0
+          ? safeSegments
+          : [{ word: originalText, pinyin: "" }];
+
+      results[originalIndex] = fallbackSegments;
+      segmentCache.set(originalText, fallbackSegments);
     });
 
     return results;

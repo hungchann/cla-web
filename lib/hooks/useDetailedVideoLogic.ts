@@ -43,6 +43,8 @@ export const useDetailedVideoLogic = (
     /** YouTube: ref tới `react-native-youtube-iframe` để lấy `currentTime` / pause. */
     youtubePlayerRef?: RefObject<any>;
     setYoutubeIsPlaying?: (playing: boolean) => void;
+    /** Exercises dự phòng khi API không trả về (demo/mock). */
+    fallbackExercises?: ExerciseItem[];
   },
 ) => {
   const router = useRouter();
@@ -89,6 +91,15 @@ export const useDetailedVideoLogic = (
       play: () => {
         if (opts?.videoRef?.current) {
           opts.videoRef.current.play().catch((err: unknown) => {
+            // Autoplay bị trình duyệt chặn (NotAllowedError) là hành vi bình thường,
+            // người dùng cần bấm nút play trước. Không ghi nhận là lỗi.
+            if (
+              err instanceof DOMException &&
+              (err.name === "NotAllowedError" || err.name === "AbortError")
+            ) {
+              logger.debug("Video autoplay blocked by browser, waiting for user interaction.");
+              return;
+            }
             logger.error("Error playing video:", err);
           });
         }
@@ -193,10 +204,21 @@ export const useDetailedVideoLogic = (
             )
           : response.exercises;
         logger.debug("[useDetailedVideoLogic] Sorted exercises:", JSON.stringify(sortedExercises));
+        // Nếu API trả rỗng → dùng fallback để trắc nghiệm vẫn hoạt động (demo).
+        if (!Array.isArray(sortedExercises) || sortedExercises.length === 0) {
+          if (Array.isArray(opts?.fallbackExercises) && opts.fallbackExercises.length > 0) {
+            logger.debug("[useDetailedVideoLogic] Using fallback exercises.");
+            setExerciseData(opts.fallbackExercises);
+            return;
+          }
+        }
         setExerciseData(sortedExercises);
       } catch (error: any) {
         logger.error("[useDetailedVideoLogic] Exercise fetch error:", error.message);
-        if (error.message === "Unauthorized" || error.message === "Failed to fetch exercise") {
+        if (Array.isArray(opts?.fallbackExercises) && opts.fallbackExercises.length > 0) {
+          logger.debug("[useDetailedVideoLogic] Using fallback exercises after fetch error.");
+          setExerciseData(opts.fallbackExercises);
+        } else if (error.message === "Unauthorized" || error.message === "Failed to fetch exercise") {
           router.replace("/sign-in");
         }
       }

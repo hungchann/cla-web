@@ -25,12 +25,12 @@ describe("fetchVideoGenres", () => {
     expect(await fetchVideoGenres()).toEqual([{ id: "g1", title: "Kinh tế" }]);
   });
 
-  it("rethrows errors", async () => {
+  it("returns empty array on GraphQL error instead of throwing", async () => {
     server.use(
       http.post(`${API}/graphql`, () => {
         return HttpResponse.json({ errors: [{ message: "x" }] }, { status: 500 });
       }),
     );
-    await expect(fetchVideoGenres()).rejects.toThrow();
+    expect(await fetchVideoGenres()).toEqual([]);
   });
 });
