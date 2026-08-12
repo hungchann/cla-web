@@ -23,6 +23,7 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
   const [isOpen, setIsOpen] = useState(false);
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
   const pendingPromiseRef = useRef<Promise<boolean> | null>(null);
+  const acceptInFlightRef = useRef(false);
   const { colors } = useThemeColors();
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
   }, []);
 
   const handleAccept = async () => {
+    acceptInFlightRef.current = true;
     try {
       await acceptAIConsent();
       if (resolverRef.current) {
@@ -57,6 +59,7 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
       resolverRef.current = null;
       pendingPromiseRef.current = null;
       setIsOpen(false);
+      acceptInFlightRef.current = false;
     }
   };
 
@@ -77,7 +80,8 @@ export default function AIConsentProvider({ children }: Readonly<AIConsentProvid
         open={isOpen}
         onOpenChange={(open) => {
           setIsOpen(open);
-          if (!open) {
+          // Radix tự đóng dialog khi bấm AlertDialogAction → không coi đó là decline
+          if (!open && !acceptInFlightRef.current) {
             handleDecline();
           }
         }}

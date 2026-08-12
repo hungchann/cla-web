@@ -27,6 +27,40 @@ export async function mockBackend(page: Page): Promise<void> {
     }
 
     if (path === "/graphql") {
+      // Bilingual list: trả về 2 bài đọc để test trang /bilingual
+      const body = route.request().postDataJSON();
+      const query = body?.query || "";
+      if (query.includes("Sections_aggregated")) {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            data: {
+              list: [
+                {
+                  id: "srv-e2e-1",
+                  title: "Bài đọc E2E",
+                  title_trans: "Bài đọc E2E",
+                  image: null,
+                  date_created: "2024-01-01T00:00:00.000Z",
+                  genre_id: [],
+                  level: "HSK4",
+                },
+                {
+                  id: "srv-e2e-2",
+                  title: "Văn hóa Trung Quốc",
+                  title_trans: "Văn hóa Trung Quốc",
+                  image: null,
+                  date_created: "2024-01-02T00:00:00.000Z",
+                  genre_id: [],
+                  level: "HSK5",
+                },
+              ],
+              meta: [{ count: { id: 2 } }],
+            },
+          }),
+        });
+      }
       return route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -95,6 +129,14 @@ export async function mockBackend(page: Page): Promise<void> {
 
     // Flows
     if (path.startsWith("/flows/trigger/")) {
+      // GET email check flow → trả exists:false (email mới)
+      if (route.request().method() === "GET") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ exists: false }),
+        });
+      }
       return route.fulfill({
         status: 200,
         contentType: "application/json",

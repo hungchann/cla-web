@@ -8,11 +8,21 @@ import {
   getUser,
   clearUserCache,
   checkEmailExists,
+  logoutUser,
+  updateProfile,
+  forgotPassword,
+  updatePassword,
+  resetPasswordWithToken,
+  translateWord,
 } from "@/api/apiService";
 import {
   REGISTER_FLOW_PATH,
   ONBOARDING_EMAIL_CHECK_FLOW_PATH,
+  UPDATE_PROFILE_FLOW_PATH,
+  RESET_PASSWORD_FLOW_PATH,
+  RESET_PASSWORD_FLOW_URL,
 } from "@/lib/constants";
+import { acceptAIConsent, resetAIConsent } from "@/lib/ai/aiConsentStorage";
 import { TEST_PROFILE, TEST_USER } from "@/tests/mocks/fixtures/users";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://marutek.space";
@@ -237,5 +247,194 @@ describe("checkEmailExists", () => {
     await expect(checkEmailExists("bad-email")).rejects.toThrow(
       "Định dạng email không hợp lệ",
     );
+  });
+});
+
+describe("logoutUser", () => {
+  beforeEach(() => {
+    document.cookie = "";
+    localStorage.clear();
+    clearUserCache();
+  });
+
+  afterEach(() => {
+    document.cookie = "";
+    localStorage.clear();
+    clearUserCache();
+  });
+
+  it("calls backend logout and clears all tokens", async () => {
+    document.cookie = "access_token=acc; path=/";
+    document.cookie = "refresh_token=ref; path=/";
+    localStorage.setItem("user_data", JSON.stringify({ id: "u1" }));
+
+    let logoutCalled = false;
+    server.use(
+      http.post(`${API}/auth/logout`, () => {
+        logoutCalled = true;
+        return HttpResponse.json({ data: null });
+      }),
+    );
+
+    await logoutUser();
+
+    expect(logoutCalled).toBe(true);
+    expect(tokenUtils.getAccessToken()).toBeNull();
+    expect(tokenUtils.getRefreshToken()).toBeNull();
+    expect(tokenUtils.getUserData()).toBeNull();
+  });
+
+  it("clears tokens even when backend logout fails", async () => {
+    document.cookie = "access_token=acc; path=/";
+    document.cookie = "refresh_token=ref; path=/";
+    server.use(
+      http.post(`${API}/auth/logout`, () => {
+        return HttpResponse.json({ error: "x" }, { status: 500 });
+      }),
+    );
+
+    await logoutUser();
+
+    expect(tokenUtils.getAccessToken()).toBeNull();
+    expect(tokenUtils.getRefreshToken()).toBeNull();
+  });
+
+  it("works when no refresh token exists", async () => {
+    await expect(logoutUser()).resolves.toBeUndefined();
+  });
+});
+
+describe("updateProfile", () => {
+  beforeEach(() => {
+    document.cookie = "";
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    document.cookie = "";
+    localStorage.clear();
+  });
+
+  it("posts cleaned fields to update profile flow", async () => {
+    let capturedBody: object | null = null;
+    server.use(
+      http.post(`${API}${UPDATE_PROFILE_FLOW_PATH}`, async ({ request }) => {
+        capturedBody = (await request.json()) as object;
+        return HttpResponse.json({ data: { ok: true } });
+      }),
+    );
+
+    await updateProfile({ first_name: "A", phone: null, note: undefined, age: 0 });
+
+    expect(capturedBody).toEqual({ first_name: "A", age: 0 });
+  });
+
+  it("throws when no valid fields to update", async () => {
+    await expect(updateProfile({ phone: null, note: undefined })).rejects.toThrow(
+      "0 có trường nào để cập nhật",
+    );
+  });
+});
+
+describe("forgotPassword", () => {
+  it("posts email to auth/forgot-password", async () => {
+    let capturedBody: object | null = null;
+    server.use(
+      http.post(`${API}/auth/forgot-password`, async ({ request }) => {
+        capturedBody = (await request.json()) as object;
+        return HttpResponse.json({ data: null });
+      }),
+    );
+
+    await forgotPassword("a@b.com");
+    expect(capturedBody).toEqual({ email: "a@b.com" });
+  });
+});
+
+describe("updatePassword", () => {
+  it("posts new password to reset flow", async () => {
+    let capturedBody: object | null = null;
+    server.use(
+      http.post(`${API}${RESET_PASSWORD_FLOW_PATH}*`, async ({ request }) => {
+        capturedBody = (await request.json()) as object;
+        return HttpResponse.json({ data: { ok: true } });
+      }),
+    );
+
+    await updatePassword("newpass123");
+    expect(capturedBody).toEqual({ new_password: "newpass123" });
+  });
+});
+
+describe("resetPasswordWithToken", () => {
+  it("posts reset token and new password to flow URL", async () => {
+    let capturedBody: object | null = null;
+    const url = new URL(RESET_PASSWORD_FLOW_URL);
+    server.use(
+      http.post(`${url.origin}${url.pathname}*`, async ({ request }) => {
+        capturedBody = (await request.json()) as object;
+        return HttpResponse.json({ data: { ok: true } });
+      }),
+    );
+
+    await resetPasswordWithToken("tok-1", "newpass");
+    expect(capturedBody).toEqual({ reset_token: "tok-1", new_password: "newpass" });
+  });
+});
+
+describe("translateWord", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetAIConsent();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    resetAIConsent();
+    vi.restoreAllMocks();
+  });
+
+  it("returns translated word when consent accepted", async () => {
+    await acceptAIConsent();
+    server.use(
+      http.get("*/api/chinese/translate", () => {
+        return HttpResponse.json([{ word: "你好", pinyin: "nǐ hǎo", meaning: "Xin chào" }]);
+      }),
+    );
+
+    const result = await translateWord("你好");
+    expect(result[0].word).toBe("你好");
+    expect(result[0].meaning).toBe("Xin chào");
+  });
+
+  it("returns fallback error message when translation fails", async () => {
+    await acceptAIConsent();
+    server.use(
+      http.get("*/api/chinese/translate", () => {
+        return HttpResponse.json({ error: "x" }, { status: 500 });
+      }),
+    );
+
+    const result = await translateWord("你好");
+    expect(result[0]).toMatchObject({
+      word: "你好",
+      meaning: "Dịch vụ dịch thuật tạm thời không khả dụng",
+    });
+  });
+
+  it("returns not-found message for 404", async () => {
+    await acceptAIConsent();
+    server.use(
+      http.get("*/api/chinese/translate", () => {
+        return HttpResponse.json({ error: "x" }, { status: 404 });
+      }),
+    );
+
+    const result = await translateWord("不存在的词");
+    expect(result[0].meaning).toBe("Không tìm thấy từ này trong từ điển");
+  });
+
+  it("throws AIConsentRequiredError when consent not granted", async () => {
+    await expect(translateWord("你好")).rejects.toThrow(/consent/i);
   });
 });

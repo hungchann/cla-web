@@ -12,7 +12,9 @@ test.describe("Login flow", () => {
     await page.getByRole("button", { name: "Đăng nhập" }).click();
 
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByText("Chào bạn, cùng học tiếng Trung nhé")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Chào bạn, cùng học tiếng Trung nhé" }),
+    ).toBeVisible();
   });
 
   test("login with wrong password shows error and stays on page", async ({ page }) => {
