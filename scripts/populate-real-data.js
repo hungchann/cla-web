@@ -7,7 +7,7 @@
  *   - 10 exercises (5 vocab + 5 grammar)
  *   - speaking_scenarios + 14 speaking_dialogues
  *   - 6 dictation course_lessons
- *   - Links everything via course_lessons.resource_id
+ *   - Links lessons through the current typed course_lessons relation fields
  *
  * The existing course id=3 / chapter id=3 / lessons 10-16 are updated with
  * the new resource IDs.
@@ -296,63 +296,28 @@ async function main() {
   }
   console.log("");
 
-  // ─── 7. Create dictation course_lessons ──────────────────────────────
-  log("·", "Creating dictation course_lessons…");
-  const dictationData = [
-    { audioKey: "YIGEPEY",        expected: "一个朋友" },
-    { audioKey: "SANKOUREN",      expected: "三口人" },
-    { audioKey: "YIWEI_LAOSHI",    expected: "一位老师" },
-    { audioKey: "WOJIAYOUSANKOUREN", expected: "我家有三口人" },
-    { audioKey: "WO_GONGSI_YOU_20GEREN", expected: "我公司有二十个人" },
-    { audioKey: "WO_40SUI_LE",    expected: "我四十岁了" },
-  ];
-
+  // ─── 7. Create one dictation course_lesson ───────────────────────────
+  // One chapter has one dictation lesson. The expected sentence and its
+  // audio belong to that row; extra dictation prompts are not extra lessons.
+  log("·", "Creating one dictation course_lesson…");
+  const dictation = { audioKey: "WOJIAYOUSANKOUREN", expected: "我家有三口人" };
+  const dictationAudioId = fileIds[dictation.audioKey];
   const dictLessonIds = [];
-  for (let i = 0; i < dictationData.length; i++) {
-    const d = dictationData[i];
-    const audioId = fileIds[d.audioKey];
-    try {
-      const row = (await create("course_lessons", {
-        status: "published",
-        sort: 20 + i,
-        title: `Dictation #${i + 1}`,
-        title_trans: `Dictation ${i + 1} — ${d.expected}`,
-        lesson_type: "dictation",
-        content: d.expected,
-        resource_id: audioId || null,
-        resource_collection: audioId ? "directus_files" : null,
-        chapter_id: 3,
-      }, token)).data.data;
-      dictLessonIds.push(row.id);
-      log("  ✓", `Dictation lesson id=${row.id} → '${d.expected}' audio=${audioId ? "✓" : "✗"}`);
-    } catch (e) {
-      log("  ✗", `Dictation ${d.expected} fail: ${JSON.stringify(e.data || e)}`);
-    }
-  }
-  console.log("");
-
-  // ─── 7b. Create reading lesson → Sections M2A ────────────────────────
-  log("·", "Creating reading lesson (M2A → Sections)…");
   try {
-    const sectionsRes = await requestJson("GET", "/items/Sections?limit=1&fields=id,title", null, token);
-    const section = sectionsRes.data?.data?.[0];
-    if (section) {
-      const readingRow = (await create("course_lessons", {
-        status: "published",
-        sort: 8,
-        title: "Bài đọc song ngữ",
-        title_trans: "Bilingual Reading",
-        lesson_type: "reading",
-        resource_id: section.id,
-        resource_collection: "Sections",
-        chapter_id: 3,
-      }, token)).data.data;
-      log("  ✓", `Reading lesson id=${readingRow.id} → Sections #${section.id} '${section.title}'`);
-    } else {
-      log("  ⚠", "No Sections found; create one first in Admin UI");
-    }
+    const row = (await create("course_lessons", {
+      status: "published",
+      sort: 6,
+      title: "Bài tập: Nghe chép chính tả",
+      title_trans: "Dictation",
+      lesson_type: "dictation",
+      content: dictation.expected,
+      audio_id: dictationAudioId || null,
+      chapter_id: 3,
+    }, token)).data.data;
+    dictLessonIds.push(row.id);
+    log("  ✓", `Dictation lesson id=${row.id} → '${dictation.expected}' audio=${dictationAudioId ? "✓" : "✗"}`);
   } catch (e) {
-    log("  ✗", `Reading lesson failed: ${JSON.stringify(e.data || e)}`);
+    log("  ✗", `Dictation failed: ${JSON.stringify(e.data || e)}`);
   }
   console.log("");
 
@@ -367,8 +332,7 @@ async function main() {
   if (links.vocab) {
     try {
       await patch("course_lessons", 11, {
-        resource_id: String(links.vocab.id),
-        resource_collection: "link_exercise",
+        exercise_id: Number(links.vocab.id),
       }, token);
       log("  ✓", `Patched lesson id=11 (quiz_vocab) → link_exercise #${links.vocab.id}`);
     } catch (e) {
@@ -380,8 +344,7 @@ async function main() {
   if (links.grammar) {
     try {
       await patch("course_lessons", 13, {
-        resource_id: String(links.grammar.id),
-        resource_collection: "link_exercise",
+        exercise_id: Number(links.grammar.id),
       }, token);
       log("  ✓", `Patched lesson id=13 (quiz_grammar) → link_exercise #${links.grammar.id}`);
     } catch (e) {
@@ -393,8 +356,7 @@ async function main() {
   if (scenario) {
     try {
       await patch("course_lessons", 15, {
-        resource_id: String(scenario.id),
-        resource_collection: "speaking_scenarios",
+        scenario_id: Number(scenario.id),
       }, token);
       log("  ✓", `Patched lesson id=15 (conversation) → speaking_scenarios #${scenario.id}`);
     } catch (e) {
@@ -412,7 +374,7 @@ async function main() {
   console.log(`  2 link_exercise (vocab=${links.vocab?.id || "?"}, grammar=${links.grammar?.id || "?"})`);
   console.log(`  10 exercises (5 vocab + 5 grammar)`);
   console.log(`  speaking_scenarios id=${scenario?.id || "?"} + 8 dialogues`);
-  console.log(`  6 dictation course_lessons (ids=${dictLessonIds.join(", ")})`);
+  console.log(`  1 dictation course_lesson (id=${dictLessonIds.join(", ") || "?"})`);
   console.log("");
   console.log("Now run:");
   console.log("  npm run dev");

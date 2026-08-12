@@ -31,7 +31,7 @@ Một Chương chuẩn bao gồm **8 phần bài học**:
 Khi tạo/chỉnh sửa một mục trong bảng **`course_lessons`**, giáo viên cần điền các thông tin cơ bản:
 - **`title`**: Tiêu đề hiển thị (vd: `1. Video từ vựng` hoặc `5. Bài tập Nghe chép chính tả`).
 - **`status`**: Chuyển thành **`Published`** để xuất bản cho học viên xem.
-- **`sort`**: Thứ tự hiển thị trong chương (1, 2, 3, 4, 5, 6, 7).
+- **`sort`**: Thứ tự hiển thị trong chương (1 đến 8, mỗi lesson type đúng một lần).
 - **`chapter_id`**: Chọn Chương chứa bài học này từ dropdown.
 
 Dưới đây là cách chọn các trường dữ liệu đặc thù cho từng loại bài học (`lesson_type`):

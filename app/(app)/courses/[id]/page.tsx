@@ -40,9 +40,7 @@ export default function CourseDetailPage({
     const { id } = use(params);
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<"info" | "syllabus">("syllabus");
-    const [expandedLessons, setExpandedLessons] = useState<Record<string | number, boolean>>({
-        1: true,
-    });
+    const [expandedLessons, setExpandedLessons] = useState<Record<string | number, boolean>>({});
 
     const [course, setCourse] = useState<CourseItem | null>(null);
     const [chapters, setChapters] = useState<CourseChapter[]>(defaultSyllabusLessons);
@@ -54,6 +52,7 @@ export default function CourseDetailPage({
                 setCourse(res);
                 if (res.chapters && res.chapters.length > 0) {
                     setChapters(res.chapters);
+                    setExpandedLessons({ [res.chapters[0].id]: true });
                 }
             }
         });
@@ -77,8 +76,8 @@ export default function CourseDetailPage({
     const courseTitle = course?.title || "Khóa học Tiếng Trung";
 
     return (
-        <div className="flex flex-col flex-1 pb-16 bg-transparent -m-4 sm:-m-6 lg:-m-8">
-            <main className="max-w-5xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
+        <div className="flex flex-col flex-1 pb-16 bg-transparent">
+            <main className="max-w-5xl w-full mx-auto py-8 space-y-8 flex-1">
                 <BackButton href="/courses" label="Danh sách khóa học" />
 
                 {/* Info Banner */}

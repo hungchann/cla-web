@@ -54,29 +54,31 @@ async function main() {
   const roles = (await request("GET", "/roles", null, token)).data?.data || [];
   console.log("Roles found:", roles.map((r) => `${r.name} (${r.id})`).join(", "));
 
-  // Grant read to all non-admin roles
+  // Grant read to all non-admin roles. Patch existing permissions as well so
+  // newly added typed lesson fields (for example vocab_display_map_id) are
+  // not blocked by an older field allow-list.
   for (const role of roles) {
     if (role.admin_access) continue; // skip admin — already has full access
 
     for (const collection of ["course", "course_chapters", "course_lessons"]) {
       try {
-        await request("POST", "/permissions", {
-          role: role.id,
-          collection: collection,
-          action: "read",
-          policy: {
-            name: `Allow ${role.name} read ${collection}`,
-          },
-          fields: ["*"],
-        }, token);
-        console.log(`  ✓ ${role.name}: read on ${collection}`);
+        const existing = (await request("GET", `/permissions?filter[role][_eq]=${role.id}&filter[collection][_eq]=${collection}&filter[action][_eq]=read`, null, token)).data?.data || [];
+        if (existing[0]) {
+          await request("PATCH", `/permissions/${existing[0].id}`, { fields: ["*"] }, token);
+          console.log(`  ✓ ${role.name}: updated read fields on ${collection}`);
+        } else {
+          await request("POST", "/permissions", {
+            role: role.id,
+            collection: collection,
+            action: "read",
+            policy: { name: `Allow ${role.name} read ${collection}` },
+            fields: ["*"],
+          }, token);
+          console.log(`  ✓ ${role.name}: created read permission on ${collection}`);
+        }
       } catch (e) {
         const msg = e.data?.errors?.[0]?.message || e.status;
-        if (msg?.includes("already") || msg?.includes("unique") || msg?.includes("duplicate") || msg?.includes("already exists") || e.status === 409) {
-          console.log(`  − ${role.name}: read on ${collection} (already exists)`);
-        } else {
-          console.log(`  ✗ ${role.name}: read on ${collection} — ${msg}`);
-        }
+        console.log(`  ✗ ${role.name}: read on ${collection} — ${msg}`);
       }
     }
   }

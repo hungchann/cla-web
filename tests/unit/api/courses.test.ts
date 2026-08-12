@@ -110,6 +110,30 @@ describe("coursesApi.getCourseById", () => {
     ]);
   });
 
+  it("falls back when an optional lesson field is not available yet", async () => {
+    let requests = 0;
+    server.use(
+      http.get(`${API}/items/course/:id*`, () => {
+        return HttpResponse.json({ data: { id: "c1", title: "Khóa", image: null } });
+      }),
+      http.get(`${API}/items/course_chapters*`, () => {
+        return HttpResponse.json({ data: [{ id: "ch1", course_id: "c1", title: "Chương 1" }] });
+      }),
+      http.get(`${API}/items/course_lessons*`, () => {
+        requests += 1;
+        if (requests === 1) return HttpResponse.json({ error: "field is forbidden" }, { status: 403 });
+        return HttpResponse.json({ data: [{ id: "l1", title: "Dictation", lesson_type: "dictation", chapter_id: "ch1" }] });
+      }),
+    );
+
+    const course = await coursesApi.getCourseById("c1");
+
+    expect(course?.chapters?.[0].lessons).toEqual([
+      { id: "l1", title: "Dictation", lesson_type: "dictation", chapter_id: "ch1" },
+    ]);
+    expect(requests).toBe(2);
+  });
+
   it("returns null when course not found", async () => {
     mockGet(`${API}/items/course/:id*`, { data: null });
     expect(await coursesApi.getCourseById("nope")).toBeNull();

@@ -5,11 +5,11 @@
  *
  * What it does:
  *   1. Login as admin (env DIRECTUS_ADMIN_EMAIL / DIRECTUS_ADMIN_PASSWORD).
- *   2. Insert 1 `course` + 1 `course_chapters` + 7 `course_lessons`.
+ *   2. Insert 1 `course` + 1 `course_chapters` + 8 `course_lessons`.
  *   3. For each lesson_type, lookup an existing resource on Directus
  *      (video_section, link_exercise, speaking_scenarios, directus_files)
- *      and PATCH the lesson row with resource_id + resource_collection.
- *   4. For `dictation`: set content = "你好".
+ *      and PATCH the lesson row with its typed relation field.
+ *   4. For `dictation`: create exactly one lesson and set content = "你好".
  *   5. For `extra`: leave file fields empty (mandatory upload manually).
  *
  * Run:
@@ -56,7 +56,6 @@ const SAMPLE_LESSONS = [
   { lesson_type: "dictation",     title: "Bài tập: Nghe chép chính tả",   sort: 6, content: "你好" },
   { lesson_type: "conversation",  title: "Thực hành hội thoại",          sort: 7 },
   { lesson_type: "extra",         title: "Bài tập bổ sung",              sort: 8 },
-  { lesson_type: "reading",       title: "Bài đọc song ngữ",             sort: 9 },
 ];
 
 function log(icon, msg) { console.log(`${icon} ${msg}`); }
@@ -207,7 +206,7 @@ async function main() {
   }
 
   // Step 4: Insert lessons and auto-link resources
-  log("·", "Inserting 7 lessons + auto-linking resources…");
+  log("·", "Inserting 8 lessons + auto-linking resources…");
   for (const l of SAMPLE_LESSONS) {
     let row;
     try {
@@ -232,8 +231,7 @@ async function main() {
         case "video_grammar":
           if (videoSection) {
             await patch("course_lessons", row.id, {
-              resource_id: videoSection.id,
-              resource_collection: "video_section",
+              video_section_id: videoSection.id,
             }, token);
             log("  ⬈", `  linked → video_section #${videoSection.id}`);
           } else {
@@ -256,8 +254,7 @@ async function main() {
         case "quiz_grammar":
           if (linkExercise) {
             await patch("course_lessons", row.id, {
-              resource_id: String(linkExercise.id),
-              resource_collection: "link_exercise",
+              exercise_id: Number(linkExercise.id),
             }, token);
             log("  ⬈", `  linked → link_exercise #${linkExercise.id}`);
           } else {
@@ -268,8 +265,7 @@ async function main() {
         case "dictation":
           if (audioFile) {
             await patch("course_lessons", row.id, {
-              resource_id: audioFile.id,
-              resource_collection: "directus_files",
+              audio_id: audioFile.id,
             }, token);
             log("  ⬈", `  linked → directus_files #${audioFile.id} (audio)`);
           } else {
@@ -280,8 +276,7 @@ async function main() {
         case "conversation":
           if (speakingScenario) {
             await patch("course_lessons", row.id, {
-              resource_id: String(speakingScenario.id),
-              resource_collection: "speaking_scenarios",
+              scenario_id: Number(speakingScenario.id),
             }, token);
             log("  ⬈", `  linked → speaking_scenarios #${speakingScenario.id}`);
           } else {
@@ -307,11 +302,11 @@ async function main() {
   console.log("Summary:");
   console.log(`  course          id=${course.id}`);
   console.log(`  course_chapter  id=${chapter.id} (course_id=${course.id})`);
-  console.log(`  7 course_lessons (chapter_id=${chapter.id}) — resources auto-linked where possible`);
+  console.log(`  8 course_lessons (chapter_id=${chapter.id}) — one lesson per guide type`);
   console.log("");
-  if (!videoSection) console.log("  ⚠ video_section: NOT FOUND — set resource_id manually for video_vocab & video_grammar.");
-  if (!linkExercise) console.log("  ⚠ link_exercise: NOT FOUND — set resource_id manually for quiz_vocab & quiz_grammar.");
-  if (!speakingScenario) console.log("  ⚠ speaking_scenarios: NOT FOUND — set resource_id manually for conversation.");
+  if (!videoSection) console.log("  ⚠ video_section: NOT FOUND — set video_section_id manually for video_vocab & video_grammar.");
+  if (!linkExercise) console.log("  ⚠ link_exercise: NOT FOUND — set exercise_id manually for quiz_vocab & quiz_grammar.");
+  if (!speakingScenario) console.log("  ⚠ speaking_scenarios: NOT FOUND — set scenario_id manually for conversation.");
   if (!audioFile) console.log("  ⚠ directus_files (audio): NOT FOUND — no audio for dictation; speechSynthesis will be used as fallback.");
   console.log("");
   console.log("Now run `npm run dev` and test:");

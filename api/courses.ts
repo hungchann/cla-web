@@ -3,7 +3,8 @@ import { API_URL } from "@/lib/constants";
 import { CourseChapter, CourseItem, CourseLesson } from "@/lib/types/course";
 import { logger } from "@/services/logger";
 
-const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,content,video_section_id,exercise_id,audio_id,audio.id,audio.filename_disk,scenario_id,extra_pdf_id,extra_answer_id,extra_audio_id,extra_pdf.id,extra_pdf.filename_disk,extra_answer.id,extra_answer.filename_disk,extra_audio.id,extra_audio.filename_disk,chapter_id";
+const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,content,video_section_id,vocab_display_map_id,exercise_id,audio_id,audio.id,audio.filename_disk,scenario_id,extra_pdf_id,extra_answer_id,extra_audio_id,extra_pdf.id,extra_pdf.filename_disk,extra_answer.id,extra_answer.filename_disk,extra_audio.id,extra_audio.filename_disk,chapter_id";
+const LESSON_FIELDS_FALLBACK = LESSON_FIELDS_REST.replace(",vocab_display_map_id", "");
 
 function escapeFilterString(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, String.raw`\"`);
@@ -36,8 +37,16 @@ async function fetchLessonsByChapterIds(chapterIds: (string | number)[]): Promis
   if (chapterIds.length === 0) return [];
   try {
     const ids = chapterIds.map((id) => String(id)).join(",");
-    const r = await apiInstance.get(`/items/course_lessons?filter[chapter_id][_in]=${ids}&filter[status][_eq]=published&sort=sort&fields=${LESSON_FIELDS_REST}`);
-    return r.data?.data || [];
+    try {
+      const r = await apiInstance.get(`/items/course_lessons?filter[chapter_id][_in]=${ids}&filter[status][_eq]=published&sort=sort&fields=${LESSON_FIELDS_REST}`);
+      return r.data?.data || [];
+    } catch (error: any) {
+      // Keep the course outline usable while Directus field permissions/schema
+      // are being deployed. Optional lesson fields must not hide all lessons.
+      logger.warn("[Courses API] retrying lessons with fallback fields", error?.response?.status || error);
+      const r = await apiInstance.get(`/items/course_lessons?filter[chapter_id][_in]=${ids}&filter[status][_eq]=published&sort=sort&fields=${LESSON_FIELDS_FALLBACK}`);
+      return r.data?.data || [];
+    }
   } catch (error: any) {
     logger.warn("[Courses API] fetchLessonsByChapterIds failed", error?.response?.status || error);
     return [];
@@ -133,8 +142,14 @@ export const coursesApi = {
     lessonId: string | number,
   ): Promise<CourseLesson | null> {
     try {
-      const r = await apiInstance.get(`/items/course_lessons/${lessonId}?fields=${LESSON_FIELDS_REST}`);
-      return r.data?.data || null;
+      try {
+        const r = await apiInstance.get(`/items/course_lessons/${lessonId}?fields=${LESSON_FIELDS_REST}`);
+        return r.data?.data || null;
+      } catch (error: any) {
+        logger.warn("[Courses API] retrying lesson with fallback fields", error?.response?.status || error);
+        const r = await apiInstance.get(`/items/course_lessons/${lessonId}?fields=${LESSON_FIELDS_FALLBACK}`);
+        return r.data?.data || null;
+      }
     } catch (error: any) {
       logger.warn(`[Courses API] getCourseLessonById(${lessonId}) failed:`, error?.response?.status || error?.message || error);
       return null;

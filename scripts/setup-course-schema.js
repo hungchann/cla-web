@@ -8,8 +8,7 @@
  *   1. Logs in as admin (env DIRECTUS_ADMIN_EMAIL / DIRECTUS_ADMIN_PASSWORD).
  *   2. For each collection, fetches the current field list.
  *   3. Adds any missing fields (idempotent: skips if field already exists).
- *   4. Sets up the M2A relation for `course_lessons.resource_id` (with
- *      `resource_collection` as the discriminator).
+ *   4. Ensures the typed lesson relations used by the current model.
  *   5. Sets up the o2m alias fields (`course.chapters`, `course_chapters.lessons`)
  *      by creating the underlying m2o with the right meta.
  *
@@ -202,25 +201,6 @@ const FIELDS_TO_ADD = {
   ],
 };
 
-const M2A_RELATION = {
-  collection: "course_lessons",
-  field: "resource_id",
-  related_collection: null,
-  meta: {
-    one_collection_field: "resource_collection",
-    one_allowed_collections: [
-      "video_section",
-      "directus_files",
-      "speaking_scenarios",
-      "module_Exercise",
-      "link_exercise",
-      "topic_of_grammarModule",
-    ],
-    sort_field: null,
-    one_deselect_action: "nullify",
-  },
-};
-
 function log(icon, msg) {
   console.log(`${icon} ${msg}`);
 }
@@ -302,17 +282,8 @@ async function collectionExists(collection, token) {
   }
 }
 
-async function listRelations(token) {
-  const res = await request("GET", `/relations`, null, token);
-  return res.data?.data || [];
-}
-
 async function createField(collection, field, token) {
   return request("POST", `/fields/${collection}`, field, token);
-}
-
-async function createRelation(relation, token) {
-  return request("POST", `/relations`, relation, token);
 }
 
 async function main() {
@@ -365,22 +336,9 @@ async function main() {
     console.log("");
   }
 
-  // Step 2: Set up M2A relation for course_lessons.resource_id
-  log("·", "Setting up M2A relation for 'course_lessons.resource_id'…");
-  const relations = await listRelations(token);
-  const hasM2A = relations.some(
-    (r) => r.collection === "course_lessons" && r.field === "resource_id"
-  );
-  if (hasM2A) {
-    log("  –", "SKIP M2A relation (already exists)");
-  } else {
-    try {
-      await createRelation(M2A_RELATION, token);
-      log("  ✓", "ADD  M2A relation (resource_id + resource_collection)");
-    } catch (e) {
-      log("  ✗", `FAIL M2A relation: ${JSON.stringify(e.data || e.status || e)}`);
-    }
-  }
+  // The legacy resource_id M2A is intentionally not created. The current
+  // model uses typed relations (video_section_id, vocab_display_map_id, etc.).
+  log("·", "Skipping legacy resource_id M2A (typed relations in use)");
   console.log("");
 
   // Step 2b: Set up O2M relation metadata for chapters and lessons
@@ -422,7 +380,7 @@ async function main() {
   console.log("  2. Create sample data:");
   console.log("     - 1 row in `course` (status=published, level=Sơ cấp, script_type=simplified, is_featured=true)");
   console.log("     - 1 row in `course_chapters` (status=published, course_id=<above>, sort=1)");
-  console.log("     - 7 rows in `course_lessons` (status=published, chapter_id=<above>, lesson_type=video_vocab/quiz_vocab/video_grammar/quiz_grammar/dictation/conversation/extra)");
+  console.log("     - 8 rows in `course_lessons` (status=published, chapter_id=<above>, one row for each lesson_type in the guide)");
   console.log("  3. Then run `node scripts/seed-course-sample.js` (or insert manually).");
   console.log("  4. After schema is verified, switch back to cla-web dev and run the API code patches.");
   console.log("");
