@@ -60,7 +60,20 @@ async function main() {
   for (const role of roles) {
     if (role.admin_access) continue; // skip admin — already has full access
 
-    for (const collection of ["course", "course_chapters", "course_lessons"]) {
+    for (const collection of [
+      "course",
+      "course_chapters",
+      "course_lessons",
+      "lesson_video",
+      "lesson_theory",
+      "lesson_extra",
+      "lesson_vocab",
+      "lesson_questions",
+      "lesson_theory_cards",
+      "lesson_dictation",
+      "lesson_dialogues",
+      "banners",
+    ]) {
       try {
         const existing = (await request("GET", `/permissions?filter[role][_eq]=${role.id}&filter[collection][_eq]=${collection}&filter[action][_eq]=read`, null, token)).data?.data || [];
         if (existing[0]) {

@@ -110,7 +110,7 @@ describe("coursesApi.getCourseById", () => {
     ]);
   });
 
-  it("falls back when an optional lesson field is not available yet", async () => {
+  it("handles lessons fetch failure gracefully", async () => {
     let requests = 0;
     server.use(
       http.get(`${API}/items/course/:id*`, () => {
@@ -121,17 +121,14 @@ describe("coursesApi.getCourseById", () => {
       }),
       http.get(`${API}/items/course_lessons*`, () => {
         requests += 1;
-        if (requests === 1) return HttpResponse.json({ error: "field is forbidden" }, { status: 403 });
-        return HttpResponse.json({ data: [{ id: "l1", title: "Dictation", lesson_type: "dictation", chapter_id: "ch1" }] });
+        return HttpResponse.json({ error: "field is forbidden" }, { status: 403 });
       }),
     );
 
     const course = await coursesApi.getCourseById("c1");
 
-    expect(course?.chapters?.[0].lessons).toEqual([
-      { id: "l1", title: "Dictation", lesson_type: "dictation", chapter_id: "ch1" },
-    ]);
-    expect(requests).toBe(2);
+    expect(course?.chapters?.[0].lessons).toEqual([]);
+    expect(requests).toBe(1);
   });
 
   it("returns null when course not found", async () => {

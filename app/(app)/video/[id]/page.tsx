@@ -10,7 +10,8 @@ import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
 import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { BackButton } from "@/components/BackButton";
 import { PremiumGate } from "@/components/PremiumGate";
-import { usePremium } from "@/lib/hooks/usePremium";
+import { usePremiumGate } from "@/lib/hooks/usePremiumGate";
+import { buildCheckoutUrl } from "@/api/plans";
 import { PageContainer } from "@/components/PageContainer";
 import { PinyinToggle } from "@/components/PinyinToggle";
 
@@ -115,8 +116,11 @@ function parseMockSRT() {
 function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const { isPremium: _isPremium, isLoading: isPremiumLoading } = usePremium();
-  const [showPremiumGate, setShowPremiumGate] = useState(false);
+  const {
+    loading: isPremiumLoading,
+    premiumModalVisible,
+    setPremiumModalVisible,
+  } = usePremiumGate({ showOnMount: true });
 
   const [isOpenPinyin, setIsOpenPinyin] = useState(true);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
@@ -411,9 +415,10 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   return (
     <PageContainer maxWidth="full" className="gap-6">
       <PremiumGate
-        isOpen={showPremiumGate}
-        onClose={() => setShowPremiumGate(false)}
+        isOpen={premiumModalVisible}
+        onClose={() => setPremiumModalVisible(false)}
         feature="xem video bài giảng đầy đủ"
+        upgradeUrl={buildCheckoutUrl(undefined, `video-${id}`)}
       />
       
       {/* Navigation Header */}

@@ -22,8 +22,10 @@ export async function speakChinese(text: string): Promise<void> {
 
     utterance.onend = () => resolve();
     utterance.onerror = (e) => {
-      if (e.error !== "interrupted") {
-        logger.error("SpeechSynthesis error:", e);
+      // Một số trình duyệt chặn autoplay / chưa có voice → lỗi vô hại, đừng spam console
+      const benign = !e.error || e.error === "interrupted" || e.error === "not-allowed" || e.error === "canceled" || e.error === "synthesis-unavailable" || e.error === "audio-busy";
+      if (!benign) {
+        logger.warn("SpeechSynthesis error:", e.error || e);
       }
       resolve();
     };

@@ -25,7 +25,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -194,14 +193,11 @@ function getRouteSidebar(pathname: string): RouteSidebar {
 }
 
 /** Sidebar động cho trang Ngữ pháp: Trình độ HSK + Chủ đề ngữ pháp. */
-function GrammarNavMain({ label }: { label: string }) {
+function GrammarNavMain() {
   return (
     <Suspense
       fallback={
         <SidebarGroup className="px-3 py-2">
-          <SidebarGroupLabel className="px-3 text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500/80">
-            {label}
-          </SidebarGroupLabel>
           <SidebarMenu className="gap-1">
             <SidebarMenuItem>
               <SidebarMenuButton tooltip="Đang tải..." className="h-10 rounded-xl px-3 text-sm font-bold">
@@ -213,12 +209,12 @@ function GrammarNavMain({ label }: { label: string }) {
         </SidebarGroup>
       }
     >
-      <GrammarNavContent label={label} />
+      <GrammarNavContent />
     </Suspense>
   )
 }
 
-function GrammarNavContent({ label }: { label: string }) {
+function GrammarNavContent() {
   const pathname = usePathname() ?? ""
   const searchParams = useSearchParams()
   const isGrammar = pathname === "/grammar" || pathname.startsWith("/grammar/")
@@ -282,7 +278,7 @@ function GrammarNavContent({ label }: { label: string }) {
     },
   ]
 
-  return <NavMain label={label} items={groups} />
+  return <NavMain items={groups} />
 }
 
 const COURSE_LESSON_STEPS: Record<string, string> = {
@@ -307,22 +303,21 @@ const COURSE_LESSON_FALLBACKS = [
   ["extra", "Bài tập bổ sung"],
 ] as const
 
-function CourseNavMain({ label, courseId }: { label: string; courseId: string }) {
+function CourseNavMain({ courseId }: { courseId: string }) {
   return (
     <Suspense
       fallback={
         <SidebarGroup className="px-3 py-2">
-          <SidebarGroupLabel className="px-3 text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500/80">{label}</SidebarGroupLabel>
           <SidebarMenu className="gap-1"><SidebarMenuItem><SidebarMenuButton className="h-10 rounded-xl px-3 text-sm font-bold">Đang tải bài học...</SidebarMenuButton></SidebarMenuItem></SidebarMenu>
         </SidebarGroup>
       }
     >
-      <CourseNavContent label={label} courseId={courseId} />
+      <CourseNavContent courseId={courseId} />
     </Suspense>
   )
 }
 
-function CourseNavContent({ label, courseId }: { label: string; courseId: string }) {
+function CourseNavContent({ courseId }: { courseId: string }) {
   const { data: chapters, isLoading } = useQuery({
     queryKey: ["sidebar-course-lessons", courseId],
     queryFn: () => coursesApi.getCourseChapters(courseId),
@@ -359,7 +354,7 @@ function CourseNavContent({ label, courseId }: { label: string; courseId: string
     })),
   }
 
-  return <NavMain label={label} items={groups.length > 0 ? groups : [fallbackGroup]} />
+  return <NavMain items={groups.length > 0 ? groups : [fallbackGroup]} />
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -493,15 +488,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <div className="px-6 pb-1 pt-2 text-xs font-black uppercase tracking-[0.16em] text-sidebar-foreground/60">
-          {routeSidebar.label}
-        </div>
         {courseId ? (
-          <CourseNavMain label="Bài học" courseId={decodeURIComponent(courseId)} />
+          <CourseNavMain courseId={decodeURIComponent(courseId)} />
         ) : pathname === "/grammar" || pathname.startsWith("/grammar/") ? (
-          <GrammarNavMain label="Danh mục" />
+          <GrammarNavMain />
         ) : (
-          <NavMain label="Danh mục" items={sidebarGroups} />
+          <NavMain items={sidebarGroups} />
         )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/50 p-3">

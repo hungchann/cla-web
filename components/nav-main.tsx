@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/collapsible"
 import {
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -32,10 +31,8 @@ export type SidebarSubmenuGroup = {
 }
 
 function NavMainContent({
-  label,
   items,
 }: Readonly<{
-  label: string
   items: SidebarSubmenuGroup[]
 }>) {
   const pathname = usePathname() ?? ""
@@ -44,9 +41,6 @@ function NavMainContent({
 
   return (
     <SidebarGroup className="px-3 py-2">
-      <SidebarGroupLabel className="px-3 text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500/80">
-        {label}
-      </SidebarGroupLabel>
       <SidebarMenu className="gap-1">
         {items.map((item) => (
           <Collapsible
@@ -102,19 +96,14 @@ function NavMainContent({
  * into a second navigator.
  */
 export function NavMain({
-  label,
   items,
 }: Readonly<{
-  label: string
   items: SidebarSubmenuGroup[]
 }>) {
   return (
     <Suspense
       fallback={
         <SidebarGroup className="px-3 py-2">
-          <SidebarGroupLabel className="px-3 text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500/80">
-            {label}
-          </SidebarGroupLabel>
           <SidebarMenu className="gap-1">
             {items.map((item) => (
               <SidebarMenuItem key={item.title}>
@@ -132,7 +121,7 @@ export function NavMain({
         </SidebarGroup>
       }
     >
-      <NavMainContent label={label} items={items} />
+      <NavMainContent items={items} />
     </Suspense>
   )
 }

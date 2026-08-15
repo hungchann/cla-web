@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import QueryProvider from "./query-provider";
 import AIConsentProvider from "@/components/AIConsentProvider";
+import { PremiumProvider } from "@/lib/context/PremiumContext";
 // AppShell is moved to the (app) route group. Root layout keeps landing/auth layouts.
 
 const nunito = localFont({
@@ -45,7 +46,9 @@ export default function RootLayout({
         {/** Root layout: landing and auth pages render directly here. The main app chrome
             is provided by `app/(app)/layout.tsx` which wraps its children with `AppShell`. */}
         <QueryProvider>
-          <AIConsentProvider>{children}</AIConsentProvider>
+          <AIConsentProvider>
+            <PremiumProvider>{children}</PremiumProvider>
+          </AIConsentProvider>
         </QueryProvider>
       </body>
     </html>

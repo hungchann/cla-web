@@ -1,39 +1,64 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
+
 import { getAccountType } from "@/api/profile";
+import { usePremiumContext } from "@/lib/context/PremiumContext";
+import { isPremiumAccountType } from "@/lib/premium";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 
-export function usePremium() {
-  const [isPremium, setIsPremium] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+interface PremiumState {
+  isPremium: boolean;
+  isLoading: boolean;
+}
+
+/**
+ * usePremium — trạng thái premium của user.
+ * Nếu có PremiumProvider (app shell) thì dùng context; ngược lại tự fetch
+ * (fallback cho môi trường render cô lập / test).
+ */
+export function usePremium(): PremiumState {
+  const ctx = usePremiumContext();
+  const hasProvider = ctx != null;
+
+  const [standalone, setStandalone] = useState<PremiumState>({
+    isPremium: false,
+    isLoading: true,
+  });
 
   useEffect(() => {
-    async function checkPremium() {
+    if (hasProvider) return;
+
+    let cancelled = false;
+    (async () => {
       try {
         const tokens = await tokenUtils.checkTokenStatus();
         if (!tokens.userData) {
-          setIsPremium(false);
-          setIsLoading(false);
+          if (!cancelled) setStandalone({ isPremium: false, isLoading: false });
           return;
         }
 
         const data = await getAccountType();
         const profile = data?.user_profiles?.[0];
-        if (profile) {
-          const typeName = profile.account_type_id?.name;
-          const isActive = profile.is_active;
-          setIsPremium(!!(typeName && typeName !== "Free" && isActive));
-        } else {
-          setIsPremium(false);
-        }
+        const typeName =
+          profile?.account_type_id?.name ?? profile?.account_type_id?.type ?? null;
+        const isPremium = profile
+          ? isPremiumAccountType(typeName, profile.is_active)
+          : false;
+        if (!cancelled) setStandalone({ isPremium, isLoading: false });
       } catch {
-        setIsPremium(false);
-      } finally {
-        setIsLoading(false);
+        if (!cancelled) setStandalone({ isPremium: false, isLoading: false });
       }
-    }
+    })();
 
-    checkPremium();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [hasProvider]);
 
-  return { isPremium, isLoading };
+  if (hasProvider && ctx) {
+    return { isPremium: ctx.isPremium, isLoading: ctx.loading };
+  }
+
+  return standalone;
 }

@@ -9,6 +9,9 @@ import { segmentChineseText as apiSegmentChineseText, type SegmentResult } from 
 import { isAIConsentRequiredError } from "@/services/aiConsentErrors";
 import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
+import { PremiumGate } from "@/components/PremiumGate";
+import { usePremiumGate } from "@/lib/hooks/usePremiumGate";
+import { buildCheckoutUrl } from "@/api/plans";
 import { RubyText } from "@/components/RubyText";
 import { PinyinToggle } from "@/components/PinyinToggle";
 import { X } from "lucide-react";
@@ -23,6 +26,9 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   const [segmentedChapterId, setSegmentedChapterId] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<{ word: string; pinyin: string; meaning: string } | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
+
+  // Premium gate: chương 1 free, các chương sau là Premium (giống mobile).
+  const { isPremium, premiumModalVisible, setPremiumModalVisible } = usePremiumGate();
 
   // Fetch book detail
   const { data: book, isLoading } = useQuery({
@@ -195,6 +201,11 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const handleSelectChapter = (index: number) => {
+    // Free user chỉ đọc được chương đầu tiên.
+    if (!isPremium && index > 0) {
+      setPremiumModalVisible(true);
+      return;
+    }
     setSelectedChapterIndex(index);
     const chapter = chapters[index];
     if (chapter) {
@@ -208,6 +219,12 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <PageContainer maxWidth="full" className="gap-6">
       <BackButton href="/stories" label="Danh sách sách" />
+      <PremiumGate
+        isOpen={premiumModalVisible}
+        onClose={() => setPremiumModalVisible(false)}
+        feature="đọc các chương truyện nâng cao"
+        upgradeUrl={buildCheckoutUrl(undefined, `book-${id}`)}
+      />
         <main className="flex-1 overflow-y-auto max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Cột trái: Nội dung chương đang đọc */}
           <div className="lg:col-span-3 space-y-6">
@@ -352,6 +369,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
               <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
                 {chapters.map((chap: any, idx: number) => {
                   const isActive = selectedChapterIndex === idx;
+                  const isLocked = !isPremium && idx > 0;
                   return (
                     <button
                       key={chap.id}
@@ -362,7 +380,16 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                           : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
                       }`}
                     >
-                      Chương {chap.sort_id || idx + 1}: {chap.title}
+                      <span className="flex items-center justify-between gap-2">
+                        <span>
+                          Chương {chap.sort_id || idx + 1}: {chap.title}
+                        </span>
+                        {isLocked && (
+                          <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                            VIP
+                          </span>
+                        )}
+                      </span>
                     </button>
                   );
                 })}

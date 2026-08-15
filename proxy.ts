@@ -66,7 +66,8 @@ export function proxy(request: NextRequest) {
   if (isProtected(pathname)) {
     if (!hasToken) {
       const signInUrl = new URL("/sign-in", request.url);
-      signInUrl.searchParams.set("redirect", pathname);
+      const redirectPath = searchParams.toString() ? `${pathname}?${searchParams.toString()}` : pathname;
+      signInUrl.searchParams.set("redirect", redirectPath);
       const response = NextResponse.redirect(signInUrl);
       response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
       return response;

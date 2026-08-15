@@ -11,6 +11,10 @@ import { tokenUtils } from "@/lib/utils/tokenUtils";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
+import { PremiumGate } from "@/components/PremiumGate";
+import { usePremiumGate } from "@/lib/hooks/usePremiumGate";
+import { buildCheckoutUrl } from "@/api/plans";
+import { FREE_NOTEBOOK_LIMIT } from "@/lib/premium";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -97,6 +101,7 @@ function FlashcardDashboard() {
   const [loadingTopics, setLoadingTopics] = useState<Record<string, boolean>>({});
   const [newDeckTitle, setNewDeckTitle] = useState("");
   const [isCreatingDeck, setIsCreatingDeck] = useState(false);
+  const { isPremium, premiumModalVisible, setPremiumModalVisible } = usePremiumGate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -168,6 +173,11 @@ function FlashcardDashboard() {
   const handleCreateDeck = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDeckTitle.trim()) return;
+    // Free user chỉ được tạo tối đa FREE_NOTEBOOK_LIMIT sổ tay (giống mobile).
+    if (!isPremium && personalDecks.length >= FREE_NOTEBOOK_LIMIT) {
+      setPremiumModalVisible(true);
+      return;
+    }
     setIsCreatingDeck(true);
     try {
       await notebookApi.createNoteBooks(newDeckTitle);
@@ -183,6 +193,12 @@ function FlashcardDashboard() {
 
   return (
     <PageContainer className="max-w-4xl">
+          <PremiumGate
+            isOpen={premiumModalVisible}
+            onClose={() => setPremiumModalVisible(false)}
+            feature="tạo sổ tay từ vựng cá nhân không giới hạn"
+            upgradeUrl={buildCheckoutUrl(undefined, "flashcard")}
+          />
           <PageHeader
             title="Thẻ Ghi Nhớ Flashcard"
             description="Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS)."

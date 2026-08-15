@@ -18,6 +18,8 @@ interface PremiumGateProps {
   readonly onClose: () => void;
   readonly feature?: string;
   readonly description?: string;
+  /** Upgrade/checkout link (affiliate). Mặc định /pricing. */
+  readonly upgradeUrl?: string;
 }
 
 /**
@@ -29,6 +31,7 @@ export function PremiumGate({
   onClose,
   feature = "tính năng này",
   description,
+  upgradeUrl = "/pricing",
 }: PremiumGateProps) {
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -70,7 +73,7 @@ export function PremiumGate({
             asChild
             className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-md shadow-amber-500/20"
           >
-            <Link href="/pricing">
+            <Link href={upgradeUrl}>
               ✨ Nâng cấp Premium ngay
             </Link>
           </Button>

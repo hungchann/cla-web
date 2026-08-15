@@ -28,7 +28,7 @@ export interface ConversationMessage extends ConversationItem {
   };
 }
 
-export function useConversationDetail(conversationId: string | null) {
+export function useConversationDetail(conversationId: string | null, overrideItems?: ConversationItem[]) {
   const { isPremium } = usePremium();
 
   const [items, setItems] = useState<ConversationMessage[]>([]);
@@ -113,6 +113,27 @@ export function useConversationDetail(conversationId: string | null) {
     let isMounted = true;
 
     const fetchConversation = async () => {
+      // Nếu bài học tự chứa dialogues (lesson_dialogues) thì dùng thẳng, không fetch từ speaking
+      if (overrideItems && overrideItems.length > 0) {
+        const sortedItems: ConversationMessage[] = [...overrideItems]
+          .sort((a: ConversationItem, b: ConversationItem) => a.order - b.order)
+          .map((item) => ({
+            ...item,
+            recording: {
+              state: audioRecordingService.getState(),
+              result: undefined,
+              comparison: undefined,
+            },
+          }));
+        if (isMounted) {
+          setItems(sortedItems);
+          setVisibleCount(sortedItems.length > 0 ? 1 : 0);
+          setErrorMessage(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       if (!conversationId) {
         setItems([]);
         setVisibleCount(0);
@@ -190,7 +211,7 @@ export function useConversationDetail(conversationId: string | null) {
     return () => {
       isMounted = false;
     };
-  }, [conversationId]);
+  }, [conversationId, overrideItems]);
 
   const visibleMessages = useMemo(() => items.slice(0, visibleCount), [items, visibleCount]);
 

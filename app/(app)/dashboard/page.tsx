@@ -18,6 +18,7 @@ import {
 
 import { PageHeader } from "@/components/PageHeader"
 import { Card } from "@/components/ui/card"
+import { BannersCarousel } from "@/components/BannersCarousel"
 
 const learningAreas = [
     {
@@ -90,6 +91,8 @@ export default function DashboardPage() {
                 description="Chọn một khu vực học tập để tiếp tục theo nhịp của riêng bạn."
                 icon={<Flame className="size-6" />}
             />
+
+            <BannersCarousel />
 
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {learningAreas.map((area) => {

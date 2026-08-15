@@ -1,10 +1,9 @@
 import apiInstance from "@/api/authConfig";
 import { API_URL } from "@/lib/constants";
-import { CourseChapter, CourseItem, CourseLesson } from "@/lib/types/course";
+import { CourseChapter, CourseItem, CourseLesson, LessonVideo, LessonTheory, LessonExtra, LessonVocab, LessonQuestion, LessonTheoryCard, LessonDictation, LessonDialogue, Banner } from "@/lib/types/course";
 import { logger } from "@/services/logger";
 
-const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,content,video_section_id,vocab_display_map_id,exercise_id,audio_id,audio.id,audio.filename_disk,scenario_id,extra_pdf_id,extra_answer_id,extra_audio_id,extra_pdf.id,extra_pdf.filename_disk,extra_answer.id,extra_answer.filename_disk,extra_audio.id,extra_audio.filename_disk,chapter_id";
-const LESSON_FIELDS_FALLBACK = LESSON_FIELDS_REST.replace(",vocab_display_map_id", "");
+const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,chapter_id";
 
 function escapeFilterString(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, String.raw`\"`);
@@ -14,6 +13,15 @@ function buildCourseImageUrl(image: CourseItem["image"]): string | undefined {
   if (!image) return undefined;
   if (typeof image === "string") return `${API_URL}/assets/${image}`;
   if (image.id) return `${API_URL}/assets/${image.id}`;
+  return undefined;
+}
+
+/** Build asset URL từ field file (string id hoặc object có filename_disk). */
+function assetUrl(file: string | { id?: string; filename_disk?: string } | null | undefined): string | undefined {
+  if (!file) return undefined;
+  if (typeof file === "string") return `${API_URL}/assets/${file}`;
+  if (file.filename_disk) return `${API_URL}/assets/${file.filename_disk}`;
+  if (file.id) return `${API_URL}/assets/${file.id}`;
   return undefined;
 }
 
@@ -37,16 +45,8 @@ async function fetchLessonsByChapterIds(chapterIds: (string | number)[]): Promis
   if (chapterIds.length === 0) return [];
   try {
     const ids = chapterIds.map((id) => String(id)).join(",");
-    try {
-      const r = await apiInstance.get(`/items/course_lessons?filter[chapter_id][_in]=${ids}&filter[status][_eq]=published&sort=sort&fields=${LESSON_FIELDS_REST}`);
-      return r.data?.data || [];
-    } catch (error: any) {
-      // Keep the course outline usable while Directus field permissions/schema
-      // are being deployed. Optional lesson fields must not hide all lessons.
-      logger.warn("[Courses API] retrying lessons with fallback fields", error?.response?.status || error);
-      const r = await apiInstance.get(`/items/course_lessons?filter[chapter_id][_in]=${ids}&filter[status][_eq]=published&sort=sort&fields=${LESSON_FIELDS_FALLBACK}`);
-      return r.data?.data || [];
-    }
+    const r = await apiInstance.get(`/items/course_lessons?filter[chapter_id][_in]=${ids}&filter[status][_eq]=published&sort=sort&fields=${LESSON_FIELDS_REST}`);
+    return r.data?.data || [];
   } catch (error: any) {
     logger.warn("[Courses API] fetchLessonsByChapterIds failed", error?.response?.status || error);
     return [];
@@ -142,17 +142,174 @@ export const coursesApi = {
     lessonId: string | number,
   ): Promise<CourseLesson | null> {
     try {
-      try {
-        const r = await apiInstance.get(`/items/course_lessons/${lessonId}?fields=${LESSON_FIELDS_REST}`);
-        return r.data?.data || null;
-      } catch (error: any) {
-        logger.warn("[Courses API] retrying lesson with fallback fields", error?.response?.status || error);
-        const r = await apiInstance.get(`/items/course_lessons/${lessonId}?fields=${LESSON_FIELDS_FALLBACK}`);
-        return r.data?.data || null;
-      }
+      const r = await apiInstance.get(`/items/course_lessons/${lessonId}?fields=${LESSON_FIELDS_REST}`);
+      return r.data?.data || null;
     } catch (error: any) {
       logger.warn(`[Courses API] getCourseLessonById(${lessonId}) failed:`, error?.response?.status || error?.message || error);
       return null;
     }
   },
+
+  async getLessonVocab(lessonId: string | number): Promise<LessonVocab[]> {
+    return fetchLessonItems("lesson_vocab", lessonId, "id,word,pinyin,meaning,time_start,time_end,sort,status", "sort");
+  },
+
+  /** Nội dung video 1:1 của lesson (video_vocab / video_grammar). */
+  async getLessonVideo(lessonId: string | number): Promise<LessonVideo | null> {
+    const row = await fetchLessonSingle("lesson_video", lessonId, "id,video_file,video_file.filename_disk,srt_file,srt_file.filename_disk,video_cover,video_cover.filename_disk,status");
+    if (!row) return null;
+    return {
+      ...row,
+      video_url: assetUrl(row.video_file),
+      srt_url: assetUrl(row.srt_file),
+    };
+  },
+
+  /** Lý thuyết 1:1 của lesson (vocab_theory) — chứa vocab_display_map_id. */
+  async getLessonTheory(lessonId: string | number): Promise<LessonTheory | null> {
+    return fetchLessonSingle("lesson_theory", lessonId, "id,vocab_display_map_id,status");
+  },
+
+  /** Bài tập bổ sung 1:1 của lesson (extra). */
+  async getLessonExtra(lessonId: string | number): Promise<LessonExtra | null> {
+    const row = await fetchLessonSingle(
+      "lesson_extra",
+      lessonId,
+      "id,extra_pdf_id,extra_pdf_id.filename_disk,extra_answer_id,extra_answer_id.filename_disk,extra_audio_id,extra_audio_id.filename_disk,status"
+    );
+    if (!row) return null;
+    return {
+      ...row,
+      extra_pdf_url: assetUrl(row.extra_pdf_id),
+      extra_answer_url: assetUrl(row.extra_answer_id),
+      extra_audio_url: assetUrl(row.extra_audio_id),
+    };
+  },
+
+  async getLessonQuestions(lessonId: string | number): Promise<LessonQuestion[]> {
+    const items = await fetchLessonItems(
+      "lesson_questions",
+      lessonId,
+      "id,question,answer_A,answer_B,answer_C,answer_D,correct_answer,explanation,audio_id,audio_id.filename_disk,sort,status",
+      "sort"
+    );
+    return items.map((q: any) => {
+      const audio = q.audio_id;
+      return {
+        ...q,
+        audio_url: audio
+          ? typeof audio === "string"
+            ? `${API_URL}/assets/${audio}`
+            : audio.filename_disk
+            ? `${API_URL}/assets/${audio.filename_disk}`
+            : audio.id
+            ? `${API_URL}/assets/${audio.id}`
+            : undefined
+          : undefined,
+      };
+    });
+  },
+
+  async getLessonTheoryCards(lessonId: string | number): Promise<LessonTheoryCard[]> {
+    const items = await fetchLessonItems(
+      "lesson_theory_cards",
+      lessonId,
+      "id,title,content,image_id,image_id.filename_disk,sort,status",
+      "sort"
+    );
+    return items.map((c: any) => {
+      const img = c.image_id;
+      return {
+        ...c,
+        image_url: img
+          ? typeof img === "string"
+            ? `${API_URL}/assets/${img}`
+            : img.filename_disk
+            ? `${API_URL}/assets/${img.filename_disk}`
+            : img.id
+            ? `${API_URL}/assets/${img.id}`
+            : undefined
+          : undefined,
+      };
+    });
+  },
+
+  async getLessonDictation(lessonId: string | number): Promise<LessonDictation[]> {
+    const items = await fetchLessonItems(
+      "lesson_dictation",
+      lessonId,
+      "id,audio_id,audio_id.filename_disk,answer_text,sort,status",
+      "sort"
+    );
+    return items.map((d: any) => {
+      const audio = d.audio_id;
+      return {
+        ...d,
+        audio_url: audio
+          ? typeof audio === "string"
+            ? `${API_URL}/assets/${audio}`
+            : audio.filename_disk
+            ? `${API_URL}/assets/${audio.filename_disk}`
+            : audio.id
+            ? `${API_URL}/assets/${audio.id}`
+            : undefined
+          : undefined,
+      };
+    });
+  },
+
+  async getLessonDialogues(lessonId: string | number): Promise<LessonDialogue[]> {
+    return fetchLessonItems(
+      "lesson_dialogues",
+      lessonId,
+      "id,chinese_text,pinyin,vietnamese_text,speaker,order,status",
+      "order"
+    );
+  },
+
+  async getBanners(): Promise<Banner[]> {
+    try {
+      const r = await apiInstance.get(`/items/banners?filter[status][_eq]=published&sort=sort&fields=id,image,image.filename_disk,link,sort,status`);
+      const items: any[] = r.data?.data || [];
+      return items.map((b) => {
+        const img = b.image;
+        return {
+          ...b,
+          image_url: img
+            ? typeof img === "string"
+              ? `${API_URL}/assets/${img}`
+              : img.filename_disk
+              ? `${API_URL}/assets/${img.filename_disk}`
+              : img.id
+              ? `${API_URL}/assets/${img.id}`
+              : undefined
+            : undefined,
+        };
+      });
+    } catch (error: any) {
+      logger.warn("[Courses API] getBanners failed:", error?.response?.status || error);
+      return [];
+    }
+  },
 };
+
+async function fetchLessonItems(collection: string, lessonId: string | number, fields: string, sort: string): Promise<any[]> {
+  try {
+    const r = await apiInstance.get(`/items/${collection}?filter[lesson_id][_eq]=${lessonId}&filter[status][_eq]=published&sort=${sort}&fields=${fields}`);
+    return r.data?.data || [];
+  } catch (error: any) {
+    logger.warn(`[Courses API] fetchLessonItems(${collection}, ${lessonId}) failed:`, error?.response?.status || error);
+    return [];
+  }
+}
+
+/** Lấy 1 dòng con 1:1 theo lesson_id (lesson_video / lesson_theory / lesson_extra). */
+async function fetchLessonSingle(collection: string, lessonId: string | number, fields: string): Promise<any | null> {
+  try {
+    const r = await apiInstance.get(`/items/${collection}?filter[lesson_id][_eq]=${lessonId}&filter[status][_eq]=published&limit=1&fields=${fields}`);
+    return r.data?.data?.[0] || null;
+  } catch (error: any) {
+    logger.warn(`[Courses API] fetchLessonSingle(${collection}, ${lessonId}) failed:`, error?.response?.status || error);
+    return null;
+  }
+}

@@ -1,0 +1,200 @@
+
+> cla-web@0.1.0 dev
+> next dev -p 3020
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3020
+- Network:       http://172.17.80.1:3020
+✓ Ready in 712ms
+
+○ Compiling /courses ...
+ GET /courses 200 in 5.0s (next.js: 4.2s, proxy.ts: 158ms, application-code: 642ms)
+ GET /sign-in?redirect=%2Fcourses 200 in 1007ms (next.js: 821ms, proxy.ts: 8ms, application-code: 178ms)
+ GET /courses 200 in 171ms (next.js: 15ms, proxy.ts: 12ms, application-code: 144ms)
+ GET /courses/3 200 in 1596ms (next.js: 1453ms, proxy.ts: 9ms, application-code: 134ms)
+ GET /courses/3/learn?lesson=46 200 in 1767ms (next.js: 1596ms, proxy.ts: 8ms, application-code: 163ms)
+ GET /bilingual/4 200 in 1750ms (next.js: 1559ms, proxy.ts: 5ms, application-code: 186ms)
+ GET /stories/1 200 in 1576ms (next.js: 1418ms, proxy.ts: 7ms, application-code: 151ms)
+ GET /video/1 200 in 1603ms (next.js: 1434ms, proxy.ts: 6ms, application-code: 162ms)
+ GET /pricing 200 in 944ms (next.js: 766ms, proxy.ts: 8ms, application-code: 171ms)
+ GET /dashboard 200 in 946ms (next.js: 670ms, proxy.ts: 5ms, application-code: 271ms)
+ GET /courses/3 200 in 79ms (next.js: 25ms, proxy.ts: 9ms, application-code: 46ms)
+[browser] [Courses API] retrying lessons with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] retrying lessons with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] retrying lessons with fallback fields 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=45 200 in 67ms (next.js: 19ms, proxy.ts: 6ms, application-code: 41ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_theory_cards, 45) failed: 403 (services/logger.ts:7:20)
+✓ Compiled in 314ms
+ GET /courses/3/learn?lesson=45 200 in 1482ms (next.js: 924ms, proxy.ts: 439ms, application-code: 119ms)
+✓ Compiled in 284ms
+ GET /courses/3/learn?lesson=45 200 in 439ms (next.js: 192ms, proxy.ts: 106ms, application-code: 141ms)
+✓ Compiled in 197ms
+ GET /courses/3/learn?lesson=45 200 in 338ms (next.js: 135ms, proxy.ts: 82ms, application-code: 121ms)
+✓ Compiled in 213ms
+ GET /courses/3/learn?lesson=45 200 in 325ms (next.js: 145ms, proxy.ts: 78ms, application-code: 102ms)
+✓ Compiled in 226ms
+ GET /courses/3/learn?lesson=45 200 in 304ms (next.js: 140ms, proxy.ts: 70ms, application-code: 94ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 186ms
+ GET /courses/3/learn?lesson=45 200 in 2.1s (next.js: 134ms, proxy.ts: 77ms, application-code: 1843ms)
+ GET /courses/3/learn?lesson=45 200 in 433ms (next.js: 208ms, proxy.ts: 102ms, application-code: 123ms)
+✓ Compiled in 210ms
+ GET /courses/3/learn?lesson=45 200 in 333ms (next.js: 137ms, proxy.ts: 78ms, application-code: 118ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 290ms
+ GET /courses/3/learn?lesson=45 200 in 1164ms (next.js: 217ms, proxy.ts: 139ms, application-code: 808ms)
+✓ Compiled in 183ms
+ GET /courses/3/learn?lesson=45 200 in 394ms (next.js: 170ms, proxy.ts: 104ms, application-code: 120ms)
+✓ Compiled in 1375ms
+ GET /courses/3/learn?lesson=45 200 in 2.7s (next.js: 967ms, proxy.ts: 276ms, application-code: 1445ms)
+ GET /courses/3/learn?lesson=45 200 in 850ms (next.js: 147ms, proxy.ts: 81ms, application-code: 622ms)
+ GET /courses/3/learn?lesson=45 200 in 954ms (next.js: 244ms, proxy.ts: 80ms, application-code: 630ms)
+ GET /courses/3/learn?lesson=45 200 in 2.3s (next.js: 1711ms, proxy.ts: 225ms, application-code: 337ms)
+ GET /courses/3/learn?lesson=45 200 in 813ms (next.js: 31ms, proxy.ts: 110ms, application-code: 672ms)
+ GET /courses/3/learn?lesson=45 200 in 785ms (next.js: 134ms, proxy.ts: 12ms, application-code: 638ms)
+[browser] [Courses API] retrying lessons with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_theory_cards, 45) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=11 200 in 74ms (next.js: 24ms, proxy.ts: 7ms, application-code: 42ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_questions, 11) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=10 200 in 59ms (next.js: 19ms, proxy.ts: 5ms, application-code: 35ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_vocab, 10) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=13 200 in 58ms (next.js: 19ms, proxy.ts: 5ms, application-code: 34ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] Image with src "/images/student_cafe.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] [Courses API] fetchLessonItems(lesson_questions, 13) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=12 200 in 56ms (next.js: 19ms, proxy.ts: 6ms, application-code: 31ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=37 200 in 65ms (next.js: 23ms, proxy.ts: 8ms, application-code: 34ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_dictation, 37) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=15 200 in 63ms (next.js: 23ms, proxy.ts: 7ms, application-code: 33ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_dialogues, 15) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=10 200 in 63ms (next.js: 20ms, proxy.ts: 6ms, application-code: 38ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_vocab, 10) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=46 200 in 75ms (next.js: 28ms, proxy.ts: 7ms, application-code: 41ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_dictation, 46) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=15 200 in 62ms (next.js: 22ms, proxy.ts: 8ms, application-code: 32ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_dialogues, 15) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=46 200 in 131ms (next.js: 80ms, proxy.ts: 16ms, application-code: 35ms)
+[browser] [Courses API] retrying lesson with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_dictation, 46) failed: 403 (services/logger.ts:7:20)
+✓ Compiled in 277ms
+ GET /courses/3/learn?lesson=46 200 in 502ms (next.js: 230ms, proxy.ts: 123ms, application-code: 150ms)
+✓ Compiled in 201ms
+ GET /courses/3/learn?lesson=46 200 in 349ms (next.js: 157ms, proxy.ts: 77ms, application-code: 115ms)
+✓ Compiled in 253ms
+ GET /courses/3/learn?lesson=46 200 in 399ms (next.js: 186ms, proxy.ts: 93ms, application-code: 120ms)
+✓ Compiled in 227ms
+ GET /courses/3/learn?lesson=46 200 in 401ms (next.js: 194ms, proxy.ts: 95ms, application-code: 111ms)
+[browser] [Courses API] retrying lessons with fallback fields 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonsByChapterIds failed 403 (services/logger.ts:7:20)
+✓ Compiled in 170ms
+ GET /courses/3/learn?lesson=46 200 in 435ms (next.js: 167ms, proxy.ts: 93ms, application-code: 175ms)
+✓ Compiled in 137ms
+ GET /courses/3/learn?lesson=46 200 in 311ms (next.js: 131ms, proxy.ts: 72ms, application-code: 108ms)
+✓ Compiled in 153ms
+ GET /courses/3/learn?lesson=46 200 in 297ms (next.js: 122ms, proxy.ts: 84ms, application-code: 90ms)
+[browser] The final argument passed to useEffect changed size between renders. The order and size of this array must remain constant.
+
+Previous: [, , ]
+Incoming: [, ] 
+    at LearnRoomContent (app/(app)/courses/[id]/learn/page.tsx:709:14)
+    at Set.forEach (<anonymous>)
+  707 |
+  708 |     // Load video vocab file + subtitles (video upload trực tiếp trên lesson)
+> 709 |     useEffect(() => {
+      |              ^
+  710 |         let isMounted = true;
+  711 |         setVideoVocabLoading(true);
+  712 |         (async () => { (app/(app)
+[browser] The final argument passed to useEffect changed size between renders. The order and size of this array must remain constant.
+
+Previous: [, , , dictation]
+Incoming: [, , dictation] 
+    at LearnRoomContent (app/(app)/courses/[id]/learn/page.tsx:752:14)
+    at Set.forEach (<anonymous>)
+  750 |
+  751 |     // Load video grammar file and subtitles (video upload trực tiếp trên lesson)
+> 752 |     useEffect(() => {
+      |              ^
+  753 |         if (currentLesson?.lesson_type !== "video_grammar") {
+  754 |             setGrammarVideoSource(null);
+  755 |             setGrammarSubtitles([]); (app/(app)
+✓ Compiled in 163ms
+ GET /courses/3/learn?lesson=46 200 in 331ms (next.js: 151ms, proxy.ts: 81ms, application-code: 98ms)
+✓ Compiled in 155ms
+ GET /courses/3/learn?lesson=46 200 in 249ms (next.js: 110ms, proxy.ts: 61ms, application-code: 78ms)
+[browser] Unexpected import of module [project]/services/audioRecordingService.ts [app-client] (ecmascript, async loader) from module [project]/app/(app)/courses/[id]/learn/page.tsx [app-client] (ecmascript), which was deleted by an HMR update (app/(app)
+[browser] Unexpected import of module [project]/services/audioRecordingService.ts [app-client] (ecmascript) from module [project]/app/(app)/courses/[id]/learn/page.tsx [app-client] (ecmascript), which was deleted by an HMR update (.next\dev\static\chunks\_0f9_9_y._.js:14:16)
+[browser] [Courses API] fetchLessonItems(lesson_dictation, 46) failed: 403 (services/logger.ts:7:20)
+✓ Compiled in 196ms
+ GET /courses/3/learn?lesson=46 200 in 396ms (next.js: 162ms, proxy.ts: 102ms, application-code: 131ms)
+✓ Compiled in 185ms
+ GET /courses/3/learn?lesson=46 200 in 312ms (next.js: 136ms, proxy.ts: 79ms, application-code: 97ms)
+✓ Compiled in 165ms
+ GET /courses/3/learn?lesson=46 200 in 297ms (next.js: 137ms, proxy.ts: 70ms, application-code: 90ms)
+✓ Compiled in 370ms
+ GET /courses/3/learn?lesson=46 200 in 439ms (next.js: 138ms, proxy.ts: 86ms, application-code: 216ms)
+ GET /courses/3/learn?lesson=46 200 in 205ms (next.js: 30ms, proxy.ts: 12ms, application-code: 163ms)
+ GET /courses/3/learn?lesson=46 200 in 103ms (next.js: 21ms, proxy.ts: 8ms, application-code: 74ms)
+✓ Compiled in 174ms
+ GET /courses/3/learn?lesson=46 200 in 426ms (next.js: 222ms, proxy.ts: 109ms, application-code: 95ms)
+✓ Compiled in 158ms
+ GET /courses/3/learn?lesson=46 200 in 427ms (next.js: 206ms, proxy.ts: 119ms, application-code: 103ms)
+✓ Compiled in 113ms
+ GET /courses/3/learn?lesson=46 200 in 320ms (next.js: 153ms, proxy.ts: 88ms, application-code: 79ms)
+✓ Compiled in 156ms
+ GET /courses/3/learn?lesson=46 200 in 382ms (next.js: 200ms, proxy.ts: 88ms, application-code: 94ms)
+✓ Compiled in 185ms
+ GET /courses/3/learn?lesson=46 200 in 386ms (next.js: 169ms, proxy.ts: 114ms, application-code: 103ms)
+✓ Compiled in 171ms
+ GET /courses/3/learn?lesson=46 200 in 605ms (next.js: 277ms, proxy.ts: 160ms, application-code: 168ms)
+[browser] Unexpected import of module [project]/services/audioRecordingService.ts [app-client] (ecmascript, async loader) from module [project]/app/(app)/courses/[id]/learn/page.tsx [app-client] (ecmascript), which was deleted by an HMR update (app/(app)
+[browser] Unexpected import of module [project]/services/audioRecordingService.ts [app-client] (ecmascript) from module [project]/app/(app)/courses/[id]/learn/page.tsx [app-client] (ecmascript), which was deleted by an HMR update (.next\dev\static\chunks\_0f9_9_y._.js:14:16)
+[browser] [Courses API] fetchLessonItems(lesson_dictation, 46) failed: 403 (services/logger.ts:7:20)
+[browser] Unexpected import of module [project]/services/audioRecordingService.ts [app-client] (ecmascript, async loader) from module [project]/app/(app)/courses/[id]/learn/page.tsx [app-client] (ecmascript), which was deleted by an HMR update (app/(app)
+[browser] Unexpected import of module [project]/services/audioRecordingService.ts [app-client] (ecmascript) from module [project]/app/(app)/courses/[id]/learn/page.tsx [app-client] (ecmascript), which was deleted by an HMR update (.next\dev\static\chunks\_0f9_9_y._.js:14:16)
+[browser] [Courses API] fetchLessonItems(lesson_dictation, 46) failed: 403 (services/logger.ts:7:20)
+[browser] Unexpected import of module [project]/services/audioRecordingService.ts [app-client] (ecmascript, async loader) from module [project]/app/(app)/courses/[id]/learn/page.tsx [app-client] (ecmascript), which was deleted by an HMR update (app/(app)
+[browser] Unexpected import of module [project]/services/audioRecordingService.ts [app-client] (ecmascript) from module [project]/app/(app)/courses/[id]/learn/page.tsx [app-client] (ecmascript), which was deleted by an HMR update (.next\dev\static\chunks\_0f9_9_y._.js:14:16)
+[browser] [Courses API] fetchLessonItems(lesson_dictation, 46) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=46 200 in 748ms (next.js: 29ms, proxy.ts: 10ms, application-code: 709ms)
+[browser] [Courses API] fetchLessonItems(lesson_dictation, 46) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=10 200 in 71ms (next.js: 23ms, proxy.ts: 10ms, application-code: 38ms)
+[browser] Image with src "/images/student_cafe.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] [Courses API] fetchLessonItems(lesson_vocab, 10) failed: 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonSingle(lesson_video, 10) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=45 200 in 74ms (next.js: 26ms, proxy.ts: 7ms, application-code: 42ms)
+[browser] [Courses API] fetchLessonItems(lesson_theory_cards, 45) failed: 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonSingle(lesson_theory, 45) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=11 200 in 63ms (next.js: 22ms, proxy.ts: 8ms, application-code: 33ms)
+[browser] [Courses API] fetchLessonItems(lesson_questions, 11) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=11 200 in 68ms (next.js: 24ms, proxy.ts: 5ms, application-code: 39ms)
+ GET /courses/3/learn?lesson=12 200 in 61ms (next.js: 14ms, proxy.ts: 6ms, application-code: 41ms)
+[browser] [Courses API] fetchLessonSingle(lesson_video, 12) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=13 200 in 79ms (next.js: 25ms, proxy.ts: 7ms, application-code: 48ms)
+[browser] [Courses API] fetchLessonItems(lesson_questions, 13) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3 200 in 467ms (next.js: 380ms, proxy.ts: 8ms, application-code: 79ms)
+ GET /courses 200 in 461ms (next.js: 377ms, proxy.ts: 7ms, application-code: 77ms)
+ GET /bilingual/4 200 in 450ms (next.js: 352ms, proxy.ts: 7ms, application-code: 91ms)
+ GET /courses 200 in 73ms (next.js: 13ms, proxy.ts: 9ms, application-code: 52ms)
+ GET /bilingual/4 200 in 70ms (next.js: 24ms, proxy.ts: 6ms, application-code: 41ms)
+ GET /courses 200 in 63ms (next.js: 13ms, proxy.ts: 7ms, application-code: 43ms)
+ GET /courses/3 200 in 68ms (next.js: 24ms, proxy.ts: 7ms, application-code: 37ms)
+ GET /courses/3/learn?lesson=45 200 in 85ms (next.js: 28ms, proxy.ts: 8ms, application-code: 50ms)
+[browser] [Courses API] fetchLessonSingle(lesson_theory, 45) failed: 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonItems(lesson_theory_cards, 45) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=46 200 in 64ms (next.js: 23ms, proxy.ts: 9ms, application-code: 32ms)
+[browser] [Courses API] getCourseLessonById(46) failed: 403 (services/logger.ts:7:20)
+ GET /courses/3/learn?lesson=10 200 in 70ms (next.js: 17ms, proxy.ts: 12ms, application-code: 41ms)
+[browser] [Courses API] fetchLessonItems(lesson_vocab, 10) failed: 403 (services/logger.ts:7:20)
+[browser] [Courses API] fetchLessonSingle(lesson_video, 10) failed: 403 (services/logger.ts:7:20)

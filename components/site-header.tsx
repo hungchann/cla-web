@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { PanelLeft } from "lucide-react"
+import { PanelLeft, Sparkles } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -63,7 +63,18 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="flex flex-1 items-center justify-end lg:flex-none" />
+        <div className="flex flex-1 items-center justify-end gap-2 lg:flex-none">
+          <Button
+            asChild
+            size="sm"
+            className="h-10 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 text-sm font-black text-white shadow-sm shadow-amber-500/20 hover:from-amber-600 hover:to-orange-600"
+          >
+            <Link href="/pricing">
+              <Sparkles className="size-4" />
+              Nâng cấp Premium
+            </Link>
+          </Button>
+        </div>
       </div>
     </header>
   )

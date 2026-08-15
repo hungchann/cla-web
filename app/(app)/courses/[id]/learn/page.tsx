@@ -9,13 +9,21 @@ import { coursesApi } from "@/api/courses";
 import { vocabularyApi } from "@/api/vocabulary";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
-import { CourseLesson, CourseLessonType } from "@/lib/types/course";
+import { CourseLesson, CourseLessonType, LessonTheoryCard, LessonVideo, LessonExtra } from "@/lib/types/course";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { speakChinese } from "@/lib/utils/speech";
+import { parseSRTtoArray } from "@/services/subtitle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ASSET_URL } from "@/lib/constants";
-import { Play, Check, Star, Folder, Volume2, Target, XCircle, User, Mic, PartyPopper, Lightbulb } from "lucide-react";
+import { Play, Check, Star, Folder, Volume2, Target, XCircle, User, Mic, PartyPopper, Lightbulb, FileText } from "lucide-react";
+
+/** Chuyển timestamp SRT ("00:00:04,000") sang giây */
+function srtTimeToSeconds(t?: string): number {
+    if (!t) return 0;
+    const [h, m, rest] = t.split(":");
+    const s = (rest || "").replace(",", ".");
+    return Number(h || 0) * 3600 + Number(m || 0) * 60 + Number(s || 0);
+}
 
 const STEP_TYPE_TO_LEARN: Record<string, CourseLessonType> = {
   "learn-video-vocab": "video_vocab",
@@ -59,8 +67,51 @@ type VocabItem = {
     meaning: string;
     word_type?: string;
     note?: string;
+    time_start?: string;
+    time_end?: string;
     senses?: VocabSense[];
 };
+
+function TheoryCardsSection({ cards, loading }: { cards: LessonTheoryCard[]; loading: boolean }) {
+    if (loading) {
+        return (
+            <div className="max-w-4xl w-full mx-auto rounded-2xl border border-amber-100 bg-white p-10 text-center shadow-2xs dark:bg-zinc-900">
+                <div className="mx-auto h-7 w-7 animate-spin rounded-full border-4 border-amber-600 border-t-transparent" />
+            </div>
+        );
+    }
+    if (cards.length === 0) return null;
+    return (
+        <div className="max-w-4xl w-full mx-auto space-y-5">
+            <div className="px-1">
+                <h3 className="text-lg font-black text-zinc-900 dark:text-white">Ghi chú & giải thích</h3>
+                <p className="text-xs font-semibold text-zinc-500">{cards.length} phần lý thuyết bổ sung</p>
+            </div>
+            {cards.map((card) => (
+                <article key={String(card.id)} className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:p-6">
+                    {card.title && (
+                        <h4 className="mb-3 flex items-center gap-2 text-base font-black text-zinc-900 dark:text-white">
+                            <FileText className="size-4 text-amber-500" />
+                            {card.title}
+                        </h4>
+                    )}
+                    {card.image_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={card.image_url} alt={card.title || "Ảnh minh họa"} className="mb-4 w-full max-h-80 rounded-xl border border-zinc-100 object-cover dark:border-zinc-800" />
+                    )}
+                    {card.content ? (
+                        <div
+                            className="prose prose-sm max-w-none text-sm font-semibold leading-relaxed text-zinc-700 dark:text-zinc-300 dark:prose-invert"
+                            dangerouslySetInnerHTML={{ __html: card.content }}
+                        />
+                    ) : (
+                        !card.title && !card.image_url && <p className="text-sm italic text-zinc-400">Chưa có nội dung</p>
+                    )}
+                </article>
+            ))}
+        </div>
+    );
+}
 
 function VocabTheoryCards({ items, loading }: { items: VocabItem[]; loading: boolean }) {
     const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
@@ -165,7 +216,21 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             try {
                 if (lessonParam) {
                     const lesson = await coursesApi.getCourseLessonById(lessonParam);
-                    if (isMounted) setCurrentLesson(lesson);
+                    if (!isMounted) return;
+                    if (lesson) {
+                        setCurrentLesson(lesson);
+                        return;
+                    }
+                    // Lesson id không tồn tại hoặc chưa publish → fallback về bài học đầu tiên của khóa
+                    const chapters = await coursesApi.getCourseChapters(courseId);
+                    if (!isMounted) return;
+                    const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
+                    const fallback = flat[0] || null;
+                    setCurrentLesson(fallback);
+                    if (fallback) {
+                        router.replace(`/courses/${courseId}/learn?lesson=${fallback.id}`, { scroll: false });
+                    }
+                    return;
                 } else if (stepParam) {
                     const chapters = await coursesApi.getCourseChapters(courseId);
                     if (!isMounted) return;
@@ -187,7 +252,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         };
         fetchLesson();
         return () => { isMounted = false; };
-    }, [courseId, lessonParam, stepParam, fallbackType]);
+    }, [courseId, lessonParam, stepParam, fallbackType, router]);
 
     const currentStep = currentLesson?.lesson_type
         ? LEARN_TO_STEP_TYPE[currentLesson.lesson_type] || `learn-${currentLesson.lesson_type}`
@@ -198,12 +263,29 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const [currentQuizIdx, setCurrentQuizIdx] = useState(0);
     const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
 
-    // Dynamic Conversation Shadowing hook
-    const conversationId =
-        currentLesson?.lesson_type === "conversation" && currentLesson.scenario_id
-            ? String(currentLesson.scenario_id)
-            : courseId || "1";
-    const conversationHook = useConversationDetail(conversationId);
+    // Dynamic Conversation Shadowing hook — lesson_dialogues (riêng của course)
+    const [lessonDialogues, setLessonDialogues] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (currentStep !== "learn-conversation") return;
+        let isMounted = true;
+        (async () => {
+            try {
+                const lessonId = currentLesson?.id;
+                if (!lessonId) {
+                    if (isMounted) setLessonDialogues([]);
+                    return;
+                }
+                const items = await coursesApi.getLessonDialogues(lessonId);
+                if (isMounted) setLessonDialogues(items);
+            } catch {
+                if (isMounted) setLessonDialogues([]);
+            }
+        })();
+        return () => { isMounted = false; };
+    }, [currentStep, currentLesson?.id]);
+
+    const conversationHook = useConversationDetail(courseId || "1", lessonDialogues.length ? lessonDialogues : undefined);
     const {
         loading: convLoading,
         visibleMessages: convVisibleMessages,
@@ -223,20 +305,30 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         }
     }, [convVisibleMessages.length]);
 
-    // Load real exercises when quiz step activates
+    // Load real exercises when quiz step activates — lesson_questions (model mới)
     useEffect(() => {
         const isQuiz = currentStep === "learn-quiz-vocab" || currentStep === "learn-quiz-grammar";
-        const targetExerciseId = currentLesson?.exercise_id;
-        if (!isQuiz || !targetExerciseId) return;
+        const targetLessonId = currentLesson?.id;
+        if (!isQuiz || !targetLessonId) return;
 
         let isMounted = true;
         const fetchExercises = async () => {
             setIsLoadingQuiz(true);
             try {
-                const { default: api } = await import("@/api/authConfig");
-                const r = await api.get(`/items/exercises?filter[link_exercise_id][_eq]=${targetExerciseId}&sort=sort&fields=id,sort,question,answer_A,answer_B,answer_C,answer_D,Correct_answer,Explanation`);
+                const questions = await coursesApi.getLessonQuestions(targetLessonId);
+                const mapped = questions.map((q) => ({
+                    id: q.id,
+                    question: q.question,
+                    answer_A: q.answer_A,
+                    answer_B: q.answer_B,
+                    answer_C: q.answer_C,
+                    answer_D: q.answer_D,
+                    Correct_answer: q.correct_answer,
+                    Explanation: q.explanation,
+                    audio_url: q.audio_url,
+                }));
                 if (isMounted) {
-                    setQuizExercises(r.data?.data || []);
+                    setQuizExercises(mapped);
                     setCurrentQuizIdx(0);
                 }
             } catch {
@@ -247,7 +339,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         };
         fetchExercises();
         return () => { isMounted = false; };
-    }, [currentStep, currentLesson?.exercise_id]);
+    }, [currentStep, currentLesson?.id]);
 
     const currentQuiz = quizExercises[currentQuizIdx];
 
@@ -264,38 +356,56 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         courseTitle = "Tiếng Trung Marketing (Phồn thể)";
     }
 
-    // --- Vocab data (Video Vocab step) ---
+    // --- Vocab data (Video Vocab step) — từ vựng theo thời gian video ---
     const [vocabItems, setVocabItems] = useState<VocabItem[]>([]);
     const [vocabLoading, setVocabLoading] = useState(false);
     const [selectedVocabIdx, setSelectedVocabIdx] = useState(0);
+    const [videoVocabTime, setVideoVocabTime] = useState(0);
+    const [videoVocabSubtitles, setVideoVocabSubtitles] = useState<{ start: number; end: number; chinese: string; vietnamese?: string; pinyin?: string }[]>([]);
     const currentVocab = vocabItems[selectedVocabIdx] || null;
 
-    // Load vocab details if lesson has video_section_id
+    // activeTimedVocab = từ vựng đang đến thời điểm hiện tại của video
+    const activeTimedVocab = vocabItems.find((item) => {
+        const start = srtTimeToSeconds(item.time_start);
+        const end = srtTimeToSeconds(item.time_end);
+        if (!start && !end) return false;
+        return videoVocabTime >= start && (!end || videoVocabTime <= end);
+    });
+
+    const activeVocabSub = videoVocabSubtitles.find(
+        (sub) => videoVocabTime >= sub.start && videoVocabTime <= (sub.end || 9999)
+    );
+
+    const jumpToVocabTime = (item: VocabItem) => {
+        const t = srtTimeToSeconds(item.time_start);
+        if (t && vocabVideoRef.current) {
+            vocabVideoRef.current.currentTime = t;
+            vocabVideoRef.current.play().catch(() => {});
+        }
+    };
+
+    // Load timed vocab (lesson_vocab) khi mở bước video từ vựng
     useEffect(() => {
         if (currentStep !== "learn-video-vocab") return;
         let isMounted = true;
         setVocabLoading(true);
         (async () => {
             try {
-                const videoId = currentLesson?.video_section_id;
-                if (!videoId) {
+                const lessonId = currentLesson?.id;
+                if (!lessonId) {
                     if (isMounted) setVocabItems([]);
                     return;
                 }
-                const { default: api } = await import("@/api/authConfig");
-                const res = await api.get(`/items/video_section/${videoId}?fields=id,title,vocabularies.vocabularies_id.*`);
-                const rawVocabs = res.data?.data?.vocabularies || [];
-                const formatted: VocabItem[] = rawVocabs
-                    .map((v: any) => v.vocabularies_id)
-                    .filter(Boolean)
-                    .map((v: any) => ({
-                        id: v.id,
-                        word: v.word || "",
-                        pinyin: v.pinyin || "",
-                        meaning: v.meaning || "",
-                        word_type: v.word_type || "",
-                        senses: v.senses || [],
-                    }));
+                const items = await coursesApi.getLessonVocab(lessonId);
+                const formatted: VocabItem[] = items.map((v) => ({
+                    id: v.id,
+                    word: v.word || "",
+                    pinyin: v.pinyin || "",
+                    meaning: v.meaning || "",
+                    word_type: "",
+                    time_start: v.time_start,
+                    time_end: v.time_end,
+                }));
                 if (isMounted) {
                     setVocabItems(formatted);
                     setSelectedVocabIdx(0);
@@ -307,7 +417,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             }
         })();
         return () => { isMounted = false; };
-    }, [currentStep, currentLesson?.video_section_id]);
+    }, [currentStep, currentLesson?.id]);
 
     // --- Vocab Theory state (Lý thuyết: Giải nghĩa từ vựng) ---
     const [vocabTheoryItems, setVocabTheoryItems] = useState<any[]>([]);
@@ -330,9 +440,8 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     if (isMounted) setVocabTheoryItems([]);
                     return;
                 }
-                const { default: api } = await import("@/api/authConfig");
-                const detailRes = await api.get(`/items/course_lessons/${lessonId}?fields=id,vocab_display_map_id`);
-                const displayMapId = detailRes.data?.data?.vocab_display_map_id;
+                const theory = await coursesApi.getLessonTheory(lessonId);
+                const displayMapId = theory?.vocab_display_map_id;
                 if (!displayMapId) {
                     if (isMounted) setVocabTheoryItems([]);
                     return;
@@ -346,6 +455,57 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 if (isMounted) setVocabTheoryItems([]);
             } finally {
                 if (isMounted) setVocabTheoryLoading(false);
+            }
+        })();
+        return () => { isMounted = false; };
+    }, [currentStep, currentLesson?.id]);
+
+    // --- Theory cards (lesson_theory_cards) — bổ sung dưới danh sách từ vựng ---
+    const [theoryCards, setTheoryCards] = useState<LessonTheoryCard[]>([]);
+    const [theoryCardsLoading, setTheoryCardsLoading] = useState(false);
+
+    useEffect(() => {
+        if (currentStep !== "learn-vocab-theory") return;
+        let isMounted = true;
+        setTheoryCardsLoading(true);
+        (async () => {
+            try {
+                const lessonId = currentLesson?.id;
+                if (!lessonId) {
+                    if (isMounted) setTheoryCards([]);
+                    return;
+                }
+                const cards = await coursesApi.getLessonTheoryCards(lessonId);
+                if (isMounted) setTheoryCards(cards);
+            } catch {
+                if (isMounted) setTheoryCards([]);
+            } finally {
+                if (isMounted) setTheoryCardsLoading(false);
+            }
+        })();
+        return () => { isMounted = false; };
+    }, [currentStep, currentLesson?.id]);
+
+    // --- Extra step (lesson_extra) — file tải về của bài tập bổ sung ---
+    const [lessonExtra, setLessonExtra] = useState<LessonExtra | null>(null);
+
+    useEffect(() => {
+        if (currentStep !== "learn-extra") {
+            setLessonExtra(null);
+            return;
+        }
+        let isMounted = true;
+        (async () => {
+            try {
+                const lessonId = currentLesson?.id;
+                if (!lessonId) {
+                    if (isMounted) setLessonExtra(null);
+                    return;
+                }
+                const row = await coursesApi.getLessonExtra(lessonId);
+                if (isMounted) setLessonExtra(row);
+            } catch {
+                if (isMounted) setLessonExtra(null);
             }
         })();
         return () => { isMounted = false; };
@@ -547,45 +707,85 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const [videoVocabLoading, setVideoVocabLoading] = useState(false);
     const vocabVideoRef = useRef<HTMLVideoElement | null>(null);
 
+    // --- Nội dung video 1:1 từ lesson_video (video_vocab / video_grammar) ---
+    const [lessonVideo, setLessonVideo] = useState<LessonVideo | null>(null);
+
+    useEffect(() => {
+        const isVideoStep = currentStep === "learn-video-vocab" || currentStep === "learn-video-grammar";
+        if (!isVideoStep || !currentLesson?.id) {
+            setLessonVideo(null);
+            return;
+        }
+        let isMounted = true;
+        (async () => {
+            try {
+                const row = await coursesApi.getLessonVideo(currentLesson.id!);
+                if (isMounted) setLessonVideo(row);
+            } catch {
+                if (isMounted) setLessonVideo(null);
+            }
+        })();
+        return () => { isMounted = false; };
+    }, [currentStep, currentLesson?.id]);
+
     const handleGrammarTimeUpdate = () => {
         if (grammarVideoRef.current) {
             setGrammarCurrentTime(grammarVideoRef.current.currentTime);
         }
     };
 
-    // Load video vocab file
-    useEffect(() => {
-        const videoId = currentLesson?.video_section_id;
-        if (!videoId) {
-            setVideoVocabSource(null);
-            return;
+    const handleVocabVideoTimeUpdate = () => {
+        if (vocabVideoRef.current) {
+            setVideoVocabTime(vocabVideoRef.current.currentTime);
         }
+    };
+
+    // Load video vocab file + subtitles (lesson_video)
+    useEffect(() => {
         let isMounted = true;
         setVideoVocabLoading(true);
         (async () => {
             try {
-                const { default: api } = await import("@/api/authConfig");
-                const res = await api.get(`/items/video_section/${videoId}?fields=id,video_file,subtitles`);
-                if (!isMounted) return;
-                const fileId = res.data?.data?.video_file;
-                if (fileId) {
-                    setVideoVocabSource(`${ASSET_URL}/${fileId}`);
-                } else {
+                const inlineVideo = lessonVideo?.video_url;
+                const inlineSrt = lessonVideo?.srt_url;
+                if (inlineVideo) {
+                    if (isMounted) setVideoVocabSource(inlineVideo);
+                    if (inlineSrt) {
+                        const res = await fetch(inlineSrt);
+                        const text = await res.text();
+                        if (isMounted) {
+                            setVideoVocabSubtitles(
+                                parseSRTtoArray(text).map((s) => ({
+                                    start: srtTimeToSeconds(s.start),
+                                    end: srtTimeToSeconds(s.end),
+                                    chinese: s.chinese,
+                                    vietnamese: s.vietnamese,
+                                    pinyin: s.pinyin,
+                                }))
+                            );
+                        }
+                    } else if (isMounted) {
+                        setVideoVocabSubtitles([]);
+                    }
+                } else if (isMounted) {
                     setVideoVocabSource(null);
+                    setVideoVocabSubtitles([]);
                 }
             } catch {
-                if (isMounted) setVideoVocabSource(null);
+                if (isMounted) {
+                    setVideoVocabSource(null);
+                    setVideoVocabSubtitles([]);
+                }
             } finally {
                 if (isMounted) setVideoVocabLoading(false);
             }
         })();
         return () => { isMounted = false; };
-    }, [currentLesson?.video_section_id]);
+    }, [lessonVideo]);
 
-    // Load video grammar file and subtitles
+    // Load video grammar file and subtitles (lesson_video)
     useEffect(() => {
-        const videoId = currentLesson?.video_section_id;
-        if (currentLesson?.lesson_type !== "video_grammar" || !videoId) {
+        if (currentLesson?.lesson_type !== "video_grammar") {
             setGrammarVideoSource(null);
             setGrammarSubtitles([]);
             return;
@@ -594,16 +794,30 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
         setGrammarVideoLoading(true);
         (async () => {
             try {
-                const { default: api } = await import("@/api/authConfig");
-                const res = await api.get(`/items/video_section/${videoId}?fields=id,video_file,subtitles`);
-                if (!isMounted) return;
-                const fileId = res.data?.data?.video_file;
-                if (fileId) {
-                    setGrammarVideoSource(`${ASSET_URL}/${fileId}`);
-                }
-                const rawSubs = res.data?.data?.subtitles;
-                if (Array.isArray(rawSubs)) {
-                    setGrammarSubtitles(rawSubs);
+                const inlineVideo = lessonVideo?.video_url;
+                const inlineSrt = lessonVideo?.srt_url;
+                if (inlineVideo) {
+                    if (isMounted) setGrammarVideoSource(inlineVideo);
+                    if (inlineSrt) {
+                        const res = await fetch(inlineSrt);
+                        const text = await res.text();
+                        if (isMounted) {
+                            setGrammarSubtitles(
+                                parseSRTtoArray(text).map((s) => ({
+                                    start: srtTimeToSeconds(s.start),
+                                    end: srtTimeToSeconds(s.end),
+                                    chinese: s.chinese,
+                                    vietnamese: s.vietnamese,
+                                    pinyin: s.pinyin,
+                                }))
+                            );
+                        }
+                    } else if (isMounted) {
+                        setGrammarSubtitles([]);
+                    }
+                } else if (isMounted) {
+                    setGrammarVideoSource(null);
+                    setGrammarSubtitles([]);
                 }
             } catch {
                 if (isMounted) setGrammarVideoSource(null);
@@ -612,24 +826,13 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             }
         })();
         return () => { isMounted = false; };
-    }, [currentLesson?.video_section_id, currentLesson?.lesson_type]);
+    }, [lessonVideo, currentLesson?.lesson_type]);
 
     const activeGrammarSub = grammarSubtitles.find(
         (sub) => grammarCurrentTime >= (sub.start || 0) && grammarCurrentTime <= (sub.end || 9999)
     );
 
-    // --- Dictation step state & helpers ---
-    const [dictationInput, setDictationInput] = useState("");
-    const [dictationChecked, setDictationChecked] = useState(false);
-    const [dictationScore, setDictationScore] = useState<number | null>(null);
-
-    const dictationExpected = currentLesson?.content || "";
-    const dictationAudioUrl = currentLesson?.audio_id
-        ? `${ASSET_URL}/${currentLesson.audio_id}`
-        : currentLesson?.extra_audio_id
-        ? `${ASSET_URL}/${currentLesson.extra_audio_id}`
-        : null;
-
+    // --- Dictation nhiều câu (lesson_dictation) — mỗi câu 1 audio + 1 đáp án ---
     const normalizeDictationText = (text: string) => {
         return text
             .toLowerCase()
@@ -637,22 +840,43 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
             .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'<>。，！？；：、（）《》【】]/g, "");
     };
 
-    const handleCheckDictation = () => {
-        const userNorm = normalizeDictationText(dictationInput);
-        const expectedNorm = normalizeDictationText(dictationExpected);
-        if (!expectedNorm) {
-            setDictationScore(100);
-        } else {
-            const isMatch = userNorm === expectedNorm;
-            setDictationScore(isMatch ? 100 : 0);
-        }
-        setDictationChecked(true);
+    const [dictationSentences, setDictationSentences] = useState<any[]>([]);
+    const [dictationLoading, setDictationLoading] = useState(false);
+    const [dictationResults, setDictationResults] = useState<Record<string, { input: string; checked: boolean; score: number }>>({});
+
+    useEffect(() => {
+        if (currentStep !== "learn-dictation") return;
+        let isMounted = true;
+        setDictationLoading(true);
+        (async () => {
+            try {
+                const lessonId = currentLesson?.id;
+                if (!lessonId) {
+                    if (isMounted) setDictationSentences([]);
+                    return;
+                }
+                const items = await coursesApi.getLessonDictation(lessonId);
+                if (isMounted) setDictationSentences(items);
+            } catch {
+                if (isMounted) setDictationSentences([]);
+            } finally {
+                if (isMounted) setDictationLoading(false);
+            }
+        })();
+        return () => { isMounted = false; };
+    }, [currentStep, currentLesson?.id]);
+
+    const setDictationInputFor = (id: string | number, value: string) => {
+        const key = String(id);
+        setDictationResults((p) => ({ ...p, [key]: { ...(p[key] || { checked: false, score: 0 }), input: value } }));
     };
 
-    const resetDictation = () => {
-        setDictationInput("");
-        setDictationChecked(false);
-        setDictationScore(null);
+    const handleCheckSentence = (s: any) => {
+        const key = String(s.id);
+        const userNorm = normalizeDictationText(dictationResults[key]?.input || "");
+        const expectedNorm = normalizeDictationText(s.answer_text || "");
+        const score = !expectedNorm ? 100 : userNorm === expectedNorm ? 100 : 0;
+        setDictationResults((p) => ({ ...p, [key]: { ...(p[key] || { input: "" }), checked: true, score } }));
     };
 
     // --- Word Info Modal State ---
@@ -683,8 +907,21 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
             {/* Main Content Body */}
             <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col items-center">
+                {!currentLesson && (
+                    <div className="max-w-2xl w-full mx-auto bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xs">
+                        <p className="text-sm font-black text-zinc-600">Khóa học chưa có bài học nào.</p>
+                        <p className="mt-2 text-xs font-semibold text-zinc-400">Hãy quay lại trang khóa học và chọn một bài học khác.</p>
+                        <Button
+                            onClick={() => router.push(`/courses/${courseId}`)}
+                            className="mt-6 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"
+                        >
+                            Về khóa học
+                        </Button>
+                    </div>
+                )}
+
                 {/* STEP 1: Video Từ Vựng (learn-video-vocab) */}
-                {currentStep === "learn-video-vocab" && (
+                {currentLesson && currentStep === "learn-video-vocab" && (
                     <div className="max-w-2xl w-full mx-auto space-y-6">
                         <div className="space-y-6">
                             <div className="relative rounded-2xl overflow-hidden shadow-md aspect-video bg-black group border border-gray-200">
@@ -698,6 +935,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                         src={videoVocabSource}
                                         controls
                                         className="h-full w-full object-contain"
+                                        onTimeUpdate={handleVocabVideoTimeUpdate}
                                     />
                                 ) : (
                                     <>
@@ -719,6 +957,33 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 )}
                             </div>
 
+                            {activeVocabSub && (
+                                <div className="bg-black/90 text-white rounded-2xl border border-zinc-800 p-4 shadow-2xs space-y-1">
+                                    <p className="text-sm font-bold text-amber-400">{activeVocabSub.chinese}{activeVocabSub.pinyin && <span className="ml-2 text-xs font-semibold text-zinc-400">{activeVocabSub.pinyin}</span>}</p>
+                                    {activeVocabSub.vietnamese && <p className="text-xs font-semibold text-zinc-300">&rarr; {activeVocabSub.vietnamese}</p>}
+                                </div>
+                            )}
+
+                            {activeTimedVocab && (
+                                <div className="bg-amber-50 border border-amber-300/60 rounded-2xl p-4 shadow-2xs flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white">
+                                            <Volume2 className="size-4" />
+                                        </span>
+                                        <div>
+                                            <p className="text-base font-black text-zinc-900 dark:text-white">{activeTimedVocab.word}</p>
+                                            <p className="text-xs font-bold text-amber-600">{activeTimedVocab.pinyin} — {activeTimedVocab.meaning}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => speakChinese(activeTimedVocab.word || "")}
+                                        className="text-xs font-bold text-amber-700 border border-amber-300 bg-white px-3 py-1.5 rounded-full hover:bg-amber-100 cursor-pointer"
+                                    >
+                                        🔊 Nghe
+                                    </button>
+                                </div>
+                            )}
+
                             {vocabLoading ? (
                                 <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-2xs flex items-center justify-center">
                                     <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
@@ -733,18 +998,24 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 <>
                                     {vocabItems.length > 1 && (
                                         <div className="flex flex-wrap gap-2">
-                                            {vocabItems.map((item, i) => (
-                                                <button
-                                                    key={String(item.id)}
-                                                    onClick={() => setSelectedVocabIdx(i)}
-                                                    className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${i === selectedVocabIdx
-                                                        ? "bg-amber-600 border-amber-600 text-white"
-                                                        : "bg-white border-gray-200 text-gray-600 hover:border-amber-300"
-                                                        }`}
-                                                >
-                                                    {item.word}
-                                                </button>
-                                            ))}
+                                            {vocabItems.map((item, i) => {
+                                                const isActive = activeTimedVocab && String(activeTimedVocab.id) === String(item.id);
+                                                return (
+                                                    <button
+                                                        key={String(item.id)}
+                                                        onClick={() => {
+                                                            setSelectedVocabIdx(i);
+                                                            jumpToVocabTime(item);
+                                                        }}
+                                                        className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${i === selectedVocabIdx || isActive
+                                                            ? "bg-amber-600 border-amber-600 text-white"
+                                                            : "bg-white border-gray-200 text-gray-600 hover:border-amber-300"
+                                                            }`}
+                                                    >
+                                                        {item.word}{isActive ? " ▶" : ""}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     )}
 
@@ -964,7 +1235,12 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 )}
 
                 {/* STEP 1.5: Lý thuyết: Giải nghĩa từ vựng (learn-vocab-theory) */}
-                {currentStep === "learn-vocab-theory" && <VocabTheoryCards items={vocabTheoryItems} loading={vocabTheoryLoading} />}
+                {currentStep === "learn-vocab-theory" && (
+                    <div className="w-full space-y-6">
+                        <VocabTheoryCards items={vocabTheoryItems} loading={vocabTheoryLoading} />
+                        <TheoryCardsSection cards={theoryCards} loading={theoryCardsLoading} />
+                    </div>
+                )}
                 {false && currentStep === "learn-vocab-theory" && (
                     <div className="max-w-3xl w-full mx-auto space-y-6">
                         {vocabTheoryLoading ? (
@@ -1121,14 +1397,20 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                 {currentQuiz?.question || "Câu hỏi"}
                                             </h3>
                                         </div>
-                                        <button
-                                            onClick={() => speakChinese("chi")}
-                                            className="w-10 h-10 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90 transition-transform animate-bounce-slow"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                                                <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
-                                            </svg>
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            {currentQuiz?.audio_url && (
+                                                <audio src={currentQuiz.audio_url} controls preload="none" className="h-9 max-w-44" />
+                                            )}
+                                            <button
+                                                onClick={() => speakChinese(currentQuiz?.question || "")}
+                                                className="w-10 h-10 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90 transition-transform"
+                                                title="Nghe câu hỏi"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                                    <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1305,6 +1587,20 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                 {currentQuiz?.question || "Câu hỏi"}
                                             </h3>
                                         </div>
+                                        <div className="flex items-center gap-2">
+                                            {currentQuiz?.audio_url && (
+                                                <audio src={currentQuiz.audio_url} controls preload="none" className="h-9 max-w-44" />
+                                            )}
+                                            <button
+                                                onClick={() => speakChinese(currentQuiz?.question || "")}
+                                                className="w-10 h-10 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90 transition-transform"
+                                                title="Nghe câu hỏi"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                                    <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.063.922-2.063 2.063v4.875c0 1.141.922 2.062 2.062 2.062h1.932l4.5 4.5c.944.944 2.56.276 2.56-1.06V4.06ZM18.57 17.47a.75.75 0 1 1-1.06 1.06 9 9 0 0 1 0-12.72.75.75 0 1 1 1.06 1.06 7.5 7.5 0 0 0 0 10.6ZM15.89 14.8a.75.75 0 1 1-1.06 1.06 4.5 4.5 0 0 1 0-6.36.75.75 0 1 1 1.06 1.06 3 3 0 0 0 0 4.24Z" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1411,73 +1707,89 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     </h3>
                                 </div>
 
-                                <div className="bg-amber-50/40 p-5 rounded-2xl border border-amber-100/80 flex flex-col gap-3">
-                                    <p className="text-xs font-bold text-amber-900">1. Nghe file âm thanh dưới đây:</p>
-                                    {dictationAudioUrl ? (
-                                        <audio src={dictationAudioUrl} controls preload="metadata" className="w-full h-11 shadow-2xs rounded-lg" />
-                                    ) : (
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={() => speakChinese(dictationExpected)}
-                                                className="w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center hover:bg-amber-600 active:scale-95 transition-all shadow-xs cursor-pointer shrink-0"
-                                            >
-                                                <Volume2 className="w-6 h-6" />
-                                            </button>
-                                            <span className="text-xs font-bold text-amber-700">Phát âm thanh bài tập</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-4">
-                                    <h4 className="font-extrabold text-gray-900 text-sm">
-                                        2. Chép lại chính xác nội dung câu bạn nghe được:
-                                    </h4>
-
-                                    <div className="relative">
-                                        <Input
-                                            type="text"
-                                            value={dictationInput}
-                                            onChange={(e) => setDictationInput(e.target.value)}
-                                            placeholder="Nhập câu tiếng Trung bạn nghe được..."
-                                            disabled={dictationChecked}
-                                            className="w-full bg-white border-2 border-amber-200 focus:border-amber-500 focus-visible:ring-0 rounded-xl px-4 py-3 text-sm text-gray-900 font-bold placeholder-gray-400 transition-all font-mono shadow-2xs"
-                                        />
+                                {dictationLoading ? (
+                                    <div className="py-16 flex items-center justify-center">
+                                        <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
                                     </div>
+                                ) : dictationSentences.length > 0 ? (
+                                    <div className="space-y-8">
+                                        {dictationSentences.map((s, i) => {
+                                            const key = String(s.id);
+                                            const result = dictationResults[key];
+                                            return (
+                                                <div key={key} className="space-y-3 rounded-2xl border border-amber-100 bg-amber-50/30 p-5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-black text-xs shrink-0">
+                                                            {i + 1}
+                                                        </span>
+                                                        <p className="text-xs font-bold text-amber-900">Nghe và chép lại câu {i + 1}:</p>
+                                                    </div>
 
-                                    <div className="flex gap-3">
-                                        <Button
-                                            onClick={handleCheckDictation}
-                                            disabled={dictationChecked || !dictationInput.trim()}
-                                            className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-6 py-5 rounded-xl text-xs shadow-xs transition-all cursor-pointer disabled:bg-gray-200 disabled:text-gray-400 active:scale-95 shrink-0"
-                                        >
-                                            Chấm điểm & Kiểm tra
-                                        </Button>
-                                        {dictationChecked && (
-                                            <button
-                                                onClick={resetDictation}
-                                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0"
-                                            >
-                                                🔄 Làm lại bài này
-                                            </button>
-                                        )}
+                                                    {s.audio_url ? (
+                                                        <audio src={s.audio_url} controls preload="metadata" className="w-full h-11 rounded-lg shadow-2xs" />
+                                                    ) : (
+                                                        <div className="flex items-center gap-3">
+                                                            <button
+                                                                onClick={() => speakChinese(s.answer_text)}
+                                                                className="w-11 h-11 bg-amber-500 text-white rounded-full flex items-center justify-center hover:bg-amber-600 active:scale-95 transition-all cursor-pointer shrink-0"
+                                                            >
+                                                                <Volume2 className="w-5 h-5" />
+                                                            </button>
+                                                            <span className="text-xs font-bold text-amber-700">Phát âm thanh</span>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="relative">
+                                                        <Input
+                                                            type="text"
+                                                            value={result?.input || ""}
+                                                            onChange={(e) => setDictationInputFor(s.id, e.target.value)}
+                                                            placeholder="Nhập câu tiếng Trung bạn nghe được..."
+                                                            disabled={result?.checked}
+                                                            className="w-full bg-white border-2 border-amber-200 focus:border-amber-500 focus-visible:ring-0 rounded-xl px-4 py-3 text-sm text-gray-900 font-bold placeholder-gray-400 transition-all font-mono shadow-2xs"
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex gap-3">
+                                                        <Button
+                                                            onClick={() => handleCheckSentence(s)}
+                                                            disabled={result?.checked || !(result?.input || "").trim()}
+                                                            className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-xs transition-all cursor-pointer disabled:bg-gray-200 disabled:text-gray-400 active:scale-95 shrink-0"
+                                                        >
+                                                            Chấm điểm
+                                                        </Button>
+                                                        {result?.checked && (
+                                                            <button
+                                                                onClick={() => setDictationResults((p) => ({ ...p, [key]: { ...(p[key] || { input: "" }), checked: false, score: 0 } }))}
+                                                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold px-5 py-2 rounded-xl text-xs shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0"
+                                                            >
+                                                                🔄 Làm lại
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {result?.checked && (
+                                                        <div className={`p-4 rounded-xl border shadow-2xs space-y-2 ${result.score >= 80 ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-rose-50 border-rose-200 text-rose-900"}`}>
+                                                            <div className="flex items-center gap-2">
+                                                                <Target className={`w-5 h-5 ${result.score >= 80 ? "text-emerald-500" : "text-rose-500"}`} />
+                                                                <h5 className="font-extrabold text-sm">
+                                                                    Kết quả: {result.score}% {result.score === 100 ? "🎉 Hoàn hảo!" : result.score >= 80 ? "Chính xác!" : "Cần luyện thêm"}
+                                                                </h5>
+                                                            </div>
+                                                            <p className="text-xs font-semibold">
+                                                                Đáp án chuẩn: <strong className="font-black underline font-mono">&quot;{s.answer_text}&quot;</strong>
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                </div>
-
-                                {dictationChecked && dictationScore !== null && (
-                                    <div className={`p-5 rounded-2xl border shadow-2xs space-y-3 ${
-                                        dictationScore >= 80 ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-rose-50 border-rose-200 text-rose-900"
-                                    }`}>
-                                        <div className="flex items-center gap-3">
-                                            <Target className={`w-8 h-8 ${dictationScore >= 80 ? "text-emerald-500" : "text-rose-500"}`} />
-                                            <div>
-                                                <h5 className="font-extrabold text-sm">
-                                                    Kết quả chấm điểm: {dictationScore}% {dictationScore === 100 ? "🎉 Hoàn hảo!" : dictationScore >= 80 ? "Chính xác!" : "Cần luyện thêm"}
-                                                </h5>
-                                                <p className="text-xs font-semibold mt-1">
-                                                    Đáp án chuẩn từ Directus: <strong className="font-black underline font-mono">&quot;{dictationExpected}&quot;</strong>
-                                                </p>
-                                            </div>
-                                        </div>
+                                ) : (
+                                    <div className="py-12 text-center">
+                                        <p className="text-sm font-bold text-zinc-500">
+                                            Chưa có bài nghe chép chính tả cho bài học này.
+                                        </p>
                                     </div>
                                 )}
 
@@ -1660,9 +1972,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                 </h4>
                                 <div className="flex items-center justify-around gap-6">
                                     {/* PDF 1 */}
-                                    {currentLesson?.extra_pdf_id ? (
+                                    {lessonExtra?.extra_pdf_url ? (
                                         <a
-                                            href={`${ASSET_URL}/${currentLesson.extra_pdf_id}`}
+                                            href={lessonExtra.extra_pdf_url}
                                             download
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -1682,9 +1994,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     )}
 
                                     {/* PDF 2 */}
-                                    {currentLesson?.extra_answer_id ? (
+                                    {lessonExtra?.extra_answer_url ? (
                                         <a
-                                            href={`${ASSET_URL}/${currentLesson.extra_answer_id}`}
+                                            href={lessonExtra.extra_answer_url}
                                             download
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -1704,9 +2016,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     )}
 
                                     {/* Audio */}
-                                    {currentLesson?.extra_audio_id ? (
+                                    {lessonExtra?.extra_audio_url ? (
                                         <a
-                                            href={`${ASSET_URL}/${currentLesson.extra_audio_id}`}
+                                            href={lessonExtra.extra_audio_url}
                                             download
                                             target="_blank"
                                             rel="noopener noreferrer"

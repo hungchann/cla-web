@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Lucide Icons
 import {
@@ -25,8 +24,6 @@ import {
     ArrowLeft,
     ArrowRight,
     ChevronRight,
-    Crown,
-    Check,
     AlertCircle,
     Loader2,
     Inbox,
@@ -607,56 +604,6 @@ export default function SpeakingPage() {
                 </Card>
             )}
 
-            {/* Premium gate modal fallback for web UI */}
-            <Dialog open={premiumModalVisible} onOpenChange={setPremiumModalVisible}>
-                <DialogContent className="max-w-md w-full p-6 text-center space-y-5 rounded-3xl">
-                    <DialogHeader className="flex flex-col items-center gap-2">
-                        <Crown className="w-12 h-12 text-amber-500 animate-bounce" />
-                        <DialogTitle className="text-lg font-black text-zinc-950 dark:text-zinc-50">
-                            Tính năng Premium VIP
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-zinc-550 dark:text-zinc-400 font-medium leading-relaxed">
-                            Hệ thống chấm điểm AI nâng cao và phân tích so sánh chi tiết phát âm của từng từ chỉ dành cho tài khoản VIP.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <ul className="text-left text-xs bg-zinc-50 dark:bg-zinc-950/20 p-4 border border-zinc-150 dark:border-zinc-800 rounded-2xl space-y-2.5 font-bold text-zinc-650 dark:text-zinc-350 list-none">
-                        <li className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                            <span>Chấm điểm AI và phân tích giọng nói chi tiết</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                            <span>Đọc mẫu & Shadowing so sánh độ chuẩn âm</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                            <span>Không giới hạn hội thoại và kịch bản giao tiếp</span>
-                        </li>
-                    </ul>
-
-                    <div className="flex items-center gap-3 pt-3">
-                        <Button
-                            onClick={() => {
-                                setPremiumModalVisible(false);
-                                localStorage.setItem("cla_premium_active", "true");
-                                alert("Đã kích hoạt giả lập Premium thành công!");
-                                globalThis.location.reload();
-                            }}
-                            className="flex-1 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black text-xs py-5 rounded-xl cursor-pointer"
-                        >
-                            Mở khóa Premium
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={() => setPremiumModalVisible(false)}
-                            className="flex-1 text-zinc-700 font-bold text-xs py-5 rounded-xl cursor-pointer"
-                        >
-                            Để sau
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
         </PageContainer>
     );
 }
