@@ -10,10 +10,12 @@ import {
   Crown,
   Loader2,
   Lock,
+  PartyPopper,
   QrCode,
   Share2,
   ShieldCheck,
   Sparkles,
+  TriangleAlert,
 } from "lucide-react";
 
 import {
@@ -238,7 +240,7 @@ function CheckoutView({
             và kích hoạt gói <strong>{plan.name_trans || plan.name}</strong> cho bạn.
             {discountVnd > 0 && (
               <span className="block mt-1 text-emerald-600">
-                🎉 Đã giảm {formatVnd(discountVnd)} bằng mã voucher.
+                <PartyPopper className="w-4 h-4 inline mr-1 -mt-0.5" /> Đã giảm {formatVnd(discountVnd)} bằng mã voucher.
               </span>
             )}
           </p>
@@ -299,7 +301,7 @@ function CheckoutView({
           </div>
           {discountVnd > 0 && (
             <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-              🎉 Voucher giảm {formatVnd(discountVnd)}
+              <PartyPopper className="w-4 h-4 inline mr-1 -mt-0.5" /> Voucher giảm {formatVnd(discountVnd)}
             </p>
           )}
 
@@ -393,7 +395,7 @@ function CheckoutView({
               {email}
             </div>
             <p className="text-[11px] text-zinc-400">
-              ⚠️ Vui lòng chuyển đúng số tiền{" "}
+              <TriangleAlert className="w-4 h-4 inline mr-1 -mt-0.5" /> Vui lòng chuyển đúng số tiền{" "}
               <strong className="text-zinc-600 dark:text-zinc-300">{formatVnd(amountVnd)}</strong>{" "}
               và đúng nội dung trên để hệ thống đối soát.
             </p>

@@ -74,7 +74,7 @@ export function PremiumGate({
             className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-md shadow-amber-500/20"
           >
             <Link href={upgradeUrl}>
-              ✨ Nâng cấp Premium ngay
+              <Sparkles className="w-4 h-4 inline mr-2 -mt-0.5" /> Nâng cấp Premium ngay
             </Link>
           </Button>
           <AlertDialogCancel

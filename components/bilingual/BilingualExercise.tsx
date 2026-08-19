@@ -91,18 +91,23 @@ export function BilingualExercise({
   const getOptions = (ex: any) => {
     if (!ex) return [];
 
-    if (Array.isArray(ex.options)) {
-      return ex.options.map((opt: any) => ({
-        id: String(opt.id),
-        val: opt.val || opt.hanzi || opt.text || "",
-      }));
+    let rawOptions = ex.options;
+    if (typeof rawOptions === "string") {
+      try { rawOptions = JSON.parse(rawOptions); } catch (e) { rawOptions = []; }
+    }
+
+    if (Array.isArray(rawOptions)) {
+      return rawOptions.map((opt: any) => ({
+        id: String(opt.id || opt.key || ""),
+        val: opt.val || opt.hanzi || opt.text || opt.value || "",
+      })).filter((o: any) => o.id && o.val);
     }
 
     const opts = [];
-    const ansA = ex.answer_A || ex.Answer_A || ex.answerA;
-    const ansB = ex.answer_B || ex.Answer_B || ex.answerB;
-    const ansC = ex.answer_C || ex.Answer_C || ex.answerC;
-    const ansD = ex.answer_D || ex.Answer_D || ex.answerD;
+    const ansA = ex.answer_A || ex.Answer_A || ex.answerA || ex.answer_a || ex.option_A || ex.optionA;
+    const ansB = ex.answer_B || ex.Answer_B || ex.answerB || ex.answer_b || ex.option_B || ex.optionB;
+    const ansC = ex.answer_C || ex.Answer_C || ex.answerC || ex.answer_c || ex.option_C || ex.optionC;
+    const ansD = ex.answer_D || ex.Answer_D || ex.answerD || ex.answer_d || ex.option_D || ex.optionD;
     
     if (ansA) opts.push({ id: "A", val: ansA });
     if (ansB) opts.push({ id: "B", val: ansB });

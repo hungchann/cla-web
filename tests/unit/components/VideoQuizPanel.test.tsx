@@ -83,7 +83,7 @@ describe("VideoQuizPanel", () => {
     );
 
     expect(screen.getByText(/50%/i)).toBeInTheDocument();
-    expect(screen.getByText(/✓ Đúng/i)).toBeInTheDocument();
+    expect(screen.getByText(/^\s*Đúng\s*$/i)).toBeInTheDocument();
   });
 
   it("calls onContinue when clicking skip button", async () => {

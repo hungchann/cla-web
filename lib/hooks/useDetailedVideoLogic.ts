@@ -55,508 +55,409 @@ export const useDetailedVideoLogic = (
   videoData: any,
   opts?: {
     videoRef?: RefObject<HTMLVideoElement | null>;
-    /** Auto TTS đọc phụ đề khi không có câu hỏi. */
     enableAutoSpeakSubtitle?: boolean;
-    /** YouTube: ref tới `react-native-youtube-iframe` để lấy `currentTime` / pause. */
     youtubePlayerRef?: RefObject<any>;
     setYoutubeIsPlaying?: (playing: boolean) => void;
-    /** Exercises dự phòng khi API không trả về (demo/mock). */
     fallbackExercises?: ExerciseItem[];
-    /**
-     * Luồng đang hoạt động:
-     * - "subtitles": chỉ đồng bộ phụ đề (không chạy trắc nghiệm).
-     * - "quiz": chỉ chạy trắc nghiệm (không đồng bộ phụ đề).
-     * - "both": chạy cả hai (mặc định).
-     */
     flowMode?: "subtitles" | "quiz" | "both";
   },
 ) => {
   const router = useRouter();
+
+  // ─── States ───
   const [exerciseData, setExerciseData] = useState<ExerciseItem[] | null>(null);
   const [answeredIds, setAnsweredIds] = useState<number[]>([]);
   const [activeQuestion, setActiveQuestion] = useState<ExerciseItem | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [answerResults, setAnswerResults] = useState<any[]>([]);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
   const [nextQuestionId, setNextQuestionId] = useState<number | null>(null);
   const [hasCompletedAll, setHasCompletedAll] = useState(false);
   const [subtitles, setSubtitles] = useState<SubtitleItem[]>([]);
   const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleItem | null>(null);
 
-  const isComponentMounted = useRef(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isYoutubeVideo = videoDataUsesYoutubePlayer(videoData);
+
+  // ─── Stable Refs (không bao giờ stale, không cần trong deps) ───
+  const isMounted = useRef(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Refs mirror state — để polling không phải dùng stale closure
+  const exerciseDataRef = useRef<ExerciseItem[] | null>(null);
+  const answeredIdsRef = useRef<number[]>([]);
+  const activeQuestionRef = useRef<ExerciseItem | null>(null);
+  const subtitlesRef = useRef<SubtitleItem[]>([]);
   const currentSubtitleRef = useRef<SubtitleItem | null>(null);
   const lastSpokenSubtitleIdRef = useRef<string | number | null>(null);
-  // Khi vừa trả lời xong (đang hiện kết quả/animation), không auto nhảy sang câu kế tiếp
-  // để tránh trường hợp 2 câu hỏi nằm sát nhau gây "dính" state/UI.
   const isAnswerTransitionRef = useRef(false);
+  const hasCompletedAllRef = useRef(false);
 
-  // flowMode quyết định luồng nào đang chạy (phụ đề / trắc nghiệm / cả hai).
-  // Dùng ref để polling interval không phải restart mỗi khi user đổi tab.
-  const flowModeRef = useRef<"subtitles" | "quiz" | "both">("both");
+  // Opts refs — avoid stale closures for opts that change on parent re-render
+  const videoRefRef = useRef(opts?.videoRef);
+  const youtubePlayerRefRef = useRef(opts?.youtubePlayerRef);
+  const setYoutubeIsPlayingRef = useRef(opts?.setYoutubeIsPlaying);
+  const isYoutubeVideoRef = useRef(isYoutubeVideo);
+  const flowModeRef = useRef<"subtitles" | "quiz" | "both">(opts?.flowMode || "both");
+  const enableAutoSpeakRef = useRef(opts?.enableAutoSpeakSubtitle);
 
-  const isYoutubeVideo = videoDataUsesYoutubePlayer(videoData);
+  // ─── Keep opts refs in sync ───
+  useEffect(() => { videoRefRef.current = opts?.videoRef; }, [opts?.videoRef]);
+  useEffect(() => { youtubePlayerRefRef.current = opts?.youtubePlayerRef; }, [opts?.youtubePlayerRef]);
+  useEffect(() => { setYoutubeIsPlayingRef.current = opts?.setYoutubeIsPlaying; }, [opts?.setYoutubeIsPlaying]);
+  useEffect(() => { isYoutubeVideoRef.current = isYoutubeVideo; }, [isYoutubeVideo]);
+  useEffect(() => { flowModeRef.current = opts?.flowMode || "both"; }, [opts?.flowMode]);
+  useEffect(() => { enableAutoSpeakRef.current = opts?.enableAutoSpeakSubtitle; }, [opts?.enableAutoSpeakSubtitle]);
+
+  // ─── Keep state refs in sync ───
+  useEffect(() => { exerciseDataRef.current = exerciseData; }, [exerciseData]);
+  useEffect(() => { answeredIdsRef.current = answeredIds; }, [answeredIds]);
+  useEffect(() => { activeQuestionRef.current = activeQuestion; }, [activeQuestion]);
+  useEffect(() => { subtitlesRef.current = subtitles; }, [subtitles]);
+  useEffect(() => { hasCompletedAllRef.current = hasCompletedAll; }, [hasCompletedAll]);
+
+  // ─── Derived ───
+  const status = isVideoLoaded ? "readyToPlay" : "loading";
 
   const videoSource = useMemo(() => {
     if (!videoData?.video_file?.filename_disk) return "";
     return `https://marutek.space/assets/${videoData.video_file.filename_disk}`;
   }, [videoData?.video_file?.filename_disk]);
 
-  const player = useMemo(() => {
-    return {
-      play: () => {
-        if (opts?.videoRef?.current) {
-          opts.videoRef.current.play().catch((err: unknown) => {
-            // Autoplay bị trình duyệt chặn (NotAllowedError) là hành vi bình thường,
-            // người dùng cần bấm nút play trước. Không ghi nhận là lỗi.
+  // ─── Stable playback helpers (no deps, always read from refs) ───
+  const pausePlayback = useCallback(() => {
+    if (isYoutubeVideoRef.current) {
+      youtubePlayerRefRef.current?.current?.pauseVideo?.();
+      setYoutubeIsPlayingRef.current?.(false);
+    } else {
+      videoRefRef.current?.current?.pause();
+    }
+  }, []);
+
+  const resumePlayback = useCallback(() => {
+    try {
+      if (isYoutubeVideoRef.current) {
+        youtubePlayerRefRef.current?.current?.playVideo?.();
+        setYoutubeIsPlayingRef.current?.(true);
+      } else {
+        videoRefRef.current?.current?.play().catch((e: unknown) => {
+          logger.debug("[resumePlayback] play() interrupted:", e);
+        });
+      }
+    } catch (err) {
+      logger.error("[resumePlayback] Error:", err);
+    }
+  }, []);
+
+  // ─── Core polling tick (all stable refs, never stale) ───
+  const pollTick = useCallback(async () => {
+    if (!isMounted.current) return;
+    if (hasCompletedAllRef.current) return;
+
+    // 1. Get current time
+    let t = Number.NaN;
+    if (isYoutubeVideoRef.current) {
+      const api = youtubePlayerRefRef.current?.current;
+      if (api?.getCurrentTime) {
+        const res = api.getCurrentTime();
+        t = typeof res?.then === "function" ? await res : res;
+      }
+    } else {
+      t = videoRefRef.current?.current?.currentTime ?? Number.NaN;
+    }
+    if (!Number.isFinite(t) || t < 0) return;
+
+    // 2. Subtitle sync
+    const flowMode = flowModeRef.current;
+    if (flowMode !== "quiz") {
+      const subs = subtitlesRef.current;
+      if (subs.length > 0) {
+        const next = subs.find((st) => {
+          const s = timeToSeconds(st.start);
+          const e = timeToSeconds(st.end);
+          return t >= s && t <= e;
+        });
+        if (next) {
+          if (currentSubtitleRef.current?.id !== next.id) {
+            currentSubtitleRef.current = next;
+            setCurrentSubtitle(next);
+            // Auto-speak
             if (
-              err instanceof DOMException &&
-              (err.name === "NotAllowedError" || err.name === "AbortError")
+              enableAutoSpeakRef.current !== false &&
+              next.chinese &&
+              lastSpokenSubtitleIdRef.current !== next.id &&
+              !activeQuestionRef.current
             ) {
-              logger.debug("Video autoplay blocked by browser, waiting for user interaction.");
-              return;
+              lastSpokenSubtitleIdRef.current = next.id;
+              speakChinese(String(next.chinese));
             }
-            logger.error("Error playing video:", err);
-          });
-        }
-      },
-      pause: () => {
-        if (opts?.videoRef?.current) {
-          opts.videoRef.current.pause();
-        }
-      },
-      get currentTime() {
-        return opts?.videoRef?.current ? opts.videoRef.current.currentTime : 0;
-      },
-      set currentTime(val: number) {
-        if (opts?.videoRef?.current) {
-          opts.videoRef.current.currentTime = val;
+          }
+        } else if (currentSubtitleRef.current) {
+          currentSubtitleRef.current = null;
+          setCurrentSubtitle(null);
         }
       }
-    };
-  }, [opts?.videoRef]);
+    }
 
-  const status = isVideoLoaded ? "readyToPlay" : "loading";
+    // 3. Quiz activation (ALWAYS runs regardless of flowMode)
+    if (t <= 0.1) return;
+    if (isAnswerTransitionRef.current) return;
 
+    const exercises = exerciseDataRef.current;
+    if (!exercises || exercises.length === 0) return;
+
+    const answered = answeredIdsRef.current;
+
+    // Find first unanswered question whose time_start has been reached
+    const firstUnanswered = exercises.find(
+      (q) => !answered.some((id) => String(id) === String(q.id))
+    );
+    setNextQuestionId(firstUnanswered?.id ?? null);
+
+    // If there's already an active question, just keep pausing
+    if (activeQuestionRef.current) {
+      pausePlayback();
+      return;
+    }
+
+    // Find a new question to activate: time_start <= currentTime < time_end
+    const toActivate = exercises.find((q) => {
+      if (answered.some((id) => String(id) === String(q.id))) return false;
+      const startSec = timeToSeconds(q.time_start);
+      const endSec = timeToSeconds(q.time_end);
+      // Window: time_start reached but time_end not yet passed
+      return t >= startSec && (endSec <= 0 || t <= endSec + 5);
+    });
+
+    if (toActivate) {
+      logger.debug(
+        `[pollTick] Activating Q${toActivate.id} at t=${t}s (start=${timeToSeconds(toActivate.time_start)}s)`,
+      );
+      activeQuestionRef.current = toActivate;
+      setActiveQuestion(toActivate);
+      pausePlayback();
+    }
+  }, [pausePlayback]);
+
+  // ─── Single persistent polling interval ───
   useEffect(() => {
-    const video = opts?.videoRef?.current;
-    if (!video) return;
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
-    const handleLoaded = () => {
-      setIsVideoLoaded(true);
+    intervalRef.current = setInterval(() => {
+      pollTick().catch((err) => logger.error("[useDetailedVideoLogic] pollTick error:", err));
+    }, 200);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
+    // Only restart when pollTick itself changes (which is "never" since it only reads refs)
+  }, [pollTick]);
 
+  // ─── onVideoTimeUpdate (called from <video onTimeUpdate>) ───
+  const onVideoTimeUpdate = useCallback((currentTime?: number) => {
+    if (!isMounted.current) return;
+    let t = typeof currentTime === "number" ? currentTime : Number.NaN;
+    if (!Number.isFinite(t)) {
+      t = videoRefRef.current?.current?.currentTime ?? Number.NaN;
+    }
+    if (!Number.isFinite(t) || t < 0) return;
+    // Trigger a poll tick immediately (don't wait for interval)
+    pollTick().catch(() => {});
+  }, [pollTick]);
+
+  // ─── Video loaded detection ───
+  useEffect(() => {
+    const video = videoRefRef.current?.current;
+    if (!video) return;
+    const handleLoaded = () => setIsVideoLoaded(true);
     if (video.readyState >= 1) {
       setIsVideoLoaded(true);
     } else {
       video.addEventListener("loadedmetadata", handleLoaded);
     }
-
-    return () => {
-      video.removeEventListener("loadedmetadata", handleLoaded);
-    };
+    return () => video.removeEventListener("loadedmetadata", handleLoaded);
+  // re-run if videoRef changes identity (unlikely but safe)
   }, [opts?.videoRef]);
 
+  const handleVideoLoaded = useCallback(() => setIsVideoLoaded(true), []);
+
+  // ─── Auto-play when ready ───
   useEffect(() => {
     if (isYoutubeVideo) return;
     if (status === "readyToPlay") {
-      try {
-        player.play();
-      } catch (error) {
-        logger.error("Error starting video:", error);
-      }
-    }
-  }, [status, player, isYoutubeVideo]);
-
-  useEffect(() => {
-    let isCancelled = false;
-    const loadSubtitles = async () => {
-      if (!videoData?.srt_file?.filename_disk) {
-        if (!isCancelled) {
-          setSubtitles([]);
-          currentSubtitleRef.current = null;
-          setCurrentSubtitle(null);
+      videoRefRef.current?.current?.play().catch((err: unknown) => {
+        if (err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "AbortError")) {
+          logger.debug("Video autoplay blocked by browser.");
+          return;
         }
+        logger.error("Error auto-playing video:", err);
+      });
+    }
+  }, [status, isYoutubeVideo]);
+
+  // ─── Subtitle loading ───
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!videoData?.srt_file?.filename_disk) {
+        setSubtitles([]);
+        currentSubtitleRef.current = null;
+        setCurrentSubtitle(null);
         return;
       }
       try {
-        const response = await fetch(
-          `https://marutek.space/assets/${videoData.srt_file.filename_disk}`,
-        );
-        const srtContent = await response.text();
+        const res = await fetch(`https://marutek.space/assets/${videoData.srt_file.filename_disk}`);
+        const srtContent = await res.text();
         const parsed = parseSRTtoArray(srtContent);
         const sorted = Array.isArray(parsed)
           ? [...parsed].sort((a: any, b: any) => timeToSeconds(a.start) - timeToSeconds(b.start))
           : [];
-        if (!isCancelled) {
+        if (!cancelled) {
           setSubtitles(sorted as SubtitleItem[]);
           currentSubtitleRef.current = null;
           setCurrentSubtitle(null);
         }
-      } catch (error) {
-        logger.error("Error loading subtitles:", error);
-        if (!isCancelled) {
-          setSubtitles([]);
-          currentSubtitleRef.current = null;
-          setCurrentSubtitle(null);
-        }
+      } catch (err) {
+        logger.error("[useDetailedVideoLogic] Error loading subtitles:", err);
+        if (!cancelled) setSubtitles([]);
       }
     };
-    loadSubtitles();
-    return () => {
-      isCancelled = true;
-    };
+    load();
+    return () => { cancelled = true; };
   }, [videoData?.srt_file?.filename_disk]);
 
+  // ─── Exercise loading ───
   useEffect(() => {
-    const getExerciseById = async () => {
+    if (!videoData?.id) return;
+    let cancelled = false;
+
+    const load = async () => {
       try {
         logger.debug("[useDetailedVideoLogic] Fetching exercises for id:", videoData.id);
         const response = await bilingualApi.getExerciseById(videoData.id);
-        logger.debug("[useDetailedVideoLogic] Exercise API raw response:", JSON.stringify(response));
-        const sortedExercises = Array.isArray(response.exercises)
-          ? [...response.exercises].sort(
-              (a: any, b: any) => timeToSeconds(a.time_end) - timeToSeconds(b.time_end),
-            )
-          : response.exercises;
-        logger.debug("[useDetailedVideoLogic] Sorted exercises:", JSON.stringify(sortedExercises));
-        // Nếu API trả rỗng → dùng fallback exercises (ví dụ demo hoặc khi video chưa có bài tập trên DB)
-        if (!Array.isArray(sortedExercises) || sortedExercises.length === 0) {
-          if (Array.isArray(opts?.fallbackExercises) && opts.fallbackExercises.length > 0) {
+        logger.debug("[useDetailedVideoLogic] Exercise API response:", JSON.stringify(response));
+
+        const raw = Array.isArray(response.exercises) ? response.exercises : [];
+        const sorted = [...raw].sort(
+          (a: any, b: any) => timeToSeconds(a.time_start) - timeToSeconds(b.time_start),
+        );
+
+        if (cancelled) return;
+
+        if (sorted.length === 0) {
+          if (Array.isArray(opts?.fallbackExercises) && opts!.fallbackExercises.length > 0) {
             logger.debug("[useDetailedVideoLogic] Using fallback exercises.");
-            setExerciseData(opts.fallbackExercises);
-            return;
+            setExerciseData(opts!.fallbackExercises);
+          } else {
+            setExerciseData([]);
           }
-          setExerciseData([]);
           return;
         }
-        setExerciseData(sortedExercises);
-      } catch (error: any) {
-        logger.error("[useDetailedVideoLogic] Exercise fetch error:", error.message);
-        if (Array.isArray(opts?.fallbackExercises) && opts.fallbackExercises.length > 0) {
-          logger.debug("[useDetailedVideoLogic] Using fallback exercises after fetch error.");
-          setExerciseData(opts.fallbackExercises);
-        } else if (error.message === "Unauthorized" || error.message === "Failed to fetch exercise") {
+        setExerciseData(sorted);
+      } catch (err: any) {
+        logger.error("[useDetailedVideoLogic] Exercise fetch error:", err.message);
+        if (cancelled) return;
+        if (Array.isArray(opts?.fallbackExercises) && opts!.fallbackExercises.length > 0) {
+          setExerciseData(opts!.fallbackExercises);
+        } else if (err.message === "Unauthorized" || err.message === "Failed to fetch exercise") {
           router.replace("/sign-in");
         } else {
           setExerciseData([]);
         }
       }
     };
-    if (videoData?.id) {
-      getExerciseById();
-    }
+    load();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoData?.id]);
 
-  // Sử dụng Refs để tránh restart interval khi state thay đổi
-  const exerciseDataRef = useRef<ExerciseItem[] | null>(null);
-  const answeredIdsRef = useRef<number[]>([]);
-  const activeQuestionRef = useRef<ExerciseItem | null>(null);
-  const subtitlesRef = useRef<SubtitleItem[]>([]);
-
-  useEffect(() => {
-    exerciseDataRef.current = exerciseData;
-  }, [exerciseData]);
-  useEffect(() => {
-    answeredIdsRef.current = answeredIds;
-  }, [answeredIds]);
-  useEffect(() => {
-    activeQuestionRef.current = activeQuestion;
-  }, [activeQuestion]);
-  useEffect(() => {
-    subtitlesRef.current = subtitles;
-  }, [subtitles]);
-
-  // ─── Shared helpers (dùng refs → an toàn khi gọi từ bất kỳ effect nào) ───
-
-  const updateCurrentSubtitle = useCallback((currentTime: number) => {
-    if (flowModeRef.current === "quiz") return;
-    const subs = subtitlesRef.current;
-    if (!Array.isArray(subs) || subs.length === 0) return;
-    const next = subs.find((st) => {
-      const s = timeToSeconds(st.start);
-      const e = timeToSeconds(st.end);
-      return currentTime >= s && currentTime <= e;
-    });
-    if (next) {
-      if (currentSubtitleRef.current?.id !== next.id) {
-        currentSubtitleRef.current = next;
-        setCurrentSubtitle(next);
-      }
-    } else if (currentSubtitleRef.current) {
-      currentSubtitleRef.current = null;
-      setCurrentSubtitle(null);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const pausePlayback = useCallback(() => {
-    logger.debug("[pausePlayback] Called. isYoutube:", isYoutubeVideo);
-    if (isYoutubeVideo) {
-      if (opts?.youtubePlayerRef?.current?.pauseVideo) {
-        opts.youtubePlayerRef.current.pauseVideo();
-      }
-      opts?.setYoutubeIsPlaying?.(false);
-    } else if (opts?.videoRef?.current) {
-      opts.videoRef.current.pause();
-    } else if (typeof (player as any)?.pause === "function") {
-      try { (player as any).pause(); } catch {}
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isYoutubeVideo, player, opts?.youtubePlayerRef, opts?.videoRef, opts?.setYoutubeIsPlaying]);
-
-  const syncExerciseState = useCallback((currentTime: number) => {
-    if (currentTime <= 0.1) {
-      return;
-    }
-    if (flowModeRef.current !== "quiz" && flowModeRef.current !== "both") {
-      return;
-    }
-    if (isAnswerTransitionRef.current) {
-      logger.debug("[syncExerciseState] Skipped - isAnswerTransition");
-      return;
-    }
-    const exercises = exerciseDataRef.current;
-    if (!exercises || exercises.length === 0) {
-      logger.debug("[syncExerciseState] No exercises");
-      return;
-    }
-
-    const firstUnanswered = exercises.find((q) => !answeredIdsRef.current.some((ansId) => String(ansId) === String(q.id)));
-    setNextQuestionId(firstUnanswered?.id ?? null);
-
-    const currentQuestion = exercises.find((q) => {
-      if (answeredIdsRef.current.some((ansId) => String(ansId) === String(q.id))) return false;
-      const endTime = timeToSeconds(q.time_end);
-      const startTime = timeToSeconds(q.time_start);
-      return currentTime >= endTime || (currentTime >= startTime && currentTime <= endTime + 2);
-    });
-
-    if (currentQuestion) {
-      logger.debug(
-        `[syncExerciseState] Found Q: id=${currentQuestion.id}, t=${currentTime}s, range=[${timeToSeconds(currentQuestion.time_start)}-${timeToSeconds(currentQuestion.time_end)}]`,
-      );
-    }
-
-    if (currentQuestion && !activeQuestionRef.current) {
-      logger.debug(`[syncExerciseState] ACTIVATE Q${currentQuestion.id}, calling pausePlayback()`);
-      activeQuestionRef.current = currentQuestion;
-      setActiveQuestion(currentQuestion);
-      pausePlayback();
-    }
-  }, [pausePlayback]);
-
-  const handleTimeBoundaryPausing = useCallback((_currentTime: number) => {
-    const activeQ = activeQuestionRef.current;
-    if (activeQ) {
-      // Khi đang có câu hỏi chưa trả lời: Bắt buộc dừng video không cho phát lén
-      pausePlayback();
-    }
-  }, [pausePlayback]);
-
-  useEffect(() => {
-    const mode = opts?.flowMode || "both";
-    flowModeRef.current = mode;
-    if (mode === "subtitles") {
-      if (activeQuestionRef.current) {
-        activeQuestionRef.current = null;
-        setActiveQuestion(null);
-      }
-    } else if (mode === "quiz") {
-      if (currentSubtitleRef.current) {
-        currentSubtitleRef.current = null;
-        setCurrentSubtitle(null);
-      }
-      const curT = opts?.videoRef?.current?.currentTime;
-      if (typeof curT === "number" && curT > 0.1) {
-        syncExerciseState(curT);
-      }
-    }
-  }, [opts?.flowMode, opts?.videoRef, syncExerciseState]);
-
-  const onVideoTimeUpdate = useCallback((currentTime?: number) => {
-    if (!isComponentMounted.current) return;
-    let t = typeof currentTime === "number" ? currentTime : Number.NaN;
-    if (!Number.isFinite(t)) {
-      t = opts?.videoRef?.current?.currentTime ?? (typeof player?.currentTime === "number" ? player.currentTime : Number.NaN);
-    }
-    if (!Number.isFinite(t) || t < 0) return;
-    const flowMode = flowModeRef.current;
-    if (flowMode === "subtitles" || flowMode === "both") {
-      updateCurrentSubtitle(t);
-    }
-    if (flowMode === "quiz" || flowMode === "both") {
-      syncExerciseState(t);
-      handleTimeBoundaryPausing(t);
-    }
-  }, [opts?.videoRef, player, updateCurrentSubtitle, syncExerciseState, handleTimeBoundaryPausing]);
-
-  // ─── Polling video timeline (mỗi 200ms cho cả local HTML5 video và YouTube iframe) ───
-  useEffect(() => {
-    if (hasCompletedAll) return;
-
-    if (intervalRef.current) clearInterval(intervalRef.current as any);
-
-    intervalRef.current = setInterval(async () => {
-      if (!isComponentMounted.current) return;
-      try {
-        let currentTime = Number.NaN;
-        if (isYoutubeVideo) {
-          const api = opts?.youtubePlayerRef?.current;
-          if (api && typeof api.getCurrentTime === "function") {
-            const res = api.getCurrentTime();
-            currentTime = typeof res?.then === "function" ? await res : res;
-          }
-        } else if (opts?.videoRef?.current) {
-          currentTime = opts.videoRef.current.currentTime;
-        } else if (typeof player?.currentTime === "number") {
-          currentTime = player.currentTime;
-        }
-
-        if (!Number.isFinite(currentTime) || currentTime < 0) return;
-
-        const flowMode = flowModeRef.current;
-        if (flowMode === "subtitles" || flowMode === "both") {
-          updateCurrentSubtitle(currentTime);
-        }
-        if (flowMode === "quiz" || flowMode === "both") {
-          syncExerciseState(currentTime);
-          handleTimeBoundaryPausing(currentTime);
-        }
-      } catch (err) {
-        logger.error("[useDetailedVideoLogic] Polling error:", err);
-      }
-    }, 200) as any;
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current as any);
-        intervalRef.current = null;
-      }
-    };
-  }, [
-    isYoutubeVideo,
-    hasCompletedAll,
-    opts?.youtubePlayerRef,
-    opts?.videoRef,
-    player,
-    updateCurrentSubtitle,
-    syncExerciseState,
-    handleTimeBoundaryPausing,
-  ]);
-
-  useEffect(() => {
-    if (opts?.enableAutoSpeakSubtitle === false) return;
-    if (!currentSubtitle?.id || !currentSubtitle?.chinese || activeQuestion) return;
-    if (lastSpokenSubtitleIdRef.current === currentSubtitle.id) return;
-    lastSpokenSubtitleIdRef.current = currentSubtitle.id;
-    speakChinese(String(currentSubtitle.chinese));
-  }, [currentSubtitle?.id, currentSubtitle?.chinese, activeQuestion, opts?.enableAutoSpeakSubtitle]);
-
-  const handleVideoLoaded = useCallback(() => {
-    setIsVideoLoaded(true);
-  }, []);
-
+  // ─── Answer submission ───
   const handleOptionPress = async (key: string) => {
-    if (!activeQuestion) return;
-    const answerText = activeQuestion[`answer_${key}`];
+    if (!activeQuestionRef.current) return;
+    const question = activeQuestionRef.current;
+
+    // Build answerText from whatever structure the exercise has
+    const answerText =
+      question[`answer_${key}`] ||
+      question[`Answer_${key}`] ||
+      (() => {
+        let raw = question.options;
+        if (typeof raw === "string") {
+          try { raw = JSON.parse(raw); } catch { raw = []; }
+        }
+        if (Array.isArray(raw)) {
+          const opt = raw.find((o: any) => String(o.id || o.key || "") === key);
+          return opt ? (opt.val || opt.hanzi || opt.text || opt.value || key) : key;
+        }
+        return key;
+      })();
+
     try {
       isAnswerTransitionRef.current = true;
-      const answers = [
-        {
-          questionId: activeQuestion.id,
-          answer: key,
-          answerText,
-          selectAnswer: key,
-        },
-      ];
+      const answers = [{ questionId: question.id, answer: key, answerText, selectAnswer: key }];
       const response = await bilingualApi.submitExercise(answers);
       const result = Array.isArray(response) ? response[0] : response;
 
       setAnswerResults((prev) => [
         ...prev,
-        {
-          ...result,
-          answerText,
-          question: activeQuestion.question,
-          sort_id: activeQuestion.sort_id,
-        },
+        { ...result, answerText, question: question.question, sort_id: question.sort_id },
       ]);
       setShowResult(true);
-
       playAnswerFeedback(result.status === "Đúng");
 
-      const nextAnsweredCount = answeredIds.length + 1;
-      const totalCount = Array.isArray(exerciseData) ? exerciseData.length : 0;
-      setAnsweredIds((prev) => [...prev, activeQuestion.id]);
+      const nextCount = answeredIdsRef.current.length + 1;
+      const total = exerciseDataRef.current?.length ?? 0;
+      setAnsweredIds((prev) => [...prev, question.id]);
 
       setTimeout(() => {
-        // Kết thúc phase hiển thị kết quả câu vừa trả lời
-        setShowResult(false);
         setShowResult(false);
         setActiveQuestion(null);
         activeQuestionRef.current = null;
         isAnswerTransitionRef.current = false;
 
-        if (totalCount > 0 && nextAnsweredCount === totalCount) {
+        if (total > 0 && nextCount >= total) {
           setHasCompletedAll(true);
           setShowCompletionOverlay(true);
-        } else if (isComponentMounted.current) {
+        } else if (isMounted.current) {
           resumePlayback();
         }
       }, 1500);
 
       return result;
-    } catch (error) {
-      logger.error("[useDetailedVideoLogic] Error submitting exercise, falling back to local verification:", error);
-      
-      // Local fallback calculation if API fails
-      const correctAns = String(
-        activeQuestion.Correct_answer || 
-        activeQuestion.correct_answer || 
-        activeQuestion.Correct_Answer || 
-        activeQuestion.correctAnswer || 
-        activeQuestion.correct || 
-        activeQuestion.answer || 
-        ""
-      ).trim().toUpperCase();
+    } catch (err: any) {
+      logger.error("[useDetailedVideoLogic] Submit error, using local fallback:", err.message);
 
+      // Local fallback
+      const correctAns = String(
+        question.Correct_answer || question.correct_answer || question.correctAnswer || ""
+      ).trim().toUpperCase();
       let isCorrect = false;
-      const keyUpper = key.trim().toUpperCase();
+      const kUp = key.trim().toUpperCase();
       if (correctAns) {
-        const cleanAns = correctAns.replace(/[^A-Z0-9\p{L}]/gu, "").toUpperCase();
-        const cleanKey = keyUpper.replace(/[^A-Z0-9\p{L}]/gu, "").toUpperCase();
-        isCorrect = cleanAns === cleanKey || cleanAns === `ANSWER${cleanKey}`;
-      } else if (Array.isArray(activeQuestion.options)) {
-        const selectedOpt = activeQuestion.options.find((opt: any) => String(opt.id) === key);
-        if (selectedOpt) {
-          isCorrect = !!(selectedOpt.isCorrect ?? selectedOpt.is_correct ?? selectedOpt.correct);
+        isCorrect = correctAns === kUp || correctAns === `ANSWER${kUp}` || correctAns === `ANSWER_${kUp}`;
+      } else {
+        let raw = question.options;
+        if (typeof raw === "string") { try { raw = JSON.parse(raw); } catch { raw = []; } }
+        if (Array.isArray(raw)) {
+          const opt = raw.find((o: any) => String(o.id || o.key || "") === key);
+          if (opt) isCorrect = !!(opt.isCorrect ?? opt.is_correct ?? opt.correct);
         }
       }
 
-      const fallbackResult = {
-        status: isCorrect ? "Đúng" : "Sai",
-        correctAnswer: correctAns,
-        isCorrect: isCorrect,
-      };
-
+      const fallbackResult = { status: isCorrect ? "Đúng" : "Sai", correctAnswer: correctAns, isCorrect };
       setAnswerResults((prev) => [
         ...prev,
-        {
-          ...fallbackResult,
-          answerText,
-          question: activeQuestion.question,
-          sort_id: activeQuestion.sort_id,
-        },
+        { ...fallbackResult, answerText, question: question.question, sort_id: question.sort_id },
       ]);
       setShowResult(true);
       playAnswerFeedback(isCorrect);
 
-      const nextAnsweredCount = answeredIds.length + 1;
-      const totalCount = Array.isArray(exerciseData) ? exerciseData.length : 0;
-      setAnsweredIds((prev) => [...prev, activeQuestion.id]);
+      const nextCount = answeredIdsRef.current.length + 1;
+      const total = exerciseDataRef.current?.length ?? 0;
+      setAnsweredIds((prev) => [...prev, question.id]);
 
       setTimeout(() => {
         setShowResult(false);
@@ -564,10 +465,10 @@ export const useDetailedVideoLogic = (
         activeQuestionRef.current = null;
         isAnswerTransitionRef.current = false;
 
-        if (totalCount > 0 && nextAnsweredCount === totalCount) {
+        if (total > 0 && nextCount >= total) {
           setHasCompletedAll(true);
           setShowCompletionOverlay(true);
-        } else if (isComponentMounted.current) {
+        } else if (isMounted.current) {
           resumePlayback();
         }
       }, 1500);
@@ -576,31 +477,13 @@ export const useDetailedVideoLogic = (
     }
   };
 
-  const resumePlayback = useCallback(() => {
-    try {
-      if (isYoutubeVideo) {
-        if (opts?.youtubePlayerRef?.current?.playVideo) {
-          opts.youtubePlayerRef.current.playVideo();
-        }
-        opts?.setYoutubeIsPlaying?.(true);
-      } else if (opts?.videoRef?.current) {
-        opts.videoRef.current.play().catch((e) => logger.debug("Play interrupted", e));
-      } else if (player && typeof (player as any).play === "function") {
-        (player as any).play();
-      }
-    } catch (error) {
-      logger.error("[useDetailedVideoLogic] Error in resumePlayback:", error);
-    }
-  }, [isYoutubeVideo, player, opts?.youtubePlayerRef, opts?.videoRef, opts?.setYoutubeIsPlaying]);
-
   const handleContinueWatching = useCallback(() => {
     setShowCompletionOverlay(false);
-    
-    // Clear active question so we don't get stuck in a pause loop
     const activeQ = activeQuestionRef.current;
     if (activeQ) {
-      if (!answeredIdsRef.current.includes(activeQ.id)) {
+      if (!answeredIdsRef.current.some((id) => String(id) === String(activeQ.id))) {
         setAnsweredIds((prev) => [...prev, activeQ.id]);
+        answeredIdsRef.current = [...answeredIdsRef.current, activeQ.id];
       }
       setActiveQuestion(null);
       activeQuestionRef.current = null;
@@ -616,23 +499,23 @@ export const useDetailedVideoLogic = (
         video: JSON.stringify(videoData || {}),
       });
       router.push(`/video/results?${searchParams.toString()}`);
-    } catch (error) {
-      logger.error("[useDetailedVideoLogic] Error in handleViewResults:", error);
+    } catch (err) {
+      logger.error("[useDetailedVideoLogic] Error in handleViewResults:", err);
     }
   }, [answerResults, videoData, router]);
 
+  // ─── Cleanup on unmount ───
   useEffect(() => {
     return () => {
+      isMounted.current = false;
       if (intervalRef.current) {
-        clearInterval(intervalRef.current as any);
+        clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      isComponentMounted.current = false;
     };
   }, []);
 
   return {
-    player,
     videoSource,
     isVideoLoaded,
     showCompletionOverlay,
@@ -646,12 +529,21 @@ export const useDetailedVideoLogic = (
     showResult,
     hasCompletedAll,
     status,
-    isComponentMounted,
+    isComponentMounted: isMounted,
     handleOptionPress,
     handleContinueWatching,
     handleViewResults,
+    resumePlayback,
     ytSavedTime: 0,
     handleVideoLoaded,
     onVideoTimeUpdate,
+    // legacy player shape (for callers that still use it)
+    player: {
+      play: resumePlayback,
+      pause: pausePlayback,
+      get currentTime() {
+        return videoRefRef.current?.current?.currentTime ?? 0;
+      },
+    },
   };
 };

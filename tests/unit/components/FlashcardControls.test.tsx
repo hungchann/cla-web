@@ -62,4 +62,14 @@ describe("FlashcardControls", () => {
     await user.click(btn);
     expect(onPrevious).not.toHaveBeenCalled();
   });
+
+  it("renders pronounce button in quiz mode and calls onPronounce", async () => {
+    const user = userEvent.setup();
+    const onPronounce = vi.fn();
+    render(<FlashcardControls {...baseProps} mode="quiz" onPronounce={onPronounce} />);
+    expect(screen.getByRole("button", { name: /phát âm/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /phát âm/i }));
+    expect(onPronounce).toHaveBeenCalled();
+  });
 });
+

@@ -11,6 +11,7 @@ import { tokenUtils } from "@/lib/utils/tokenUtils";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
+import { BackButton } from "@/components/BackButton";
 import { PremiumGate } from "@/components/PremiumGate";
 import { usePremiumGate } from "@/lib/hooks/usePremiumGate";
 import { buildCheckoutUrl } from "@/api/plans";
@@ -18,7 +19,7 @@ import { FREE_NOTEBOOK_LIMIT } from "@/lib/premium";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Folder, Lightbulb, User, Library, Notebook, Key, Trophy, FolderOpen, ChevronDown, ChevronUp, Heart } from "lucide-react";
+import { Folder, Lightbulb, User, Library, Notebook, Key, Trophy, FolderOpen, ChevronDown, ChevronUp, Heart, Check, X, Layers, PenLine, Volume2 } from "lucide-react";
 
 // Mock data từ vựng phong phú làm fallback
 const MOCK_FLASHCARDS = [
@@ -495,6 +496,7 @@ function FlashcardStudySession({
       moveToNext(status);
     }
   }, [fallbackDataActive, localIndex, moveToNext, masteredCount, reviewCount]);
+
   const handlePrevAction = useCallback(() => {
     if (fallbackDataActive) {
       if (localIndex > 0) {
@@ -513,33 +515,6 @@ function FlashcardStudySession({
       flip();
     }
   }, [fallbackDataActive, flip]);
-
-  // Lắng nghe phím tắt bàn phím
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        e.preventDefault();
-        handleFlipAction();
-      } else if (e.code === "ArrowRight" || e.code === "Digit1") {
-        // Thuộc từ
-        handleNextAction("mastered");
-      } else if (e.code === "ArrowLeft" || e.code === "Digit2") {
-        // Chưa thuộc
-        handleNextAction("learning");
-      } else if (e.code === "ArrowUp") {
-        // Xem lại
-        handleNextAction("uncertain");
-      } else if (e.code === "ArrowDown") {
-        // Quay lại
-        handlePrevAction();
-      }
-    };
-
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => {
-      globalThis.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [handleFlipAction, handleNextAction, handlePrevAction]);
 
   // Kích hoạt Mock Data khi API rỗng
   useEffect(() => {
@@ -578,7 +553,7 @@ function FlashcardStudySession({
     const seededShuffle = (arr: string[], seed: string): string[] => {
       const result = [...arr];
       let h = 0;
-      for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      for (const ch of seed) h = (h * 31 + (ch.codePointAt(0) ?? 0)) >>> 0;
       for (let i = result.length - 1; i > 0; i--) {
         h = (h * 1103515245 + 12345) >>> 0;
         const j = h % (i + 1);
@@ -606,7 +581,7 @@ function FlashcardStudySession({
       }));
   }, [currentQuizWord, quizWords]);
 
-  const handleQuizSelect = (optionKey: string) => {
+  const handleQuizSelect = useCallback((optionKey: string) => {
     if (quizSelected || !currentQuizWord) return;
     const option = quizOptions.find((o) => o.key === optionKey);
     if (!option) return;
@@ -615,8 +590,64 @@ function FlashcardStudySession({
     const isCorrect = option.isCorrect;
     globalThis.setTimeout(() => {
       handleNextAction(isCorrect ? "mastered" : "learning");
-    }, isCorrect ? 900 : 1600);
-  };
+    }, isCorrect ? 900 : 1500);
+  }, [quizSelected, currentQuizWord, quizOptions, handleNextAction]);
+
+  // Lắng nghe phím tắt bàn phím
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (studyMode === "flashcard") {
+          handleFlipAction();
+        } else if (studyMode === "quiz" && currentQuizWord?.word) {
+          speakChinese(currentQuizWord.word);
+        }
+      } else if (e.code === "ArrowRight") {
+        // Thuộc từ
+        handleNextAction("mastered");
+      } else if (e.code === "ArrowLeft") {
+        // Chưa thuộc
+        handleNextAction("learning");
+      } else if (e.code === "ArrowUp") {
+        // Xem lại
+        handleNextAction("uncertain");
+      } else if (e.code === "ArrowDown") {
+        // Quay lại
+        handlePrevAction();
+      } else if (studyMode === "quiz" && !quizSelected) {
+        if (e.key === "a" || e.key === "A" || e.code === "Digit1") {
+          handleQuizSelect("A");
+        } else if (e.key === "b" || e.key === "B" || e.code === "Digit2") {
+          handleQuizSelect("B");
+        } else if (e.key === "c" || e.key === "C" || e.code === "Digit3") {
+          handleQuizSelect("C");
+        } else if (e.key === "d" || e.key === "D" || e.code === "Digit4") {
+          handleQuizSelect("D");
+        }
+      } else if (studyMode === "flashcard") {
+        if (e.code === "Digit1") {
+          handleNextAction("mastered");
+        } else if (e.code === "Digit2") {
+          handleNextAction("learning");
+        }
+      }
+    };
+
+    globalThis.addEventListener("keydown", handleKeyDown);
+    return () => {
+      globalThis.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleFlipAction, handleNextAction, handlePrevAction, studyMode, currentQuizWord, quizSelected, handleQuizSelect]);
+
+  const headerTitle = useMemo(() => {
+    if (type === "system") return "Luyện tập từ vựng HSK";
+    if (type === "personal") return "Sổ tay từ vựng cá nhân";
+    return "Bộ từ gợi ý học nhanh";
+  }, [type]);
 
   if (isLoadingList) {
     return (
@@ -646,7 +677,7 @@ function FlashcardStudySession({
 
   const isFavorite = activeVocab?.id ? favoriteStatus[String(activeVocab.id)] : false;
 
-  // Render detail senses definition (tránh nested ternary operation)
+  // Render detail senses definition
   let sensesContent: React.ReactNode = (
     <p className="text-zinc-400 italic">Không có nghĩa tiếng Việt.</p>
   );
@@ -677,175 +708,236 @@ function FlashcardStudySession({
   }
 
   return (
-    <PageContainer className="max-w-3xl">
-          <div className="bg-amber-500 text-white font-black py-4 px-6 rounded-2xl text-center shadow-xs text-sm uppercase tracking-wide">
-            {fallbackDataActive ? "Thử thách Flashcard" : "Học tập Flashcard"}
-          </div>
+    <PageContainer className="max-w-3xl space-y-6">
+      {/* Top bar: Back Button & Favorite Button */}
+      <div className="flex items-center justify-between">
+        <BackButton href="/flashcard" label="Về danh sách sổ tay" />
+        <button
+          type="button"
+          onClick={toggleFavorite}
+          title={isFavorite ? "Bỏ yêu thích" : "Lưu vào yêu thích"}
+          className={`p-2.5 rounded-xl border transition-all active:scale-90 cursor-pointer ${
+            isFavorite
+              ? "border-rose-200 bg-rose-50/60 dark:border-rose-900/40 dark:bg-rose-950/20 text-rose-500 shadow-xs"
+              : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-rose-500 hover:border-rose-200"
+          }`}
+        >
+          <Heart className="w-5 h-5" fill={isFavorite ? "currentColor" : "none"} />
+        </button>
+      </div>
 
-          {/* Stats + Mode Switcher */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-3">
-              <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 font-bold px-3 py-1.5 rounded-xl text-xs">
-                Đã thuộc {masteredCount}
+      {/* Page Header with Mode Switcher */}
+      <PageHeader
+        title={headerTitle}
+        description="Ôn tập từ vựng theo phương pháp ngắt quãng (SRS) và phản xạ nhanh."
+        icon={<FolderOpen className="w-6 h-6" />}
+        action={
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800/90 p-1 rounded-xl border border-zinc-200/80 dark:border-zinc-700/60 shadow-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setStudyMode("flashcard");
+                setQuizSelected(null);
+              }}
+              className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                studyMode === "flashcard"
+                  ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white"
+                  : "bg-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+            >
+              <Layers className="w-4 h-4" /> Flashcard
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStudyMode("quiz");
+                setQuizSelected(null);
+              }}
+              className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                studyMode === "quiz"
+                  ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white"
+                  : "bg-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+            >
+              <PenLine className="w-4 h-4" /> Chọn đáp án
+            </button>
+          </div>
+        }
+      />
+
+      {/* Stats & Progress */}
+      <div className="space-y-3 bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800 p-4 rounded-2xl shadow-xs backdrop-blur-xs">
+        <div className="flex items-center justify-between text-xs font-bold">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+              <Check className="w-3.5 h-3.5" /> Đã thuộc {masteredCount}
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2.5 py-1 rounded-lg border border-rose-500/20">
+              <X className="w-3.5 h-3.5" /> Cần ôn {reviewCount}
+            </span>
+          </div>
+          <span className="text-zinc-500 dark:text-zinc-400">
+            Tiến trình: {displayIndex + 1} / {totalCards} ({Math.round(((displayIndex + 1) / Math.max(1, totalCards)) * 100)}%)
+          </span>
+        </div>
+
+        <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden shadow-inner">
+          <div
+            className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${((displayIndex + 1) / Math.max(1, totalCards)) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Study Mode: Quiz vs Flashcard */}
+      {studyMode === "quiz" ? (
+        <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+          <div className="p-6 sm:p-8 flex flex-col justify-between min-h-[380px] gap-6">
+            {/* Question Header */}
+            <div className="flex flex-col items-center text-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                Trắc nghiệm phản xạ từ vựng
               </span>
-              <span className="bg-rose-500/10 text-rose-600 dark:text-rose-500 font-bold px-3 py-1.5 rounded-xl text-xs">
-                Cần ôn {reviewCount}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setStudyMode("flashcard")}
-                className={`px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none ${
-                  studyMode === "flashcard"
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-transparent text-zinc-400 hover:text-zinc-650"
-                }`}
-              >
-                Flashcard
-              </button>
-              <button
-                type="button"
-                onClick={() => setStudyMode("quiz")}
-                className={`px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none ${
-                  studyMode === "quiz"
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-transparent text-zinc-400 hover:text-zinc-650"
-                }`}
-              >
-                Chọn đáp án
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-xs font-bold text-zinc-500 dark:text-zinc-400 select-none px-1">
-              <span>Tiến trình học: {displayIndex + 1} / {totalCards}</span>
-              <button
-                onClick={toggleFavorite}
-                className={`cursor-pointer bg-transparent border-none transition-all active:scale-90 ${isFavorite ? "text-rose-500" : "text-zinc-300 dark:text-zinc-700 hover:text-rose-400"}`}
-              >
-                <Heart className="w-6 h-6" fill={isFavorite ? "currentColor" : "none"} />
-              </button>
-            </div>
-            {/* Dynamic Progress Bar */}
-            <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden shadow-inner">
-              <div
-                className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${((displayIndex + 1) / totalCards) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {studyMode === "quiz" ? (
-            <div className="border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 bg-white dark:bg-zinc-900 shadow-sm flex flex-col gap-6 min-h-[340px]">
-              <h3 className="font-black text-zinc-800 dark:text-zinc-200 text-sm tracking-wide text-center">
-                Từ nào có nghĩa là &quot;{currentQuizWord?.meaning || "?"}&quot;?
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 content-center">
-                {quizOptions.map((opt) => {
-                  const isSelected = quizSelected === opt.key;
-                  let btnStyle = "border-zinc-250 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:border-amber-300 hover:bg-amber-50/10";
-
-                  if (isSelected) {
-                    btnStyle = opt.isCorrect
-                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 ring-2 ring-emerald-500"
-                      : "border-rose-500 bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 ring-2 ring-rose-500";
-                  } else if (quizSelected && opt.isCorrect) {
-                    btnStyle = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300";
-                  }
-
-                  return (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      disabled={!!quizSelected}
-                      onClick={() => handleQuizSelect(opt.key)}
-                      className={`flex items-center gap-3.5 p-5 rounded-2xl border font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer shadow-xs disabled:cursor-default ${btnStyle}`}
-                    >
-                      <span className="font-black px-2.5 py-1 text-xs rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">{opt.key}</span>
-                      <span className="text-zinc-850 dark:text-zinc-150 font-extrabold text-lg">{opt.word}</span>
-                    </button>
-                  );
-                })}
+              <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 mt-1">
+                Từ nào dưới đây có nghĩa là:
+              </p>
+              <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-500 tracking-tight max-w-xl">
+                &ldquo;{currentQuizWord?.meaning || "?"}&rdquo;
               </div>
             </div>
-          ) : (
-            <>
-              <div className="h-96 w-full mt-2">
-                <FlashcardCard
-                  isFlipped={isCardFlipped}
-                  onFlip={handleFlipAction}
-                  frontContent={
-                    <div className="flex-1 flex flex-col items-center justify-center p-8 h-full text-center rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                      <span className="text-6xl font-black text-zinc-900 dark:text-white tracking-wider">
+
+            {/* 4 Options Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full max-w-2xl mx-auto my-auto">
+              {quizOptions.map((opt) => {
+                const isSelected = quizSelected === opt.key;
+                let btnStyle =
+                  "border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40 text-zinc-800 dark:text-zinc-200 hover:border-amber-300 hover:bg-amber-50/20 dark:hover:border-amber-700/50 hover:shadow-xs";
+
+                if (isSelected) {
+                  btnStyle = opt.isCorrect
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 ring-2 ring-emerald-500/50 shadow-sm"
+                    : "border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300 ring-2 ring-rose-500/50 shadow-sm";
+                } else if (quizSelected && opt.isCorrect) {
+                  btnStyle = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 ring-2 ring-emerald-500/40";
+                }
+
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    disabled={!!quizSelected}
+                    onClick={() => handleQuizSelect(opt.key)}
+                    className={`flex items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl border font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer disabled:cursor-default ${btnStyle}`}
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <span className="font-black px-2.5 py-1 text-xs rounded-lg bg-zinc-200/70 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
+                        {opt.key}
+                      </span>
+                      <span className="text-zinc-900 dark:text-white font-extrabold text-xl sm:text-2xl tracking-wide">
+                        {opt.word}
+                      </span>
+                    </div>
+                    {quizSelected && (
+                      <span>
+                        {opt.isCorrect && <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+                        {isSelected && !opt.isCorrect && <X className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick hint for shortcuts */}
+            <p className="text-center text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">
+              Chọn đáp án bằng cách nhấp chuột hoặc ấn phím <kbd className="font-bold">A</kbd>, <kbd className="font-bold">B</kbd>, <kbd className="font-bold">C</kbd>, <kbd className="font-bold">D</kbd> (hoặc <kbd className="font-bold">1</kbd>, <kbd className="font-bold">2</kbd>, <kbd className="font-bold">3</kbd>, <kbd className="font-bold">4</kbd>)
+            </p>
+          </div>
+
+          {/* Action Controls for Quiz Mode */}
+          <FlashcardControls
+            mode="quiz"
+            onNext={handleNextAction}
+            onPrevious={handlePrevAction}
+            onPronounce={() => {
+              if (currentQuizWord?.word) {
+                speakChinese(currentQuizWord.word);
+              }
+            }}
+            currentIndex={displayIndex}
+            isFirst={displayIndex === 0}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+          <div className="h-96 w-full p-4 sm:p-6">
+            <FlashcardCard
+              isFlipped={isCardFlipped}
+              onFlip={handleFlipAction}
+              frontContent={
+                <div className="flex-1 flex flex-col items-center justify-center p-8 h-full text-center rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  <span className="text-6xl font-black text-zinc-900 dark:text-white tracking-wider">
+                    {activeVocab?.name || activeDetail?.word}
+                  </span>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-6 tracking-wide">
+                    Nhấp vào thẻ hoặc ấn [Space] để xem nghĩa
+                  </p>
+                </div>
+              }
+              backContent={
+                <div className="flex-1 flex flex-col justify-between p-8 h-full overflow-y-auto scrollbar-thin rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="space-y-5">
+                    <div className="text-center">
+                      <span className="text-5xl font-black text-zinc-900 dark:text-white tracking-wider">
                         {activeVocab?.name || activeDetail?.word}
                       </span>
-                      <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-6 tracking-wide">Nhấp vào thẻ hoặc ấn [Space] để xem nghĩa</p>
+                      <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 font-mono mt-2">
+                        {activeVocab?.pinyin || activeDetail?.pinyin}
+                      </p>
                     </div>
-                  }
-                  backContent={
-                    <div className="flex-1 flex flex-col justify-between p-8 h-full overflow-y-auto scrollbar-thin rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                      <div className="space-y-5">
-                        <div className="text-center">
-                          <span className="text-5xl font-black text-zinc-900 dark:text-white tracking-wider">
-                            {activeVocab?.name || activeDetail?.word}
-                          </span>
-                          <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 font-mono mt-2">
-                            {activeVocab?.pinyin || activeDetail?.pinyin}
-                          </p>
-                        </div>
 
-                        <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-4 space-y-4">
-                          {sensesContent}
-                        </div>
-
-                        {activeDetail?.note && (
-                          <div className="text-xs text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800/85 pt-3">
-                            <span className="font-bold text-zinc-500">Ghi chú: </span>
-                            {activeDetail.note}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="text-center pt-6">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            speakChinese(activeVocab?.name || activeDetail?.word || "");
-                          }}
-                          className="border border-amber-500/25 text-amber-700 dark:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 justify-center bg-transparent"
-                        >
-                          🔊 Nghe phát âm
-                        </button>
-                        <div className="text-center text-[10px] text-zinc-400 dark:text-zinc-500 mt-3 font-semibold">
-                          Nhấp để quay lại mặt trước
-                        </div>
-                      </div>
+                    <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-4 space-y-4">
+                      {sensesContent}
                     </div>
-                  }
-                />
-              </div>
 
-              <FlashcardControls
-                onNext={handleNextAction}
-                onPrevious={handlePrevAction}
-                onFlip={handleFlipAction}
-                currentIndex={displayIndex}
-                isFirst={displayIndex === 0}
-              />
-            </>
-          )}
+                    {activeDetail?.note && (
+                      <div className="text-xs text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800/85 pt-3">
+                        <span className="font-bold text-zinc-500">Ghi chú: </span>
+                        {activeDetail.note}
+                      </div>
+                    )}
+                  </div>
 
-          <div className="flex justify-start w-full pt-4">
-            <Link
-              href="/flashcard"
-              className="text-xs font-black text-zinc-400 hover:text-amber-600 dark:text-zinc-550 dark:hover:text-amber-500 transition-colors"
-            >
-              &larr; Về sổ tay cá nhân
-            </Link>
+                  <div className="text-center pt-6">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        speakChinese(activeVocab?.name || activeDetail?.word || "");
+                      }}
+                      className="border border-amber-500/25 text-amber-700 dark:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 justify-center bg-transparent"
+                    >
+                      <Volume2 className="w-4 h-4" /> Nghe phát âm
+                    </button>
+                    <div className="text-center text-[10px] text-zinc-400 dark:text-zinc-500 mt-3 font-semibold">
+                      Nhấp để quay lại mặt trước
+                    </div>
+                  </div>
+                </div>
+              }
+            />
           </div>
+
+          <FlashcardControls
+            mode="flashcard"
+            onNext={handleNextAction}
+            onPrevious={handlePrevAction}
+            onFlip={handleFlipAction}
+            currentIndex={displayIndex}
+            isFirst={displayIndex === 0}
+          />
+        </div>
+      )}
     </PageContainer>
   );
 }

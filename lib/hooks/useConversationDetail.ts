@@ -38,7 +38,7 @@ export function useConversationDetail(conversationId: string | null, overrideIte
   const [activeRecordingId, setActiveRecordingId] = useState<string | null>(null);
   const [premiumModalVisible, setPremiumModalVisible] = useState(false);
 
-  // --- 🧠 TỰ ĐỘNG HIỂN THỊ CÂU KẾ TIẾP & PHÁT AUDIO ---
+  // ---  TỰ ĐỘNG HIỂN THỊ CÂU KẾ TIẾP & PHÁT AUDIO ---
   useEffect(() => {
     if (loading || items.length === 0) return;
 

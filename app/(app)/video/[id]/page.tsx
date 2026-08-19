@@ -144,7 +144,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
   const youtubePlayerRef = useRef<any>(null);
   const [youtubeIsPlaying, setYoutubeIsPlaying] = useState(false);
 
-  // Dynamically map options from backend data or mock data
   const getOptions = (ex: any) => {
     if (!ex) return [];
 
@@ -171,10 +170,19 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
              cleanAns === cleanVal;
     };
 
-    if (Array.isArray(ex.options)) {
-      return ex.options.map((opt: any) => {
-        const optionId = String(opt.id);
-        const optionVal = String(opt.val || opt.hanzi || opt.text || "");
+    let rawOptions = ex.options;
+    if (typeof rawOptions === "string") {
+      try {
+        rawOptions = JSON.parse(rawOptions);
+      } catch (e) {
+        rawOptions = [];
+      }
+    }
+
+    if (Array.isArray(rawOptions)) {
+      return rawOptions.map((opt: any) => {
+        const optionId = String(opt.id || opt.key || "");
+        const optionVal = String(opt.val || opt.hanzi || opt.text || opt.value || "");
         
         const hasFlag = opt.isCorrect !== undefined || opt.is_correct !== undefined || opt.correct !== undefined;
         if (hasFlag) {
@@ -193,14 +201,14 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
           hanzi: optionVal,
           isCorrect: isOptionCorrect(optionId, optionVal),
         };
-      });
+      }).filter((o: any) => o.id && o.hanzi);
     }
     
     const opts = [];
-    const ansA = ex.answer_A || ex.Answer_A || ex.answerA || ex.answer_a;
-    const ansB = ex.answer_B || ex.Answer_B || ex.answerB || ex.answer_b;
-    const ansC = ex.answer_C || ex.Answer_C || ex.answerC || ex.answer_c;
-    const ansD = ex.answer_D || ex.Answer_D || ex.answerD || ex.answer_d;
+    const ansA = ex.answer_A || ex.Answer_A || ex.answerA || ex.answer_a || ex.option_A || ex.optionA;
+    const ansB = ex.answer_B || ex.Answer_B || ex.answerB || ex.answer_b || ex.option_B || ex.optionB;
+    const ansC = ex.answer_C || ex.Answer_C || ex.answerC || ex.answer_c || ex.option_C || ex.optionC;
+    const ansD = ex.answer_D || ex.Answer_D || ex.answerD || ex.answer_d || ex.option_D || ex.optionD;
     
     if (ansA) opts.push({ id: "A", hanzi: ansA, pinyin: "", isCorrect: isOptionCorrect("A", ansA) });
     if (ansB) opts.push({ id: "B", hanzi: ansB, pinyin: "", isCorrect: isOptionCorrect("B", ansB) });
@@ -243,6 +251,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     handleOptionPress,
     handleContinueWatching,
     handleViewResults,
+    resumePlayback,
     exerciseData,
     videoSource,
     answeredIds,
@@ -389,6 +398,11 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     setRightPanelTab(nextTab);
     if (nextTab === "subtitles" && activeQuestion) {
       handleContinueWatching();
+    }
+    // Khi chuyển sang tab Trắc nghiệm mà chưa có câu hỏi đang dừng video,
+    // tự phát video để quiz bắt kịp timestamp và kích hoạt câu hỏi đúng mốc.
+    if (nextTab === "quiz" && !activeQuestion) {
+      resumePlayback();
     }
   };
 

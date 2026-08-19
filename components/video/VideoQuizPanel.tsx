@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { speakChinese } from "@/lib/utils/speech";
+import { Check, X, Timer, PartyPopper } from "lucide-react";
 
 export interface ExerciseItem {
   id: number;
@@ -53,6 +54,15 @@ export function VideoQuizPanel({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Reset selection when active question changes
+  const prevActiveIdRef = useRef<number | null>(null);
+  const activeId = (activeEx || activeQuestion)?.id ?? null;
+  if (prevActiveIdRef.current !== activeId) {
+    prevActiveIdRef.current = activeId;
+    if (selectedAnswer !== null) setSelectedAnswer(null);
+    if (isSubmitting) setIsSubmitting(false);
+  }
+
   const questions = useMemo(() => {
     if (Array.isArray(exerciseData) && exerciseData.length > 0) {
       return exerciseData;
@@ -72,10 +82,25 @@ export function VideoQuizPanel({
       return getOptions(currentEx);
     }
     const opts = [];
-    const ansA = currentEx.answer_A || currentEx.Answer_A || currentEx.answerA || currentEx.answer_a;
-    const ansB = currentEx.answer_B || currentEx.Answer_B || currentEx.answerB || currentEx.answer_b;
-    const ansC = currentEx.answer_C || currentEx.Answer_C || currentEx.answerC || currentEx.answer_c;
-    const ansD = currentEx.answer_D || currentEx.Answer_D || currentEx.answerD || currentEx.answer_d;
+    
+    let rawOptions = currentEx.options;
+    if (typeof rawOptions === "string") {
+      try { rawOptions = JSON.parse(rawOptions); } catch (e) { rawOptions = []; }
+    }
+    
+    if (Array.isArray(rawOptions)) {
+      return rawOptions.map((opt: any) => ({
+        id: String(opt.id || opt.key || ""),
+        hanzi: opt.val || opt.hanzi || opt.text || opt.value || "",
+        isCorrect: currentEx.Correct_answer === String(opt.id || opt.key || ""),
+      })).filter((o: any) => o.id && o.hanzi);
+    }
+
+    const ansA = currentEx.answer_A || currentEx.Answer_A || currentEx.answerA || currentEx.answer_a || currentEx.option_A || currentEx.optionA;
+    const ansB = currentEx.answer_B || currentEx.Answer_B || currentEx.answerB || currentEx.answer_b || currentEx.option_B || currentEx.optionB;
+    const ansC = currentEx.answer_C || currentEx.Answer_C || currentEx.answerC || currentEx.answer_c || currentEx.option_C || currentEx.optionC;
+    const ansD = currentEx.answer_D || currentEx.Answer_D || currentEx.answerD || currentEx.answer_d || currentEx.option_D || currentEx.optionD;
+    
     if (ansA) opts.push({ id: "A", hanzi: ansA, isCorrect: currentEx.Correct_answer === "A" });
     if (ansB) opts.push({ id: "B", hanzi: ansB, isCorrect: currentEx.Correct_answer === "B" });
     if (ansC) opts.push({ id: "C", hanzi: ansC, isCorrect: currentEx.Correct_answer === "C" });
@@ -138,7 +163,17 @@ export function VideoQuizPanel({
     );
   };
 
-  // 1. Trường hợp video không có bất kỳ câu hỏi nào
+  // 1. Đang load exercises (null = chưa fetch xong)
+  if (exerciseData === null && !currentEx) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-6 gap-3">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+        <p className="text-xs text-zinc-400 font-semibold">Đang tải câu hỏi...</p>
+      </div>
+    );
+  }
+
+  // 2. Trường hợp video không có bất kỳ câu hỏi nào
   if (effectiveTotal === 0 && !currentEx) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center p-6 gap-3">
@@ -212,7 +247,7 @@ export function VideoQuizPanel({
                         onClick={() => onSeek?.(String(item.time_start || item.time_end || ""))}
                         className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-200/70 dark:bg-zinc-700/60 text-zinc-600 dark:text-zinc-300 hover:bg-amber-500 hover:text-white transition-colors cursor-pointer border-none"
                       >
-                        ⏱ {item.time_start?.slice(3, 8) || item.time_end?.slice(3, 8)}
+                        <Timer className="w-3 h-3 inline mr-0.5 -mt-0.5" /> {item.time_start?.slice(3, 8) || item.time_end?.slice(3, 8)}
                       </button>
                     )}
                     {isActive && (
@@ -228,7 +263,10 @@ export function VideoQuizPanel({
                             : "bg-rose-500/15 text-rose-600 dark:text-rose-400"
                         }`}
                       >
-                        {isCorrect ? "✓ Đúng" : "✗ Sai"}
+                        <span className="inline-flex items-center gap-0.5">
+                          {isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                          {isCorrect ? " Đúng" : " Sai"}
+                        </span>
                       </span>
                     )}
                   </div>
@@ -261,7 +299,7 @@ export function VideoQuizPanel({
               onClick={onViewResults}
               className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs transition-all shadow-sm cursor-pointer border-none active:scale-[0.98]"
             >
-              🎉 Xem kết quả tổng quan
+              <PartyPopper className="w-4 h-4 inline mr-1.5" /> Xem kết quả tổng quan
             </button>
           </div>
         )}
@@ -331,11 +369,11 @@ export function VideoQuizPanel({
                   className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all flex items-center justify-between cursor-pointer active:scale-95 disabled:cursor-default ${btnStyle}`}
                 >
                   <span className="truncate">
-                    <strong className="mr-1 text-zinc-400">{opt.id}.</strong> {opt.hanzi}
+                    <strong className="mr-1 text-zinc-400">{opt.id}.</strong> {opt.hanzi || opt.val}
                   </span>
                   {showResult && activeResult && opt.id === activeResult.yourAnswer && (
                     <span className="text-xs font-black">
-                      {activeResult.status === "Đúng" || activeResult.isCorrect === true ? "✓" : "✗"}
+                      {activeResult.status === "Đúng" || activeResult.isCorrect === true ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                     </span>
                   )}
                 </button>
@@ -347,7 +385,7 @@ export function VideoQuizPanel({
           {showResult && (
             <div className="flex items-center justify-between text-xs font-bold pt-1">
               <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                ✓ Đang tiếp tục video...
+                <Check className="w-3.5 h-3.5" /> Đang tiếp tục video...
               </span>
               <button
                 type="button"

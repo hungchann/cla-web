@@ -1,5 +1,5 @@
 /**
- * 🎤 Web Audio Recording Service
+ *  Web Audio Recording Service
  *
  * - Recording audio using browser MediaRecorder API
  * - Blob based in-memory storage (Blob URL)
@@ -123,13 +123,13 @@ class AudioRecordingService {
 
   async resetRecorder(): Promise<void> {
     try {
-      logger.debug("🎤 [AUDIO_SERVICE] Resetting recorder...");
+      logger.debug(" [AUDIO_SERVICE] Resetting recorder...");
 
       if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
         try {
           this.mediaRecorder.stop();
         } catch (error) {
-          logger.warn("🎤 [AUDIO_SERVICE] Error stopping mediaRecorder:", error);
+          logger.warn(" [AUDIO_SERVICE] Error stopping mediaRecorder:", error);
         }
       }
       this.mediaRecorder = null;
@@ -155,9 +155,9 @@ class AudioRecordingService {
       this.lastStartTimestamp = null;
       this.lastStopTimestamp = null;
 
-      logger.debug("🎤 [AUDIO_SERVICE] Recorder reset complete");
+      logger.debug(" [AUDIO_SERVICE] Recorder reset complete");
     } catch (error) {
-      logger.error("🎤 [AUDIO_SERVICE] Error resetting recorder:", error);
+      logger.error(" [AUDIO_SERVICE] Error resetting recorder:", error);
     }
   }
 
@@ -165,7 +165,7 @@ class AudioRecordingService {
   async startRecording(): Promise<void> {
     try {
       if (this.state.isRecording || this.state.isProcessing) {
-        logger.debug("🎤 [AUDIO_SERVICE] Recording already in progress, resetting first...");
+        logger.debug(" [AUDIO_SERVICE] Recording already in progress, resetting first...");
         await this.resetRecorder();
       }
 
@@ -173,7 +173,7 @@ class AudioRecordingService {
         throw new Error("Ghi âm không được hỗ trợ trên môi trường này.");
       }
 
-      logger.debug("🎤 [AUDIO_SERVICE] startRecording invoked");
+      logger.debug(" [AUDIO_SERVICE] startRecording invoked");
 
       const aiConsented = await ensureAIConsent();
       if (!aiConsented) {
@@ -187,7 +187,7 @@ class AudioRecordingService {
       this.mediaStream = stream;
 
       const mimeType = this.getSupportedMimeType();
-      logger.debug("🎤 [AUDIO_SERVICE] Using MIME Type:", mimeType);
+      logger.debug(" [AUDIO_SERVICE] Using MIME Type:", mimeType);
 
       this.audioChunks = [];
       const recorder = new MediaRecorder(stream, { mimeType });
@@ -207,7 +207,7 @@ class AudioRecordingService {
         error: null,
       });
 
-      logger.debug("🎤 [AUDIO_SERVICE] Recording started successfully");
+      logger.debug(" [AUDIO_SERVICE] Recording started successfully");
     } catch (error) {
       logger.error("Error starting recording:", error);
       this.cleanupTracks();
@@ -232,7 +232,7 @@ class AudioRecordingService {
         throw new Error("No active recording to stop");
       }
 
-      logger.debug("🎤 [AUDIO_SERVICE] stopRecording invoked");
+      logger.debug(" [AUDIO_SERVICE] stopRecording invoked");
       
       this.updateState({
         isRecording: false,
@@ -253,7 +253,7 @@ class AudioRecordingService {
               ? this.lastStopTimestamp - this.lastStartTimestamp
               : 0;
 
-            logger.debug("🎤 [AUDIO_SERVICE] Recording duration (ms):", recordingDuration);
+            logger.debug(" [AUDIO_SERVICE] Recording duration (ms):", recordingDuration);
 
             // Combine chunks into a single audio blob
             const mimeType = this.mediaRecorder?.mimeType || "audio/webm";
@@ -267,10 +267,10 @@ class AudioRecordingService {
             this.cleanupTracks();
 
             if (recordingDuration < 800) {
-              logger.warn("🎤 [AUDIO_SERVICE] Recording was very short. Transcription might fail.");
+              logger.warn(" [AUDIO_SERVICE] Recording was very short. Transcription might fail.");
             }
 
-            logger.debug("🎤 [AUDIO_SERVICE] Starting transcription of:", uri);
+            logger.debug(" [AUDIO_SERVICE] Starting transcription of:", uri);
 
             // Validate blob size
             if (audioBlob.size === 0) {
@@ -281,10 +281,10 @@ class AudioRecordingService {
             try {
               const serverAvailable = await testMarutekServer();
               if (!serverAvailable) {
-                logger.warn("🎤 [AUDIO_SERVICE] Server test failed, but trying anyway");
+                logger.warn(" [AUDIO_SERVICE] Server test failed, but trying anyway");
               }
             } catch (serverError) {
-              logger.warn("🎤 [AUDIO_SERVICE] Server availability test errored:", serverError);
+              logger.warn(" [AUDIO_SERVICE] Server availability test errored:", serverError);
             }
 
             // Determine file extension
@@ -312,7 +312,7 @@ class AudioRecordingService {
             });
 
           } catch (transcriptionError) {
-            logger.error("🎤 [AUDIO_SERVICE] Transcription error:", transcriptionError);
+            logger.error(" [AUDIO_SERVICE] Transcription error:", transcriptionError);
 
             const fallbackDetails: RecordingResult = {
               text: "",
@@ -410,7 +410,7 @@ class AudioRecordingService {
         try {
           URL.revokeObjectURL(this.state.currentUri);
         } catch (cleanupError) {
-          logger.warn("🎤 [AUDIO_SERVICE] Object URL revoke warning:", cleanupError);
+          logger.warn(" [AUDIO_SERVICE] Object URL revoke warning:", cleanupError);
         }
       }
 

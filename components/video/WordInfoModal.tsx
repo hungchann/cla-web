@@ -4,6 +4,7 @@ import { WordInfo } from "@/lib/types/vocabulary";
 import { RubyText } from "../RubyText";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
+import { Star, Folder, Plus } from "lucide-react";
 
 interface WordInfoModalProps {
   isVisible: boolean;
@@ -208,7 +209,7 @@ const WordInfoModalContent = ({
               onClick={handleSaveClick}
               className="mt-4 w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-md active:scale-[0.98] transition-all cursor-pointer border-none"
             >
-              ⭐ Lưu từ vào Flashcard
+              <Star className="w-4 h-4 inline mr-1.5 -mt-0.5" /> Lưu từ vào Flashcard
             </button>
           )}
         </>
@@ -232,7 +233,7 @@ const WordInfoModalContent = ({
                   disabled={saving}
                   className="w-full text-left py-2 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-amber-50 dark:hover:bg-zinc-800 font-semibold text-xs text-zinc-700 dark:text-zinc-300 transition-colors disabled:opacity-50 cursor-pointer bg-transparent"
                 >
-                  📁 {deck.title}
+                  <Folder className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" /> {deck.title}
                 </button>
               ))}
             </div>
@@ -269,7 +270,7 @@ const WordInfoModalContent = ({
               onClick={() => setShowCreateInput(true)}
               className="mt-1 text-center py-1.5 border border-dashed border-amber-500/40 rounded-lg text-amber-600 dark:text-amber-500 hover:bg-amber-500/5 text-xs font-bold transition-colors cursor-pointer bg-transparent"
             >
-              ➕ Tạo bộ từ mới
+              <Plus className="w-3.5 h-3.5 inline mr-1" /> Tạo bộ từ mới
             </button>
           )}
 

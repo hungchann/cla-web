@@ -317,14 +317,14 @@ export function compareMarutekResult(
   targetText: string,
   marutekResult: { transcription: string; confidence: number },
 ): ComparisonResult & { confidence: number } {
-  logger.debug("🔍 [TEXT_COMPARISON] Comparing Marutek result:");
+  logger.debug(" [TEXT_COMPARISON] Comparing Marutek result:");
   logger.debug("  - Target text:", targetText);
   logger.debug("  - Transcription:", marutekResult.transcription);
   logger.debug("  - Confidence:", marutekResult.confidence);
 
   const comparison = compareTextsAdvanced(targetText, marutekResult.transcription);
 
-  logger.debug("🔍 [TEXT_COMPARISON] Comparison result:");
+  logger.debug(" [TEXT_COMPARISON] Comparison result:");
   logger.debug("  - Accuracy:", comparison.accuracy + "%");
   logger.debug("  - Correct words:", comparison.correctWords.length);
   logger.debug("  - Missing words:", comparison.missingWords.length);

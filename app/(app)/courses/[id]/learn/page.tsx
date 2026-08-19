@@ -15,7 +15,7 @@ import { speakChinese } from "@/lib/utils/speech";
 import { parseSRTtoArray } from "@/services/subtitle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Play, Check, Star, Folder, Volume2, Target, XCircle, User, Mic, PartyPopper, Lightbulb, FileText } from "lucide-react";
+import { Play, Check, Star, Folder, Volume2, Target, XCircle, User, Mic, PartyPopper, Lightbulb, FileText, Plus, RefreshCw, MessageCircle, Download } from "lucide-react";
 
 /** Chuyển timestamp SRT ("00:00:04,000") sang giây */
 function srtTimeToSeconds(t?: string): number {
@@ -173,7 +173,7 @@ function VocabTheoryCards({ items, loading }: { items: VocabItem[]; loading: boo
                                     <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100"><span className="mr-2 text-amber-600">{senseIndex + 1}.</span>{sense.meaning}</p>
                                     {sense.examples?.length ? sense.examples.map((example, exampleIndex) => (
                                         <div key={exampleIndex} className="rounded-lg bg-zinc-50 px-3 py-2.5 dark:bg-zinc-950/40">
-                                            <div className="flex items-start justify-between gap-3"><span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{example.chinese}</span><button type="button" onClick={() => speakChinese(example.chinese)} className="shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700">🔊 Nghe</button></div>
+                                            <div className="flex items-start justify-between gap-3"><span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{example.chinese}</span><button type="button" onClick={() => speakChinese(example.chinese)} className="shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700 inline-flex items-center gap-1"><Volume2 className="w-3.5 h-3.5" /> Nghe</button></div>
                                             {example.pinyin && <p className="mt-0.5 text-xs font-semibold text-amber-600">{example.pinyin}</p>}
                                             {example.vietnamese && <p className="mt-0.5 text-xs font-medium text-zinc-500">&rarr; {example.vietnamese}</p>}
                                         </div>
@@ -962,9 +962,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                     </div>
                                     <button
                                         onClick={() => speakChinese(activeTimedVocab.word || "")}
-                                        className="text-xs font-bold text-amber-700 border border-amber-300 bg-white px-3 py-1.5 rounded-full hover:bg-amber-100 cursor-pointer"
+                                        className="text-xs font-bold text-amber-700 border border-amber-300 bg-white px-3 py-1.5 rounded-full hover:bg-amber-100 cursor-pointer inline-flex items-center gap-1"
                                     >
-                                        🔊 Nghe
+                                        <Volume2 className="w-3.5 h-3.5" /> Nghe
                                     </button>
                                 </div>
                             )}
@@ -997,7 +997,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                             : "bg-white border-gray-200 text-gray-600 hover:border-amber-300"
                                                             }`}
                                                     >
-                                                        {item.word}{isActive ? " ▶" : ""}
+                                                        {item.word}{isActive && <Play className="w-3 h-3 inline ml-1" />}
                                                     </button>
                                                 );
                                             })}
@@ -1017,9 +1017,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                             <span>{ex.chinese} &rarr; {ex.vietnamese}</span>
                                                             <button
                                                                 onClick={() => speakChinese(ex.chinese)}
-                                                                className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-none font-bold shrink-0"
+                                                                className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-none font-bold shrink-0 inline-flex items-center gap-1"
                                                             >
-                                                                🔊 Nghe
+                                                                <Volume2 className="w-3.5 h-3.5" /> Nghe
                                                             </button>
                                                         </div>
                                                     ))}
@@ -1088,7 +1088,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                         onClick={() => setShowCreateInput(true)}
                                                         className="text-center py-1 text-[10px] text-amber-600 font-bold border border-dashed border-amber-500/30 rounded bg-transparent cursor-pointer"
                                                     >
-                                                        ➕ Tạo bộ mới
+                                                        <Plus className="w-3.5 h-3.5 inline mr-1" /> Tạo bộ mới
                                                     </button>
                                                 )}
 
@@ -1177,7 +1177,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                         onClick={resetPronunciation}
                                                         className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-4 py-2 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer"
                                                     >
-                                                        🔄 Ghi lại
+                                                        <RefreshCw className="w-3.5 h-3.5 inline mr-1" /> Ghi lại
                                                     </button>
                                                 </div>
                                                 {pronounceProcessing ? (
@@ -1335,10 +1335,10 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                                 <span className="text-sm text-gray-800 font-semibold">{ex.chinese}</span>
                                                                 <button
                                                                     onClick={() => speakChinese(ex.chinese)}
-                                                                    className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-none font-bold shrink-0"
-                                                                >
-                                                                    🔊 Nghe
-                                                                </button>
+className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-none font-bold shrink-0 inline-flex items-center gap-1"
+                                                                    >
+                                                                        <Volume2 className="w-3.5 h-3.5" /> Nghe
+                                                                    </button>
                                                             </div>
                                                             {ex.pinyin && <p className="text-xs text-amber-600 font-semibold">{ex.pinyin}</p>}
                                                             {ex.vietnamese && <p className="text-xs text-gray-500 font-medium">&rarr; {ex.vietnamese}</p>}
@@ -1748,7 +1748,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                                 onClick={() => setDictationResults((p) => ({ ...p, [key]: { ...(p[key] || { input: "" }), checked: false, score: 0 } }))}
                                                                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold px-5 py-2 rounded-xl text-xs shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0"
                                                             >
-                                                                🔄 Làm lại
+                                                                <RefreshCw className="w-3.5 h-3.5 inline mr-1" /> Làm lại
                                                             </button>
                                                         )}
                                                     </div>
@@ -1757,9 +1757,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                         <div className={`p-4 rounded-xl border shadow-2xs space-y-2 ${result.score >= 80 ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-rose-50 border-rose-200 text-rose-900"}`}>
                                                             <div className="flex items-center gap-2">
                                                                 <Target className={`w-5 h-5 ${result.score >= 80 ? "text-emerald-500" : "text-rose-500"}`} />
-                                                                <h5 className="font-extrabold text-sm">
-                                                                    Kết quả: {result.score}% {result.score === 100 ? "🎉 Hoàn hảo!" : result.score >= 80 ? "Chính xác!" : "Cần luyện thêm"}
-                                                                </h5>
+<h5 className="font-extrabold text-sm">
+                                    Kết quả: {result.score}% {result.score === 100 ? (<span className="inline-flex items-center gap-1"><PartyPopper className="w-4 h-4" /> Hoàn hảo!</span>) : result.score >= 80 ? "Chính xác!" : "Cần luyện thêm"}
+                                </h5>
                                                             </div>
                                                             <p className="text-xs font-semibold">
                                                                 Đáp án chuẩn: <strong className="font-black underline font-mono">&quot;{s.answer_text}&quot;</strong>
@@ -1843,9 +1843,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <button
                                                             onClick={() => handleConvSpeak(msg.chinese_text)}
-                                                            className={`text-xs cursor-pointer ${isSpeakerA ? "text-zinc-400 hover:text-zinc-600" : "text-white/80 hover:text-white"}`}
+                                                            className={`text-xs cursor-pointer inline-flex items-center gap-1 ${isSpeakerA ? "text-zinc-400 hover:text-zinc-600" : "text-white/80 hover:text-white"}`}
                                                         >
-                                                            🔊 Phát âm mẫu
+                                                            <Volume2 className="w-3.5 h-3.5" /> Phát âm mẫu
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1921,7 +1921,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
 
                                             {!isSpeakerA && (
                                                 <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-2xl shrink-0 shadow-sm">
-                                                    👤
+                                                    <User className="w-6 h-6 text-amber-700" />
                                                 </div>
                                             )}
                                         </div>
@@ -1935,9 +1935,9 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                             {convHasMoreMessages && !convLoading && (
                                 <button
                                     onClick={handleConvContinue}
-                                    className="text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs active:scale-95"
+                                    className="text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 inline-flex items-center gap-1.5"
                                 >
-                                    Xem câu thoại tiếp theo 💬
+                                    Xem câu thoại tiếp theo <MessageCircle className="w-3.5 h-3.5" />
                                 </button>
                             )}
 
@@ -1953,7 +1953,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                             {/* Left side: Dashed bordered container with 3 download items */}
                             <div className="md:col-span-2 bg-white rounded-2xl border-2 border-dashed border-orange-200 p-8 shadow-xs w-full">
                                 <h4 className="text-xs font-black text-amber-800 uppercase tracking-wider mb-6 text-center">
-                                    📥 Giao diện tải tài liệu & Bài tập bổ sung
+                                    <Download className="w-4 h-4 inline mr-1.5 -mt-0.5" /> Giao diện tải tài liệu & Bài tập bổ sung
                                 </h4>
                                 <div className="flex items-center justify-around gap-6">
                                     {/* PDF 1 */}

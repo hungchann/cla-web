@@ -1,5 +1,7 @@
 "use client";
 
+import { Check, X } from "lucide-react";
+
 interface VideoQuizSectionProps {
   activeQuestion: any;
   activeEx: any;
@@ -68,9 +70,9 @@ export function VideoQuizSection({
             let checkIcon = null;
             if (isAnswerChecked) {
               if (opt.isCorrect) {
-                checkIcon = <span className="text-emerald-500 font-black text-sm shrink-0">✓</span>;
+                checkIcon = <Check className="text-emerald-500 w-3.5 h-3.5 shrink-0" />;
               } else if (isSelected) {
-                checkIcon = <span className="text-rose-500 font-black text-sm shrink-0">✗</span>;
+                checkIcon = <X className="text-rose-500 w-3.5 h-3.5 shrink-0" />;
               }
             }
 

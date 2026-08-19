@@ -13,7 +13,7 @@ import {
 } from "@/api/stories";
 import { getAssetUrl } from "@/lib/utils/assets";
 import { PageHeader } from "@/components/PageHeader";
-import { Lightbulb, Library, ArrowLeft, AlertCircle } from "lucide-react";
+import { Lightbulb, Library, ArrowLeft, AlertCircle, Flame, Sparkles } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
 
 function BookCard({ book, badge }: { book: any; badge?: string }) {
@@ -168,7 +168,7 @@ function StoriesPageContent() {
               {trendingBooks && trendingBooks.length > 0 && (
                 <section id="trending" className="scroll-mt-24 space-y-4">
                   <h3 className="text-md font-extrabold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                    🔥 Đang Thịnh Hành
+                    <Flame className="w-5 h-5 inline mr-1.5" /> Đang Thịnh Hành
                   </h3>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -183,7 +183,7 @@ function StoriesPageContent() {
               {latestBooks && latestBooks.length > 0 && (
                 <section id="latest" className="scroll-mt-24 space-y-4">
                   <h3 className="text-md font-extrabold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                    ✨ Tác Phẩm Mới Cập Nhật
+                    <Sparkles className="w-5 h-5 inline mr-1.5" /> Tác Phẩm Mới Cập Nhật
                   </h3>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

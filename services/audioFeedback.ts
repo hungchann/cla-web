@@ -1,5 +1,5 @@
 /**
- * 🔊 Audio Feedback Service
+ *  Audio Feedback Service
  *
  * - Play sound effects (correct/incorrect answer, translation score) on web
  * - Browser standard HTMLAudioElement (window.Audio)

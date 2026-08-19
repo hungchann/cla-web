@@ -36,12 +36,12 @@ function makeVideoElement(currentTime: number) {
   return el;
 }
 
-describe("useDetailedVideoLogic — flowMode switching", () => {
+describe("useDetailedVideoLogic — quiz auto-activation regardless of tab (video-stopping quiz)", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("activates question after switching flowMode from subtitles to quiz", async () => {
+  it("activates the question when video reaches time_start even while in 'subtitles' mode", async () => {
     vi.mocked(bilingualApi.bilingualApi.getExerciseById).mockResolvedValue({
       exercises: [
         { id: 1, question: "Q1", time_start: "00:00:01,000", time_end: "00:00:05,000" },
@@ -49,22 +49,14 @@ describe("useDetailedVideoLogic — flowMode switching", () => {
     });
     const videoRef = { current: makeVideoElement(10) };
 
-    const { result, rerender } = renderHook(
-      ({ mode }: { mode: "subtitles" | "quiz" | "both" }) =>
-        useDetailedVideoLogic(
-          { id: "v1", video_file: { filename_disk: "clip.mp4" } },
-          { videoRef, flowMode: mode },
-        ),
-      { initialProps: { mode: "subtitles" as "subtitles" | "quiz" | "both" } },
+    const { result } = renderHook(() =>
+      useDetailedVideoLogic(
+        { id: "v1", video_file: { filename_disk: "clip.mp4" } },
+        { videoRef, flowMode: "subtitles" },
+      ),
     );
 
     await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
-
-    await new Promise((r) => setTimeout(r, 800));
-    expect(result.current.activeQuestion).toBeNull();
-
-    rerender({ mode: "quiz" });
-
     await waitFor(
       () => expect(result.current.activeQuestion).not.toBeNull(),
       { timeout: 3000 },
@@ -72,7 +64,7 @@ describe("useDetailedVideoLogic — flowMode switching", () => {
     expect(result.current.activeQuestion?.id).toBe(1);
   });
 
-  it("clears active question when switching from quiz mode back to subtitles mode", async () => {
+  it("does NOT clear the active question when switching from quiz back to subtitles", async () => {
     vi.mocked(bilingualApi.bilingualApi.getExerciseById).mockResolvedValue({
       exercises: [
         { id: 1, question: "Q1", time_start: "00:00:01,000", time_end: "00:00:05,000" },
@@ -93,6 +85,8 @@ describe("useDetailedVideoLogic — flowMode switching", () => {
 
     rerender({ mode: "subtitles" });
 
-    await waitFor(() => expect(result.current.activeQuestion).toBeNull(), { timeout: 1000 });
+    await new Promise((r) => setTimeout(r, 600));
+    // Câu hỏi đang hiển thị không bị mất khi chuyển sang tab phụ đề
+    expect(result.current.activeQuestion?.id).toBe(1);
   });
 });

@@ -128,14 +128,14 @@ function isPayloadTooLargeError(error: unknown): boolean {
 export async function testMarutekServer(endpoint?: string): Promise<boolean> {
   try {
     const testEndpoint = buildTranscribeEndpoint(endpoint);
-    logger.debug("🌐 [MARUTEK] Testing server availability:", testEndpoint);
+    logger.debug(" [MARUTEK] Testing server availability:", testEndpoint);
 
     const res = await fetch(testEndpoint, {
       method: "GET",
       headers: { Accept: "application/json" },
     });
 
-    logger.debug("🌐 [MARUTEK] Server test result:", {
+    logger.debug(" [MARUTEK] Server test result:", {
       status: res.status,
       ok: res.ok,
       statusText: res.statusText,
@@ -144,7 +144,7 @@ export async function testMarutekServer(endpoint?: string): Promise<boolean> {
     // Server is available if it responds (even with error, it means server is up)
     return res.status !== 404;
   } catch (error) {
-    logger.error("🌐 [MARUTEK] Server test failed:", error);
+    logger.error(" [MARUTEK] Server test failed:", error);
     return false;
   }
 }
@@ -161,7 +161,7 @@ export async function transcribeAudioFromUri(
   const name = options?.filename ?? "audio.m4a";
   const type = options?.contentType ?? guessMimeTypeFromUri(uri);
 
-  logger.debug("🌐 [MARUTEK] Starting transcription request...");
+  logger.debug(" [MARUTEK] Starting transcription request...");
   logger.debug("  - URI:", uri);
   logger.debug("  - Endpoint:", endpoint);
   logger.debug("  - Language:", language);
@@ -172,17 +172,17 @@ export async function transcribeAudioFromUri(
   try {
     const response = await fetch(uri);
     blob = await response.blob();
-    logger.debug("🌐 [MARUTEK] File size:", blob.size, "bytes");
+    logger.debug(" [MARUTEK] File size:", blob.size, "bytes");
 
     if (blob.size === 0) {
       throw new Error("Audio file is empty");
     }
 
     if (blob.size < 1000) {
-      logger.warn("🌐 [MARUTEK] Warning: Audio file is very small - might be too short");
+      logger.warn(" [MARUTEK] Warning: Audio file is very small - might be too short");
     }
   } catch (fileError) {
-    logger.error("🌐 [MARUTEK] File check failed:", fileError);
+    logger.error(" [MARUTEK] File check failed:", fileError);
     throw new Error(
       `Audio file validation failed: ${fileError instanceof Error ? fileError.message : "Unknown error"}`,
     );
@@ -192,7 +192,7 @@ export async function transcribeAudioFromUri(
   form.append("audio", blob, name);
   form.append("language", language);
 
-  logger.debug("🌐 [MARUTEK] Sending request to:", endpoint);
+  logger.debug(" [MARUTEK] Sending request to:", endpoint);
 
   const startTime = Date.now();
   const res = await fetch(endpoint, {
@@ -202,7 +202,7 @@ export async function transcribeAudioFromUri(
   });
   const duration = Date.now() - startTime;
 
-  logger.debug("🌐 [MARUTEK] Response received:");
+  logger.debug(" [MARUTEK] Response received:");
   logger.debug("  - Status:", res.status);
   logger.debug("  - OK:", res.ok);
   logger.debug("  - Duration:", duration, "ms");
@@ -210,13 +210,13 @@ export async function transcribeAudioFromUri(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    logger.error("🌐 [MARUTEK] Request failed:", res.status, text);
+    logger.error(" [MARUTEK] Request failed:", res.status, text);
     throw new Error(`Transcribe failed: ${res.status} ${text}`);
   }
 
   const json = (await res.json()) as TranscribeResponse;
 
-  logger.debug("🌐 [MARUTEK] Transcription successful:");
+  logger.debug(" [MARUTEK] Transcription successful:");
   logger.debug("  - Success:", json.success);
   logger.debug("  - Transcription:", json.transcription);
   logger.debug("  - Confidence:", json.confidence);
@@ -228,7 +228,7 @@ export async function transcribeAudioFromUri(
 
   // Check for empty results and provide diagnostic info
   if (!json.success || isEmptyTranscription(json.transcription)) {
-    logger.warn("🌐 [MARUTEK] WARNING: Empty transcription result received");
+    logger.warn(" [MARUTEK] WARNING: Empty transcription result received");
     logger.warn("  - This is now treated as an error to trigger fallback attempts");
     logger.warn("  - Inspect EmptyTranscriptionError.details for diagnostics");
     throw buildEmptyResultError("multipart", endpoint, {
@@ -252,7 +252,7 @@ export async function transcribeAudioAsBase64(
   const multipartRef = buildTranscribeEndpoint(options?.endpoint);
   const endpoint = marutekTranscribeBase64Url(multipartRef);
 
-  logger.debug("🌐 [MARUTEK] Starting base64 transcription...");
+  logger.debug(" [MARUTEK] Starting base64 transcription...");
   logger.debug("  - URI:", uri);
   logger.debug("  - Endpoint (base64):", endpoint);
 
@@ -261,7 +261,7 @@ export async function transcribeAudioAsBase64(
     const response = await fetch(uri);
     blob = await response.blob();
   } catch (error) {
-    logger.error("🌐 [MARUTEK] Failed to fetch blob for base64:", error);
+    logger.error(" [MARUTEK] Failed to fetch blob for base64:", error);
     throw new Error("Failed to read audio data");
   }
 
@@ -289,15 +289,15 @@ export async function transcribeAudioAsBase64(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    logger.error("🌐 [MARUTEK] Base64 request failed:", res.status, text);
+    logger.error(" [MARUTEK] Base64 request failed:", res.status, text);
     throw new Error(`Transcribe failed: ${res.status} ${text}`);
   }
 
   const json = (await res.json()) as TranscribeResponse;
-  logger.debug("🌐 [MARUTEK] Base64 transcription result:", json);
+  logger.debug(" [MARUTEK] Base64 transcription result:", json);
 
   if (!json.success || isEmptyTranscription(json.transcription)) {
-    logger.warn("🌐 [MARUTEK] WARNING: Empty base64 transcription result received");
+    logger.warn(" [MARUTEK] WARNING: Empty base64 transcription result received");
     throw buildEmptyResultError("base64", endpoint, {
       status: res.status,
       response: json,
@@ -311,22 +311,22 @@ async function transcribeAudioWithFallbackInternal(
   uri: string,
   options?: { language?: string; endpoint?: string; filename?: string; contentType?: string },
 ): Promise<TranscribeResponse> {
-  logger.debug("🌐 [MARUTEK] Starting transcription with fallback...");
+  logger.debug(" [MARUTEK] Starting transcription with fallback...");
 
   // Retry multipart only (khuyến nghị). Base64 chỉ thử một lần sau khi multipart thất bại hoàn toàn.
   const maxRetries = 2;
   const errors: Error[] = [];
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    logger.debug(`🌐 [MARUTEK] Multipart attempt ${attempt}/${maxRetries}`);
+    logger.debug(` [MARUTEK] Multipart attempt ${attempt}/${maxRetries}`);
 
     try {
-      logger.debug("🌐 [MARUTEK] Attempting multipart form-data (field: audio)...");
+      logger.debug(" [MARUTEK] Attempting multipart form-data (field: audio)...");
       const result = await transcribeAudioFromUri(uri, options);
-      logger.debug("🌐 [MARUTEK] Multipart transcription successful");
+      logger.debug(" [MARUTEK] Multipart transcription successful");
       return result;
     } catch (multipartError) {
-      logger.warn(`🌐 [MARUTEK] Multipart failed (attempt ${attempt}):`, multipartError);
+      logger.warn(` [MARUTEK] Multipart failed (attempt ${attempt}):`, multipartError);
       const err =
         multipartError instanceof Error ? multipartError : new Error(String(multipartError));
       errors.push(err);
@@ -339,21 +339,21 @@ async function transcribeAudioWithFallbackInternal(
       }
 
       if (attempt < maxRetries) {
-        logger.debug("🌐 [MARUTEK] Retrying multipart in 1 second...");
+        logger.debug(" [MARUTEK] Retrying multipart in 1 second...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
   }
 
   try {
-    logger.debug("🌐 [MARUTEK] Multipart exhausted; attempting base64 once (POST .../transcribe/base64)...");
+    logger.debug(" [MARUTEK] Multipart exhausted; attempting base64 once (POST .../transcribe/base64)...");
     const result = await transcribeAudioAsBase64(uri, { endpoint: options?.endpoint });
-    logger.debug("🌐 [MARUTEK] Base64 transcription successful");
+    logger.debug(" [MARUTEK] Base64 transcription successful");
     return result;
   } catch (base64Error) {
     const err = base64Error instanceof Error ? base64Error : new Error(String(base64Error));
     errors.push(err);
-    logger.warn("🌐 [MARUTEK] Base64 transcription failed:", base64Error);
+    logger.warn(" [MARUTEK] Base64 transcription failed:", base64Error);
   }
 
   const onlyEmptyResults =
@@ -361,22 +361,22 @@ async function transcribeAudioWithFallbackInternal(
 
   if (onlyEmptyResults) {
     logger.warn(
-      "🌐 [MARUTEK] Mọi lần gửi đều trả về transcription rỗng — có thể file không có lời hoặc server không nhận được âm thanh hữu ích.",
+      " [MARUTEK] Mọi lần gửi đều trả về transcription rỗng — có thể file không có lời hoặc server không nhận được âm thanh hữu ích.",
     );
   } else {
     logger.error(
-      "🌐 [MARUTEK] All transcription methods failed after",
+      " [MARUTEK] All transcription methods failed after",
       maxRetries,
       "multipart attempt(s) + base64",
     );
-    logger.error("🌐 [MARUTEK] This could be due to:");
+    logger.error(" [MARUTEK] This could be due to:");
     logger.error("  - Server is down or unreachable");
     logger.error("  - Audio file is corrupted or empty");
     logger.error("  - Network connectivity issues");
     logger.error("  - Marutek API authentication problems");
     logger.error("  - Server rate limiting or temporary issues");
     errors.forEach((error, index) => {
-      logger.error(`🌐 [MARUTEK] Attempt ${index + 1} error:`, error);
+      logger.error(` [MARUTEK] Attempt ${index + 1} error:`, error);
     });
   }
 
@@ -401,7 +401,7 @@ export async function transcribeAudioWithFallback(
  * Compare transcribed text with expected text
  */
 export function compareTexts(transcribedText: string, expectedText: string): ComparisonResult {
-  logger.debug("🔍 [MARUTEK] Comparing texts:");
+  logger.debug(" [MARUTEK] Comparing texts:");
   logger.debug("  - Transcribed:", transcribedText);
   logger.debug("  - Expected:", expectedText);
 
@@ -416,7 +416,7 @@ export function compareTexts(transcribedText: string, expectedText: string): Com
   const normalizedTranscribed = normalizeText(transcribedText);
   const normalizedExpected = normalizeText(expectedText);
 
-  logger.debug("🔍 [MARUTEK] Normalized texts:");
+  logger.debug(" [MARUTEK] Normalized texts:");
   logger.debug("  - Transcribed:", normalizedTranscribed);
   logger.debug("  - Expected:", normalizedExpected);
 
@@ -424,7 +424,7 @@ export function compareTexts(transcribedText: string, expectedText: string): Com
   const transcribedWords = normalizedTranscribed.split(/\s+/).filter((word) => word.length > 0);
   const expectedWords = normalizedExpected.split(/\s+/).filter((word) => word.length > 0);
 
-  logger.debug("🔍 [MARUTEK] Word arrays:");
+  logger.debug(" [MARUTEK] Word arrays:");
   logger.debug("  - Transcribed words:", transcribedWords);
   logger.debug("  - Expected words:", expectedWords);
 
@@ -465,7 +465,7 @@ export function compareTexts(transcribedText: string, expectedText: string): Com
     details,
   };
 
-  logger.debug("🔍 [MARUTEK] Comparison result:");
+  logger.debug(" [MARUTEK] Comparison result:");
   logger.debug("  - Correct words:", result.correctWords);
   logger.debug("  - Incorrect words:", result.incorrectWords);
   logger.debug("  - Accuracy:", result.accuracy + "%");

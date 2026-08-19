@@ -4,7 +4,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { speakChinese } from "@/lib/utils/speech";
 import { notebookApi } from "@/api/notebook";
-import { RotateCw, Check, X, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { FlashcardControls } from "@/components/flashcard/FlashcardControls";
 
 // Helper to generate dynamic quiz options from vocabulary list
 function generateQuizOptions(currentWord: any, allWords: any[]) {
@@ -305,38 +306,6 @@ function StudyContent() {
                     </div>
                   )}
                 </div>
-
-                <div className="w-full flex flex-col gap-4 mt-6">
-                  <div className="flex justify-center">
-                    <button
-                      onClick={() => {
-                        setIsFlipped(!isFlipped);
-                        speakChinese(currentItem.word);
-                      }}
-                      className="border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-450 hover:bg-zinc-50 dark:hover:bg-zinc-850 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer inline-flex items-center gap-1.5 justify-center bg-transparent"
-                    >
-                      <RotateCw className="w-4 h-4" />
-                      Lật thẻ <kbd className="px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200/60 dark:border-zinc-700 ml-1.5">Space</kbd>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 w-full pt-2">
-                    <button
-                      onClick={() => handleNext(true)}
-                      className="border border-emerald-200 hover:bg-emerald-50 dark:border-emerald-950/30 dark:hover:bg-emerald-950/20 text-emerald-600 py-3 px-4 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Check className="w-4 h-4" />
-                      Đã thuộc <kbd className="px-1.5 py-0.5 text-[9px] font-bold text-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 rounded border border-emerald-200/50 dark:border-emerald-900/30 ml-1.5">→ / 1</kbd>
-                    </button>
-                    <button
-                      onClick={() => handleNext(false)}
-                      className="border border-rose-200 hover:bg-rose-50 dark:border-rose-950/30 dark:hover:bg-rose-950/20 text-rose-600 py-3 px-4 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <X className="w-4 h-4" />
-                      Cần ôn <kbd className="px-1.5 py-0.5 text-[9px] font-bold text-rose-500 bg-rose-50/50 dark:bg-rose-950/20 rounded border border-rose-200/50 dark:border-rose-900/30 ml-1.5">← / 2</kbd>
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -369,6 +338,7 @@ function StudyContent() {
                     return (
                       <button
                         key={opt.k}
+                        type="button"
                         disabled={!!quizSelected}
                         onClick={() => {
                           if (!quizSelected) {
@@ -389,6 +359,26 @@ function StudyContent() {
                 </div>
               </div>
             )}
+
+            {/* Bottom Controls Nav Bar */}
+            <FlashcardControls
+              mode={mode}
+              onNext={(status) => handleNext(status === "mastered")}
+              onPrevious={() => {
+                if (currentIndex > 0) {
+                  setIsFlipped(false);
+                  setQuizSelected(null);
+                  setCurrentIndex((i) => i - 1);
+                }
+              }}
+              onFlip={() => {
+                setIsFlipped(!isFlipped);
+                speakChinese(currentItem.word);
+              }}
+              onPronounce={() => speakChinese(currentItem.word)}
+              currentIndex={currentIndex}
+              isFirst={currentIndex === 0}
+            />
           </div>
 
           {/* Add New Word Button */}
