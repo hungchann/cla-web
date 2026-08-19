@@ -18,6 +18,7 @@ import { PageContainer } from "@/components/PageContainer";
 
 function BookCard({ book, badge }: { book: any; badge?: string }) {
   const cover = getAssetUrl(book?.image?.filename_disk, null);
+  const displayName = book.title_trans || book.title;
   return (
     <Link
       key={book.id}
@@ -29,13 +30,13 @@ function BookCard({ book, badge }: { book: any; badge?: string }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={cover}
-            alt={book.title}
+            alt={displayName}
             className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center p-4 text-center">
             <span className="text-xs font-extrabold text-zinc-600 dark:text-zinc-400 line-clamp-3">
-              {book.title}
+              {displayName}
             </span>
           </div>
         )}
@@ -48,7 +49,7 @@ function BookCard({ book, badge }: { book: any; badge?: string }) {
 
       <div className="px-1">
         <h4 className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-sm tracking-tight">
-          {book.title}
+          {displayName}
         </h4>
         <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
           {book.author || book.author_trans || "Khuyết danh"}

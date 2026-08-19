@@ -24,14 +24,31 @@ export interface ExerciseItem {
   [key: string]: any;
 }
 
-const timeToSeconds = (timeStr: string): number => {
-  const parts = timeStr.split(":");
-  const hours = Number.parseInt(parts[0]) || 0;
-  const minutes = Number.parseInt(parts[1]) || 0;
-  const secondsPart = parts[2] || "0";
-  const secondsWithMs = secondsPart.replace(",", ".");
-  const seconds = Number.parseFloat(secondsWithMs) || 0;
-  return hours * 3600 + minutes * 60 + seconds;
+const timeToSeconds = (val: string | number | undefined | null): number => {
+  if (val == null) return 0;
+  if (typeof val === "number") return Number.isFinite(val) ? val : 0;
+  const str = String(val).trim();
+  if (!str) return 0;
+
+  if (/^\d+(\.\d+)?$/.test(str)) {
+    return Number.parseFloat(str) || 0;
+  }
+
+  const clean = str.replace(",", ".");
+  const parts = clean.split(":");
+  if (parts.length === 3) {
+    const hours = Number.parseFloat(parts[0]) || 0;
+    const minutes = Number.parseFloat(parts[1]) || 0;
+    const seconds = Number.parseFloat(parts[2]) || 0;
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+  if (parts.length === 2) {
+    const minutes = Number.parseFloat(parts[0]) || 0;
+    const seconds = Number.parseFloat(parts[1]) || 0;
+    return minutes * 60 + seconds;
+  }
+  const parsed = Number.parseFloat(clean);
+  return Number.isNaN(parsed) ? 0 : parsed;
 };
 
 export const useDetailedVideoLogic = (
@@ -45,6 +62,13 @@ export const useDetailedVideoLogic = (
     setYoutubeIsPlaying?: (playing: boolean) => void;
     /** Exercises dự phòng khi API không trả về (demo/mock). */
     fallbackExercises?: ExerciseItem[];
+    /**
+     * Luồng đang hoạt động:
+     * - "subtitles": chỉ đồng bộ phụ đề (không chạy trắc nghiệm).
+     * - "quiz": chỉ chạy trắc nghiệm (không đồng bộ phụ đề).
+     * - "both": chạy cả hai (mặc định).
+     */
+    flowMode?: "subtitles" | "quiz" | "both";
   },
 ) => {
   const router = useRouter();
@@ -63,21 +87,15 @@ export const useDetailedVideoLogic = (
 
   const isComponentMounted = useRef(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const inFlightYoutubeClockRef = useRef(false);
   const currentSubtitleRef = useRef<SubtitleItem | null>(null);
   const lastSpokenSubtitleIdRef = useRef<string | number | null>(null);
   // Khi vừa trả lời xong (đang hiện kết quả/animation), không auto nhảy sang câu kế tiếp
   // để tránh trường hợp 2 câu hỏi nằm sát nhau gây "dính" state/UI.
   const isAnswerTransitionRef = useRef(false);
 
-  // Virtual clock cho YouTube: tránh độ trễ async của getCurrentTime() trong detection.
-  // anchor lưu { time: giây thực từ YT, ts: Date.now() lúc đó }.
-  // Khi đang play: virtualTime = anchor.time + (Date.now() - anchor.ts) / 1000
-  // Khi pause: virtualTime = anchor.time (đóng băng)
-  const ytVirtualAnchorRef = useRef<{ time: number; ts: number } | null>(null);
-  const ytIsPlayingInternalRef = useRef(false);
-  // Thời gian video YouTube tại thời điểm pause (để remount player tiếp tục từ đây).
-  const [ytSavedTime, setYtSavedTime] = useState(0);
+  // flowMode quyết định luồng nào đang chạy (phụ đề / trắc nghiệm / cả hai).
+  // Dùng ref để polling interval không phải restart mỗi khi user đổi tab.
+  const flowModeRef = useRef<"subtitles" | "quiz" | "both">("both");
 
   const isYoutubeVideo = videoDataUsesYoutubePlayer(videoData);
 
@@ -168,7 +186,7 @@ export const useDetailedVideoLogic = (
           `https://marutek.space/assets/${videoData.srt_file.filename_disk}`,
         );
         const srtContent = await response.text();
-        const parsed = await parseSRTtoArray(srtContent);
+        const parsed = parseSRTtoArray(srtContent);
         const sorted = Array.isArray(parsed)
           ? [...parsed].sort((a: any, b: any) => timeToSeconds(a.start) - timeToSeconds(b.start))
           : [];
@@ -204,13 +222,15 @@ export const useDetailedVideoLogic = (
             )
           : response.exercises;
         logger.debug("[useDetailedVideoLogic] Sorted exercises:", JSON.stringify(sortedExercises));
-        // Nếu API trả rỗng → dùng fallback để trắc nghiệm vẫn hoạt động (demo).
+        // Nếu API trả rỗng → dùng fallback exercises (ví dụ demo hoặc khi video chưa có bài tập trên DB)
         if (!Array.isArray(sortedExercises) || sortedExercises.length === 0) {
           if (Array.isArray(opts?.fallbackExercises) && opts.fallbackExercises.length > 0) {
             logger.debug("[useDetailedVideoLogic] Using fallback exercises.");
             setExerciseData(opts.fallbackExercises);
             return;
           }
+          setExerciseData([]);
+          return;
         }
         setExerciseData(sortedExercises);
       } catch (error: any) {
@@ -220,6 +240,8 @@ export const useDetailedVideoLogic = (
           setExerciseData(opts.fallbackExercises);
         } else if (error.message === "Unauthorized" || error.message === "Failed to fetch exercise") {
           router.replace("/sign-in");
+        } else {
+          setExerciseData([]);
         }
       }
     };
@@ -250,6 +272,7 @@ export const useDetailedVideoLogic = (
   // ─── Shared helpers (dùng refs → an toàn khi gọi từ bất kỳ effect nào) ───
 
   const updateCurrentSubtitle = useCallback((currentTime: number) => {
+    if (flowModeRef.current === "quiz") return;
     const subs = subtitlesRef.current;
     if (!Array.isArray(subs) || subs.length === 0) return;
     const next = subs.find((st) => {
@@ -272,26 +295,23 @@ export const useDetailedVideoLogic = (
   const pausePlayback = useCallback(() => {
     logger.debug("[pausePlayback] Called. isYoutube:", isYoutubeVideo);
     if (isYoutubeVideo) {
-      const anchor = ytVirtualAnchorRef.current;
-      let frozenTime = 0;
-      if (anchor) {
-        frozenTime = ytIsPlayingInternalRef.current
-          ? anchor.time + (Date.now() - anchor.ts) / 1000
-          : anchor.time;
-        ytVirtualAnchorRef.current = { time: frozenTime, ts: Date.now() };
-        logger.debug("[pausePlayback] Froze YT time to:", frozenTime);
+      if (opts?.youtubePlayerRef?.current?.pauseVideo) {
+        opts.youtubePlayerRef.current.pauseVideo();
       }
-      ytIsPlayingInternalRef.current = false;
-      setYtSavedTime(frozenTime);
       opts?.setYoutubeIsPlaying?.(false);
+    } else if (opts?.videoRef?.current) {
+      opts.videoRef.current.pause();
     } else if (typeof (player as any)?.pause === "function") {
       try { (player as any).pause(); } catch {}
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isYoutubeVideo, player, opts?.setYoutubeIsPlaying]);
+  }, [isYoutubeVideo, player, opts?.youtubePlayerRef, opts?.videoRef, opts?.setYoutubeIsPlaying]);
 
   const syncExerciseState = useCallback((currentTime: number) => {
     if (currentTime <= 0.1) {
+      return;
+    }
+    if (flowModeRef.current !== "quiz" && flowModeRef.current !== "both") {
       return;
     }
     if (isAnswerTransitionRef.current) {
@@ -299,29 +319,25 @@ export const useDetailedVideoLogic = (
       return;
     }
     const exercises = exerciseDataRef.current;
-    if (!exercises) {
+    if (!exercises || exercises.length === 0) {
       logger.debug("[syncExerciseState] No exercises");
       return;
     }
 
-    const firstUnanswered = exercises.find((q) => !answeredIdsRef.current.includes(q.id));
+    const firstUnanswered = exercises.find((q) => !answeredIdsRef.current.some((ansId) => String(ansId) === String(q.id)));
     setNextQuestionId(firstUnanswered?.id ?? null);
 
     const currentQuestion = exercises.find((q) => {
-      if (answeredIdsRef.current.includes(q.id)) return false;
+      if (answeredIdsRef.current.some((ansId) => String(ansId) === String(q.id))) return false;
       const endTime = timeToSeconds(q.time_end);
-      // Chỉ hiển thị câu hỏi SAU KHI câu đã phát xong (>= time_end),
-      // với cửa sổ 3 giây để polling kịp bắt được điểm kết thúc.
-      return currentTime >= endTime && currentTime <= endTime + 3;
+      const startTime = timeToSeconds(q.time_start);
+      return currentTime >= endTime || (currentTime >= startTime && currentTime <= endTime + 2);
     });
 
     if (currentQuestion) {
       logger.debug(
         `[syncExerciseState] Found Q: id=${currentQuestion.id}, t=${currentTime}s, range=[${timeToSeconds(currentQuestion.time_start)}-${timeToSeconds(currentQuestion.time_end)}]`,
       );
-      if (activeQuestionRef.current) {
-        logger.debug(`[syncExerciseState] Already has active question, skipping`);
-      }
     }
 
     if (currentQuestion && !activeQuestionRef.current) {
@@ -332,198 +348,100 @@ export const useDetailedVideoLogic = (
     }
   }, [pausePlayback]);
 
-  const handleTimeBoundaryPausing = useCallback((currentTime: number) => {
+  const handleTimeBoundaryPausing = useCallback((_currentTime: number) => {
     const activeQ = activeQuestionRef.current;
-    if (activeQ && currentTime >= timeToSeconds(activeQ.time_end)) {
-      pausePlayback();
-    }
-    const subtitleEnded =
-      currentSubtitleRef.current &&
-      currentTime >= timeToSeconds(currentSubtitleRef.current.end);
-    if (subtitleEnded && activeQ) {
+    if (activeQ) {
+      // Khi đang có câu hỏi chưa trả lời: Bắt buộc dừng video không cho phát lén
       pausePlayback();
     }
   }, [pausePlayback]);
 
-  // ─── Effect: Local video detection (300 ms polling via native player) ───
   useEffect(() => {
-    if (isYoutubeVideo || hasCompletedAll) return;
-    if (status !== "readyToPlay" || !player || !videoSource || videoSource === "") return;
+    const mode = opts?.flowMode || "both";
+    flowModeRef.current = mode;
+    if (mode === "subtitles") {
+      if (activeQuestionRef.current) {
+        activeQuestionRef.current = null;
+        setActiveQuestion(null);
+      }
+    } else if (mode === "quiz") {
+      if (currentSubtitleRef.current) {
+        currentSubtitleRef.current = null;
+        setCurrentSubtitle(null);
+      }
+      const curT = opts?.videoRef?.current?.currentTime;
+      if (typeof curT === "number" && curT > 0.1) {
+        syncExerciseState(curT);
+      }
+    }
+  }, [opts?.flowMode, opts?.videoRef, syncExerciseState]);
+
+  const onVideoTimeUpdate = useCallback((currentTime?: number) => {
+    if (!isComponentMounted.current) return;
+    let t = typeof currentTime === "number" ? currentTime : Number.NaN;
+    if (!Number.isFinite(t)) {
+      t = opts?.videoRef?.current?.currentTime ?? (typeof player?.currentTime === "number" ? player.currentTime : Number.NaN);
+    }
+    if (!Number.isFinite(t) || t < 0) return;
+    const flowMode = flowModeRef.current;
+    if (flowMode === "subtitles" || flowMode === "both") {
+      updateCurrentSubtitle(t);
+    }
+    if (flowMode === "quiz" || flowMode === "both") {
+      syncExerciseState(t);
+      handleTimeBoundaryPausing(t);
+    }
+  }, [opts?.videoRef, player, updateCurrentSubtitle, syncExerciseState, handleTimeBoundaryPausing]);
+
+  // ─── Polling video timeline (mỗi 200ms cho cả local HTML5 video và YouTube iframe) ───
+  useEffect(() => {
+    if (hasCompletedAll) return;
 
     if (intervalRef.current) clearInterval(intervalRef.current as any);
 
-    intervalRef.current = setInterval(() => {
+    intervalRef.current = setInterval(async () => {
       if (!isComponentMounted.current) return;
       try {
-        const currentTime =
-          typeof player.currentTime === "number" ? player.currentTime : Number.NaN;
-        if (!Number.isFinite(currentTime)) return;
-        updateCurrentSubtitle(currentTime);
-        syncExerciseState(currentTime);
-        handleTimeBoundaryPausing(currentTime);
+        let currentTime = Number.NaN;
+        if (isYoutubeVideo) {
+          const api = opts?.youtubePlayerRef?.current;
+          if (api && typeof api.getCurrentTime === "function") {
+            const res = api.getCurrentTime();
+            currentTime = typeof res?.then === "function" ? await res : res;
+          }
+        } else if (opts?.videoRef?.current) {
+          currentTime = opts.videoRef.current.currentTime;
+        } else if (typeof player?.currentTime === "number") {
+          currentTime = player.currentTime;
+        }
+
+        if (!Number.isFinite(currentTime) || currentTime < 0) return;
+
+        const flowMode = flowModeRef.current;
+        if (flowMode === "subtitles" || flowMode === "both") {
+          updateCurrentSubtitle(currentTime);
+        }
+        if (flowMode === "quiz" || flowMode === "both") {
+          syncExerciseState(currentTime);
+          handleTimeBoundaryPausing(currentTime);
+        }
       } catch (err) {
-        logger.error("[useDetailedVideoLogic] Local polling error:", err);
+        logger.error("[useDetailedVideoLogic] Polling error:", err);
       }
-    }, 300) as any;
+    }, 200) as any;
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current as any);
         intervalRef.current = null;
       }
-    };
-  }, [
-    isYoutubeVideo,
-    hasCompletedAll,
-    status,
-    player,
-    videoSource,
-    updateCurrentSubtitle,
-    syncExerciseState,
-    handleTimeBoundaryPausing,
-  ]);
-
-  // ─── Effect: YouTube detection via Virtual Clock ───
-  // Không dùng getCurrentTime() cho mỗi tick (async, 100-200ms lag).
-  // Thay bằng: virtual clock (Date.now() interpolation) cho detection 100ms,
-  // và drift correction từ getCurrentTime() mỗi 2000ms (với timeout chống treo).
-  useEffect(() => {
-    if (!isYoutubeVideo || hasCompletedAll) return;
-
-    if (intervalRef.current) clearInterval(intervalRef.current as any);
-    // Reset inFlight để tránh bị block từ effect lần trước
-    inFlightYoutubeClockRef.current = false;
-
-    let driftMs = 0;
-
-    // Khởi tạo virtual clock ngay lập tức (lần đầu)
-    const api = opts?.youtubePlayerRef?.current;
-    logger.debug("[YouTube effect] Initializing anchor. api:", !!api, "getCurrentTime?", api?.getCurrentTime ? "yes" : "no");
-
-    if (api && typeof api.getCurrentTime === "function" && !inFlightYoutubeClockRef.current) {
-      logger.debug("[YouTube effect] Calling api.getCurrentTime()...");
-      inFlightYoutubeClockRef.current = true;
-      const initTimeout = setTimeout(() => {
-        logger.debug("[YouTube effect] getCurrentTime timeout");
-        inFlightYoutubeClockRef.current = false;
-      }, 1500);
-
-      api.getCurrentTime()
-        .then((t: number) => {
-          logger.debug("[YouTube effect] getCurrentTime resolved with:", t);
-          clearTimeout(initTimeout);
-          if (typeof t === "number" && Number.isFinite(t)) {
-            ytVirtualAnchorRef.current = { time: t, ts: Date.now() };
-            ytIsPlayingInternalRef.current = true;
-            logger.debug("[YouTube effect] Anchor initialized with time:", t);
-          } else {
-            logger.debug("[YouTube effect] Invalid time value:", t);
-          }
-        })
-        .catch((e: any) => {
-          logger.debug("[YouTube effect] getCurrentTime error:", e);
-          clearTimeout(initTimeout);
-        })
-        .finally(() => { inFlightYoutubeClockRef.current = false; });
-    } else {
-      logger.debug("[YouTube effect] Cannot init anchor - conditions not met");
-    }
-
-    intervalRef.current = setInterval(() => {
-      if (!isComponentMounted.current) return;
-
-      const anchor = ytVirtualAnchorRef.current;
-
-      // Nếu chưa có anchor, thử khởi tạo từ YouTube API
-      if (!anchor) {
-        if (inFlightYoutubeClockRef.current) {
-          logger.debug("[YouTube polling] No anchor, init in-flight");
-          return;
-        }
-        const playerApi = opts?.youtubePlayerRef?.current;
-        if (!playerApi || typeof playerApi.getCurrentTime !== "function") {
-          logger.debug("[YouTube polling] No anchor, API not ready yet");
-          return;
-        }
-        logger.debug("[YouTube polling] No anchor, attempting init...");
-        inFlightYoutubeClockRef.current = true;
-        const initTimeout = setTimeout(() => {
-          logger.debug("[YouTube polling] Init timeout");
-          inFlightYoutubeClockRef.current = false;
-        }, 1500);
-        playerApi.getCurrentTime()
-          .then((t: number) => {
-            clearTimeout(initTimeout);
-            if (typeof t === "number" && Number.isFinite(t)) {
-              ytVirtualAnchorRef.current = { time: t, ts: Date.now() };
-              ytIsPlayingInternalRef.current = true;
-              logger.debug("[YouTube polling] Anchor initialized with time:", t);
-            } else {
-              logger.debug("[YouTube polling] Invalid init time:", t);
-            }
-          })
-          .catch((e: any) => {
-            logger.debug("[YouTube polling] Init error:", e);
-            clearTimeout(initTimeout);
-          })
-          .finally(() => { inFlightYoutubeClockRef.current = false; });
-        return;
-      }
-
-      const virtualTime = ytIsPlayingInternalRef.current
-        ? anchor.time + (Date.now() - anchor.ts) / 1000
-        : anchor.time;
-
-      logger.debug(
-        `[YouTube polling] virtualTime=${virtualTime.toFixed(2)}s, isPlaying=${ytIsPlayingInternalRef.current}, activeQ=${activeQuestionRef.current ? activeQuestionRef.current.id : "none"}`,
-      );
-      updateCurrentSubtitle(virtualTime);
-      syncExerciseState(virtualTime);
-      handleTimeBoundaryPausing(virtualTime);
-
-      // 2. Drift correction mỗi 2000ms - chỉ khi đang play
-      driftMs += 100;
-      if (driftMs < 2000 || inFlightYoutubeClockRef.current) return;
-      driftMs = 0;
-
-      // Khi đang pause, KHÔNG cập nhật anchor từ YouTube thực (giữ virtual time đông cứng).
-      // Không seekTo vì sẽ gây cycle playing/buffering/playing với YouTube WebView.
-      if (!ytIsPlayingInternalRef.current) return;
-
-      const playerApi = opts?.youtubePlayerRef?.current;
-      if (!playerApi || typeof playerApi.getCurrentTime !== "function") return;
-
-      inFlightYoutubeClockRef.current = true;
-      // Timeout 1.5s để tránh trường hợp WebView không reply → bị treo mãi
-      const timeoutId = setTimeout(() => {
-        inFlightYoutubeClockRef.current = false;
-      }, 1500);
-
-      playerApi.getCurrentTime()
-        .then((t: number) => {
-          clearTimeout(timeoutId);
-          if (typeof t === "number" && Number.isFinite(t)) {
-            // Cập nhật anchor với thời gian thực từ YouTube
-            ytVirtualAnchorRef.current = { time: t, ts: Date.now() };
-          }
-        })
-        .catch(() => { clearTimeout(timeoutId); })
-        .finally(() => { inFlightYoutubeClockRef.current = false; });
-    }, 100) as any;
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current as any);
-        intervalRef.current = null;
-      }
-      // Bắt buộc reset để interval mới không bị chặn bởi call đang bay
-      inFlightYoutubeClockRef.current = false;
     };
   }, [
     isYoutubeVideo,
     hasCompletedAll,
     opts?.youtubePlayerRef,
-    opts?.setYoutubeIsPlaying,
+    opts?.videoRef,
+    player,
     updateCurrentSubtitle,
     syncExerciseState,
     handleTimeBoundaryPausing,
@@ -577,67 +495,16 @@ export const useDetailedVideoLogic = (
       setTimeout(() => {
         // Kết thúc phase hiển thị kết quả câu vừa trả lời
         setShowResult(false);
+        setShowResult(false);
         setActiveQuestion(null);
-        activeQuestionRef.current = null; // clear ref ngay, không chờ useEffect
-
-        // Nếu câu tiếp theo bắt đầu ngay tại thời điểm hiện tại → giữ pause và mở luôn câu đó
-        try {
-          const exercises = exerciseDataRef.current;
-          if (Array.isArray(exercises) && exercises.length > 0) {
-            const nextUnanswered = exercises.find((q) => !answeredIdsRef.current.includes(q.id));
-            const getVirtualOrLocalTime = () => {
-              if (isYoutubeVideo) {
-                const anchor = ytVirtualAnchorRef.current;
-                if (!anchor) return Number.NaN;
-                return ytIsPlayingInternalRef.current
-                  ? anchor.time + (Date.now() - anchor.ts) / 1000
-                  : anchor.time;
-              }
-              const t = (player as any)?.currentTime;
-              return typeof t === "number" ? t : Number.NaN;
-            };
-            const nowT = getVirtualOrLocalTime();
-            if (nextUnanswered && Number.isFinite(nowT)) {
-              const s = timeToSeconds(nextUnanswered.time_start);
-              const e = timeToSeconds(nextUnanswered.time_end);
-              if (nowT >= s && nowT <= e) {
-                activeQuestionRef.current = nextUnanswered;
-                setActiveQuestion(nextUnanswered);
-                pausePlayback();
-                isAnswerTransitionRef.current = false;
-                return;
-              }
-            }
-          }
-        } catch {}
-
+        activeQuestionRef.current = null;
         isAnswerTransitionRef.current = false;
+
         if (totalCount > 0 && nextAnsweredCount === totalCount) {
           setHasCompletedAll(true);
           setShowCompletionOverlay(true);
-        } else if (isYoutubeVideo && opts?.setYoutubeIsPlaying && isComponentMounted.current) {
-          try {
-            // Mở băng virtual clock để tiếp tục đếm thời gian
-            ytIsPlayingInternalRef.current = true;
-            if (ytVirtualAnchorRef.current) {
-              ytVirtualAnchorRef.current = { ...ytVirtualAnchorRef.current, ts: Date.now() };
-            }
-            opts.setYoutubeIsPlaying(true);
-          } catch (error) {
-            logger.error("[useDetailedVideoLogic] Error resuming YouTube after answer:", error);
-          }
-        } else if (
-          player &&
-          videoSource &&
-          videoSource !== "" &&
-          typeof player.play === "function" &&
-          isComponentMounted.current
-        ) {
-          try {
-            player.play();
-          } catch (error) {
-            logger.error("[useDetailedVideoLogic] Error playing after answer:", error);
-          }
+        } else if (isComponentMounted.current) {
+          resumePlayback();
         }
       }, 1500);
 
@@ -697,66 +564,34 @@ export const useDetailedVideoLogic = (
         activeQuestionRef.current = null;
         isAnswerTransitionRef.current = false;
 
-        try {
-          const exercises = exerciseDataRef.current;
-          if (Array.isArray(exercises) && exercises.length > 0) {
-            const nextUnanswered = exercises.find((q) => !answeredIdsRef.current.includes(q.id));
-            const getVirtualOrLocalTime = () => {
-              if (isYoutubeVideo) {
-                const anchor = ytVirtualAnchorRef.current;
-                if (!anchor) return Number.NaN;
-                return ytIsPlayingInternalRef.current
-                  ? anchor.time + (Date.now() - anchor.ts) / 1000
-                  : anchor.time;
-              }
-              const t = (player as any)?.currentTime;
-              return typeof t === "number" ? t : Number.NaN;
-            };
-            const nowT = getVirtualOrLocalTime();
-            if (nextUnanswered && Number.isFinite(nowT)) {
-              const s = timeToSeconds(nextUnanswered.time_start);
-              const e = timeToSeconds(nextUnanswered.time_end);
-              if (nowT >= s && nowT <= e) {
-                activeQuestionRef.current = nextUnanswered;
-                setActiveQuestion(nextUnanswered);
-                pausePlayback();
-                return;
-              }
-            }
-          }
-        } catch {}
-
         if (totalCount > 0 && nextAnsweredCount === totalCount) {
           setHasCompletedAll(true);
           setShowCompletionOverlay(true);
-        } else if (isYoutubeVideo && opts?.setYoutubeIsPlaying && isComponentMounted.current) {
-          try {
-            ytIsPlayingInternalRef.current = true;
-            if (ytVirtualAnchorRef.current) {
-              ytVirtualAnchorRef.current = { ...ytVirtualAnchorRef.current, ts: Date.now() };
-            }
-            opts.setYoutubeIsPlaying(true);
-          } catch (error) {
-            logger.error("[useDetailedVideoLogic] Error resuming YouTube after answer (fallback):", error);
-          }
-        } else if (
-          player &&
-          videoSource &&
-          videoSource !== "" &&
-          typeof player.play === "function" &&
-          isComponentMounted.current
-        ) {
-          try {
-            player.play();
-          } catch (error) {
-            logger.error("[useDetailedVideoLogic] Error playing after answer (fallback):", error);
-          }
+        } else if (isComponentMounted.current) {
+          resumePlayback();
         }
       }, 1500);
 
       return fallbackResult;
     }
   };
+
+  const resumePlayback = useCallback(() => {
+    try {
+      if (isYoutubeVideo) {
+        if (opts?.youtubePlayerRef?.current?.playVideo) {
+          opts.youtubePlayerRef.current.playVideo();
+        }
+        opts?.setYoutubeIsPlaying?.(true);
+      } else if (opts?.videoRef?.current) {
+        opts.videoRef.current.play().catch((e) => logger.debug("Play interrupted", e));
+      } else if (player && typeof (player as any).play === "function") {
+        (player as any).play();
+      }
+    } catch (error) {
+      logger.error("[useDetailedVideoLogic] Error in resumePlayback:", error);
+    }
+  }, [isYoutubeVideo, player, opts?.youtubePlayerRef, opts?.videoRef, opts?.setYoutubeIsPlaying]);
 
   const handleContinueWatching = useCallback(() => {
     setShowCompletionOverlay(false);
@@ -771,21 +606,8 @@ export const useDetailedVideoLogic = (
       activeQuestionRef.current = null;
     }
     isAnswerTransitionRef.current = false;
-
-    try {
-      if (isYoutubeVideo) {
-        ytIsPlayingInternalRef.current = true;
-        if (ytVirtualAnchorRef.current) {
-          ytVirtualAnchorRef.current = { ...ytVirtualAnchorRef.current, ts: Date.now() };
-        }
-        opts?.setYoutubeIsPlaying?.(true);
-      } else if (player && typeof (player as any).play === "function") {
-        (player as any).play();
-      }
-    } catch (error) {
-      logger.error("[useDetailedVideoLogic] Error in handleContinueWatching:", error);
-    }
-  }, [player, isYoutubeVideo, opts?.setYoutubeIsPlaying]);
+    resumePlayback();
+  }, [resumePlayback]);
 
   const handleViewResults = useCallback(() => {
     try {
@@ -805,7 +627,6 @@ export const useDetailedVideoLogic = (
         clearInterval(intervalRef.current as any);
         intervalRef.current = null;
       }
-      inFlightYoutubeClockRef.current = false;
       isComponentMounted.current = false;
     };
   }, []);
@@ -829,7 +650,8 @@ export const useDetailedVideoLogic = (
     handleOptionPress,
     handleContinueWatching,
     handleViewResults,
-    ytSavedTime,
+    ytSavedTime: 0,
     handleVideoLoaded,
+    onVideoTimeUpdate,
   };
 };

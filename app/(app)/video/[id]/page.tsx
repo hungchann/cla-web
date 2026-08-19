@@ -197,10 +197,10 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     }
     
     const opts = [];
-    const ansA = ex.answer_A || ex.Answer_A || ex.answerA;
-    const ansB = ex.answer_B || ex.Answer_B || ex.answerB;
-    const ansC = ex.answer_C || ex.Answer_C || ex.answerC;
-    const ansD = ex.answer_D || ex.Answer_D || ex.answerD;
+    const ansA = ex.answer_A || ex.Answer_A || ex.answerA || ex.answer_a;
+    const ansB = ex.answer_B || ex.Answer_B || ex.answerB || ex.answer_b;
+    const ansC = ex.answer_C || ex.Answer_C || ex.answerC || ex.answer_c;
+    const ansD = ex.answer_D || ex.Answer_D || ex.answerD || ex.answer_d;
     
     if (ansA) opts.push({ id: "A", hanzi: ansA, pinyin: "", isCorrect: isOptionCorrect("A", ansA) });
     if (ansB) opts.push({ id: "B", hanzi: ansB, pinyin: "", isCorrect: isOptionCorrect("B", ansB) });
@@ -234,6 +234,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     youtubePlayerRef,
     setYoutubeIsPlaying,
     fallbackExercises: MOCK_EXERCISES,
+    flowMode: rightPanelTab,
   });
 
   const {
@@ -241,10 +242,24 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     subtitles,
     handleOptionPress,
     handleContinueWatching,
+    handleViewResults,
     exerciseData,
     videoSource,
+    answeredIds,
+    answerResults,
+    showResult,
+    nextQuestionId,
+    hasCompletedAll,
     handleVideoLoaded,
+    onVideoTimeUpdate,
   } = hookData;
+
+  // Tự động chuyển tab sang "quiz" khi có câu hỏi dừng video kích hoạt
+  useEffect(() => {
+    if (activeQuestion && rightPanelTab !== "quiz") {
+      setRightPanelTab("quiz");
+    }
+  }, [activeQuestion, rightPanelTab]);
 
   // Phân tách từ Hán ngữ phụ đề tự động bằng API AI
   useEffect(() => {
@@ -299,6 +314,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
           const t = await youtubePlayerRef.current.getCurrentTime();
           if (typeof t === "number" && !Number.isNaN(t)) {
             setCurrentTime(t);
+            onVideoTimeUpdate?.(t);
           }
         } catch {
           // ignore
@@ -306,39 +322,24 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
       }
     }, 250);
     return () => clearInterval(interval);
-  }, [isYoutubeVideo]);
+  }, [isYoutubeVideo, onVideoTimeUpdate]);
 
-  // Sync active subtitle index from current time
+  // Sync active subtitle index from current time (chỉ chạy khi ở tab Phụ đề)
   useEffect(() => {
+    if (rightPanelTab !== "subtitles") return;
     if (currentTime > 0 && enrichedSubtitles.length > 0) {
       const idx = binarySearchSubtitle(currentTime);
       if (idx !== null && idx !== activeSubtitleIndex) {
         setActiveIndex(idx);
       }
     }
-  }, [currentTime, enrichedSubtitles, binarySearchSubtitle, activeSubtitleIndex, setActiveIndex]);
-
-  // Tự động Pause video + chuyển sang tab Trắc nghiệm khi có câu hỏi hoạt động.
-  // Ngược lại về Phụ đề (teleprompter) khi hết câu hỏi.
-  useEffect(() => {
-    if (activeQuestion) {
-      if (isYoutubeVideo) {
-        setYoutubeIsPlaying(false);
-      } else {
-        const video = videoRef.current;
-        if (video && !video.paused) {
-          video.pause();
-        }
-      }
-      setRightPanelTab("quiz");
-    } else {
-      setRightPanelTab("subtitles");
-    }
-  }, [activeQuestion, isYoutubeVideo]);
+  }, [currentTime, enrichedSubtitles, binarySearchSubtitle, activeSubtitleIndex, setActiveIndex, rightPanelTab]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
+      const t = videoRef.current.currentTime;
+      setCurrentTime(t);
+      onVideoTimeUpdate?.(t);
     }
   };
 
@@ -377,29 +378,18 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
         youtubePlayerRef.current.seekTo(seconds);
         youtubePlayerRef.current.playVideo();
       }
-    } else {
-      if (videoRef.current) {
-        videoRef.current.currentTime = seconds;
-        videoRef.current.play().catch((e) => console.log("Play interrupted", e));
-      }
-    }
-  };
-
-  const handleQuizSubmit = async (answer: string) => {
-    // Gọi hook báo cáo kết quả và lấy status thực tế từ API server
-    const result = await handleOptionPress(answer);
-    return result;
-  };
-
-  const handleContinueVideo = () => {
-    // Play tiếp video
-    if (isYoutubeVideo) {
-      setYoutubeIsPlaying(true);
     } else if (videoRef.current) {
+      videoRef.current.currentTime = seconds;
       videoRef.current.play().catch((e) => console.log("Play interrupted", e));
     }
-    // Chuyển sang câu kế tiếp ở hook
-    handleContinueWatching();
+  };
+
+  const handleRightPanelTabChange = (nextTab: "subtitles" | "quiz") => {
+    if (nextTab === rightPanelTab) return;
+    setRightPanelTab(nextTab);
+    if (nextTab === "subtitles" && activeQuestion) {
+      handleContinueWatching();
+    }
   };
 
   if (isLoading || isPremiumLoading) {
@@ -410,7 +400,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     );
   }
 
-  const activeEx = (exerciseData && exerciseData.find((ex: any) => ex.id === activeQuestion?.id)) || MOCK_EXERCISES.find((ex) => ex.id === activeQuestion?.id);
+  const activeEx = activeQuestion;
 
   return (
     <PageContainer maxWidth="full" className="gap-6">
@@ -483,7 +473,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                 {/* Sub-tab header inside the right column */}
                 <div className="flex items-center gap-4 text-xs font-black uppercase tracking-wider text-zinc-400 select-none border-b border-zinc-100 dark:border-zinc-800 pb-2.5 mb-2 shrink-0">
                   <button
-                    onClick={() => setRightPanelTab("subtitles")}
+                    onClick={() => handleRightPanelTabChange("subtitles")}
                     className={`pb-1 transition-all cursor-pointer bg-transparent border-none ${
                       rightPanelTab === "subtitles"
                         ? "border-b-2 border-zinc-900 dark:border-zinc-50 text-zinc-900 dark:text-zinc-50 font-extrabold"
@@ -493,27 +483,43 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                     Phụ đề
                   </button>
                   <button
-                    onClick={() => setRightPanelTab("quiz")}
+                    onClick={() => handleRightPanelTabChange("quiz")}
                     className={`pb-1 transition-all cursor-pointer bg-transparent border-none flex items-center gap-1 ${
                       rightPanelTab === "quiz"
                         ? "border-b-2 border-zinc-900 dark:border-zinc-50 text-zinc-900 dark:text-zinc-50 font-extrabold"
                         : "hover:text-zinc-600 dark:hover:text-zinc-350"
                     }`}
                   >
-                    Trắc nghiệm {activeQuestion && <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>}
+                    Trắc nghiệm
                   </button>
                 </div>
 
                 {/* Teleprompter: hiển thị phụ đề to, tự nhảy theo video trong lúc video chạy.
-                    Trắc nghiệm chỉ được bật khi có câu hỏi hoạt động (activeQuestion). */}
+                    Trắc nghiệm hiển thị danh sách câu hỏi và popup trả lời tương tác. */}
                 {rightPanelTab === "quiz" ? (
                   <VideoQuizPanel
-                    key={activeQuestion?.id ?? "no-question"}
+                    exerciseData={exerciseData}
                     activeQuestion={activeQuestion}
                     activeEx={activeEx}
+                    answeredIds={answeredIds}
+                    answerResults={answerResults}
+                    showResult={showResult}
+                    nextQuestionId={nextQuestionId}
+                    hasCompletedAll={hasCompletedAll}
+                    totalExercises={exerciseData?.length ?? 0}
                     getOptions={getOptions}
-                    onSubmit={handleQuizSubmit}
-                    onContinue={handleContinueVideo}
+                    onSubmit={handleOptionPress}
+                    onContinue={handleContinueWatching}
+                    onViewResults={handleViewResults}
+                    onSeek={(timeStr: string) => {
+                      const s = timeToSeconds(timeStr);
+                      if (isYoutubeVideo && youtubePlayerRef.current?.seekTo) {
+                        youtubePlayerRef.current.seekTo(s, true);
+                      } else if (videoRef.current) {
+                        videoRef.current.currentTime = s;
+                        videoRef.current.play().catch(() => {});
+                      }
+                    }}
                   />
                 ) : (
                   // Teleprompter: hiển thị 1 dòng phụ đề to, tự nhảy theo video

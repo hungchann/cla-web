@@ -44,6 +44,8 @@ export function VideoPlayerSection({
             controls
             className="h-full w-full object-contain"
             onTimeUpdate={handleTimeUpdate}
+            onSeeked={handleTimeUpdate}
+            onSeeking={handleTimeUpdate}
             onLoadedMetadata={handleVideoLoaded}
           />
         )}
