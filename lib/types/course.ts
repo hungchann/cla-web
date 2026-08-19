@@ -34,6 +34,11 @@ export interface LessonTheory {
   id: string | number;
   lesson_id?: string | number;
   vocab_display_map_id?: string | null;
+  title?: string;
+  content?: string;
+  image_id?: string | { id: string; filename_disk?: string } | null;
+  image_url?: string;
+  sort?: number;
   status?: string;
 }
 
@@ -103,17 +108,6 @@ export interface LessonQuestion {
   explanation?: string;
   audio_id?: string | { id: string; filename_disk?: string } | null;
   audio_url?: string;
-  sort?: number;
-  status?: string;
-}
-
-export interface LessonTheoryCard {
-  id: string | number;
-  lesson_id?: string | number;
-  title?: string;
-  content?: string;
-  image_id?: string | { id: string; filename_disk?: string } | null;
-  image_url?: string;
   sort?: number;
   status?: string;
 }

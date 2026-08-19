@@ -9,7 +9,7 @@ import { coursesApi } from "@/api/courses";
 import { vocabularyApi } from "@/api/vocabulary";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
-import { CourseLesson, CourseLessonType, LessonTheoryCard, LessonVideo, LessonExtra } from "@/lib/types/course";
+import { CourseLesson, CourseLessonType, LessonTheory, LessonVideo, LessonExtra } from "@/lib/types/course";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { speakChinese } from "@/lib/utils/speech";
 import { parseSRTtoArray } from "@/services/subtitle";
@@ -72,7 +72,7 @@ type VocabItem = {
     senses?: VocabSense[];
 };
 
-function TheoryCardsSection({ cards, loading }: { cards: LessonTheoryCard[]; loading: boolean }) {
+function TheoryContentSection({ theory, loading }: { theory: LessonTheory | null; loading: boolean }) {
     if (loading) {
         return (
             <div className="max-w-4xl w-full mx-auto rounded-2xl border border-amber-100 bg-white p-10 text-center shadow-2xs dark:bg-zinc-900">
@@ -80,35 +80,33 @@ function TheoryCardsSection({ cards, loading }: { cards: LessonTheoryCard[]; loa
             </div>
         );
     }
-    if (cards.length === 0) return null;
+    if (!theory || (!theory.content && !theory.image_url && !theory.title)) return null;
     return (
         <div className="max-w-4xl w-full mx-auto space-y-5">
             <div className="px-1">
                 <h3 className="text-lg font-black text-zinc-900 dark:text-white">Ghi chú & giải thích</h3>
-                <p className="text-xs font-semibold text-zinc-500">{cards.length} phần lý thuyết bổ sung</p>
+                <p className="text-xs font-semibold text-zinc-500">Nội dung lý thuyết bổ sung</p>
             </div>
-            {cards.map((card) => (
-                <article key={String(card.id)} className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:p-6">
-                    {card.title && (
-                        <h4 className="mb-3 flex items-center gap-2 text-base font-black text-zinc-900 dark:text-white">
-                            <FileText className="size-4 text-amber-500" />
-                            {card.title}
-                        </h4>
-                    )}
-                    {card.image_url && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={card.image_url} alt={card.title || "Ảnh minh họa"} className="mb-4 w-full max-h-80 rounded-xl border border-zinc-100 object-cover dark:border-zinc-800" />
-                    )}
-                    {card.content ? (
-                        <div
-                            className="prose prose-sm max-w-none text-sm font-semibold leading-relaxed text-zinc-700 dark:text-zinc-300 dark:prose-invert"
-                            dangerouslySetInnerHTML={{ __html: card.content }}
-                        />
-                    ) : (
-                        !card.title && !card.image_url && <p className="text-sm italic text-zinc-400">Chưa có nội dung</p>
-                    )}
-                </article>
-            ))}
+            <article className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:p-6">
+                {theory.title && (
+                    <h4 className="mb-3 flex items-center gap-2 text-base font-black text-zinc-900 dark:text-white">
+                        <FileText className="size-4 text-amber-500" />
+                        {theory.title}
+                    </h4>
+                )}
+                {theory.image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={theory.image_url} alt={theory.title || "Ảnh minh họa"} className="mb-4 w-full max-h-80 rounded-xl border border-zinc-100 object-cover dark:border-zinc-800" />
+                )}
+                {theory.content ? (
+                    <div
+                        className="prose prose-sm max-w-none text-sm font-semibold leading-relaxed text-zinc-700 dark:text-zinc-300 dark:prose-invert"
+                        dangerouslySetInnerHTML={{ __html: theory.content }}
+                    />
+                ) : (
+                    <p className="text-sm italic text-zinc-400">Chưa có nội dung</p>
+                )}
+            </article>
         </div>
     );
 }
@@ -425,13 +423,19 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const [vocabTheoryIdx, setVocabTheoryIdx] = useState(0);
     const [showHanziWrite, setShowHanziWrite] = useState(false);
 
+    // Nội dung lý thuyết bổ sung (lesson_theory 1:1) — hiển thị dưới danh sách từ vựng
+    const [lessonTheory, setLessonTheory] = useState<LessonTheory | null>(null);
+    const [lessonTheoryLoading, setLessonTheoryLoading] = useState(false);
+
     const currentTheoryVocab = vocabTheoryItems[vocabTheoryIdx] || null;
 
     useEffect(() => {
         if (currentStep !== "learn-vocab-theory") return;
         let isMounted = true;
         setVocabTheoryLoading(true);
+        setLessonTheoryLoading(true);
         setVocabTheoryItems([]);
+        setLessonTheory(null);
         setVocabTheoryIdx(0);
         (async () => {
             try {
@@ -441,6 +445,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     return;
                 }
                 const theory = await coursesApi.getLessonTheory(lessonId);
+                if (isMounted) setLessonTheory(theory);
                 const displayMapId = theory?.vocab_display_map_id;
                 if (!displayMapId) {
                     if (isMounted) setVocabTheoryItems([]);
@@ -452,35 +457,15 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                     setVocabTheoryIdx(0);
                 }
             } catch {
-                if (isMounted) setVocabTheoryItems([]);
-            } finally {
-                if (isMounted) setVocabTheoryLoading(false);
-            }
-        })();
-        return () => { isMounted = false; };
-    }, [currentStep, currentLesson?.id]);
-
-    // --- Theory cards (lesson_theory_cards) — bổ sung dưới danh sách từ vựng ---
-    const [theoryCards, setTheoryCards] = useState<LessonTheoryCard[]>([]);
-    const [theoryCardsLoading, setTheoryCardsLoading] = useState(false);
-
-    useEffect(() => {
-        if (currentStep !== "learn-vocab-theory") return;
-        let isMounted = true;
-        setTheoryCardsLoading(true);
-        (async () => {
-            try {
-                const lessonId = currentLesson?.id;
-                if (!lessonId) {
-                    if (isMounted) setTheoryCards([]);
-                    return;
+                if (isMounted) {
+                    setVocabTheoryItems([]);
+                    setLessonTheory(null);
                 }
-                const cards = await coursesApi.getLessonTheoryCards(lessonId);
-                if (isMounted) setTheoryCards(cards);
-            } catch {
-                if (isMounted) setTheoryCards([]);
             } finally {
-                if (isMounted) setTheoryCardsLoading(false);
+                if (isMounted) {
+                    setVocabTheoryLoading(false);
+                    setLessonTheoryLoading(false);
+                }
             }
         })();
         return () => { isMounted = false; };
@@ -1238,7 +1223,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                 {currentStep === "learn-vocab-theory" && (
                     <div className="w-full space-y-6">
                         <VocabTheoryCards items={vocabTheoryItems} loading={vocabTheoryLoading} />
-                        <TheoryCardsSection cards={theoryCards} loading={theoryCardsLoading} />
+                        <TheoryContentSection theory={lessonTheory} loading={lessonTheoryLoading} />
                     </div>
                 )}
                 {false && currentStep === "learn-vocab-theory" && (

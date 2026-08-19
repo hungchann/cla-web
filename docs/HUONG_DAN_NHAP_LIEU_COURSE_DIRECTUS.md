@@ -3,11 +3,33 @@
 Tài liệu hướng dẫn Giáo viên & Biên tập viên nội dung nhập dữ liệu khóa học, chương và từng loại bài học (`course_lessons`) trên **Directus** (`https://marutek.space`).
 
 > ⚙️ **Chạy 1 lần trước khi nhập (cần credential admin):**
-> 1. `node scripts/setup-course-content-schema.js` — tạo schema nội dung bài học (lesson_vocab, lesson_questions, lesson_theory_cards, lesson_dictation, lesson_dialogues, banners).
-> 2. `node scripts/setup-course-split-schema.js` — (Phase 2) tách nội dung theo loại bài: `lesson_video`, `lesson_theory`, `lesson_extra`.
-> 3. `node scripts/apply-course-field-conditions.js` — form hiện/ẩn field theo `lesson_type`.
-> 4. `node scripts/grant-course-permissions.js` — cấp quyền read cho toàn bộ collection khóa học.
-> 5. (tuỳ chọn) `node scripts/group-course-collections.js --apply` — gom collection vào folder trong sidebar.
+>
+> ⭐ **CÁCH NHANH (khuyên dùng) — chạy toàn bộ migrate bằng 1 lệnh:**
+> ```powershell
+> $env:DIRECTUS_ADMIN_EMAIL="admin@marutek.space"
+> $env:DIRECTUS_ADMIN_PASSWORD="***"
+> node scripts/migrate-course-pipeline.js
+> ```
+> Pipeline này tự chạy đúng thứ tự + idempotent (chạy lại an toàn):
+> tạo collection con → migrate dữ liệu cũ → tách content theo loại bài →
+> gộp theory cards → cấu hình form theo lesson_type → cấp quyền → dọn field legacy → verify.
+>
+> Nếu không có email/password thì dùng static token:
+> ```powershell
+> $env:DIRECTUS_TOKEN="***"
+> node scripts/migrate-course-pipeline.js
+> ```
+>
+> ---
+> **Nếu muốn chạy từng bước thủ công, thứ tự đúng là:**
+> 1. `node scripts/setup-course-content-schema.js` — tạo schema nội dung bài học (lesson_vocab, lesson_questions, lesson_dictation, lesson_dialogues, banners).
+> 2. `node scripts/migrate-course-content.js` — copy dữ liệu CŨ (video_section/exercise/speaking_dialogues/content) sang model mới.
+> 3. `node scripts/setup-course-split-schema.js --apply` — tách nội dung theo loại bài: `lesson_video`, `lesson_theory`, `lesson_extra`.
+> 4. `node scripts/merge-theory-cards.js --apply` — gộp `lesson_theory_cards` vào `lesson_theory` (chỉ khi còn collection cũ).
+> 5. `node scripts/apply-course-field-conditions.js` — form hiện/ẩn field theo `lesson_type`.
+> 6. `node scripts/grant-course-content-permissions.js` — cấp quyền read cho toàn bộ collection khóa học.
+> 7. `node scripts/cleanup-course-legacy.js --apply` — xóa field cũ (video_section_id, exercise_id, …).
+> 8. `node scripts/verify-course-content.js` — kiểm tra nội dung từng lesson.
 
 ---
 
@@ -48,8 +70,11 @@ Khi tạo mới trong **`course_lessons`**:
 - **Video từ vựng — từ vựng theo thời gian**: kéo xuống mục **lesson_vocab**, bấm **"+"** thêm từng dòng: `word`, `pinyin`, `meaning`, **`time_start`** / **`time_end`** (định dạng `00:00:04,000`). Từ vựng sẽ hiện lên khi video chạy tới mốc đó.
 
 ### 2️⃣ Lý Thuyết (`vocab_theory`)
-- Kéo xuống mục **lesson_theory** → bấm **"+"** (hoặc edit dòng có sẵn): **`vocab_display_map_id`** — chọn nhóm từ vựng từ từ điển (hệ thống tự nạp từ + nghĩa + ví dụ).
-- **Card lý thuyết tự điền** (tùy chọn): mục **lesson_theory_cards** → bấm **"+"**: `title`, **`content`** (soạn chữ, chèn ảnh), **`image_id`** (upload ảnh), `sort`.
+- Kéo xuống mục **lesson_theory** → bấm **"+"** (hoặc edit dòng có sẵn). Mỗi lesson **chỉ 1 dòng**:
+  - **`vocab_display_map_id`** — chọn nhóm từ vựng từ từ điển (hệ thống tự nạp từ + nghĩa + ví dụ). ⭐ Bắt buộc.
+  - **`content`** — nội dung lý thuyết bổ sung (tùy chọn): soạn chữ, chèn được ảnh ngay trong ô rich text.
+  - **`title`** — tiêu đề khối lý thuyết (tùy chọn), **`image_id`** — ảnh minh họa (tùy chọn).
+- ⚠️ `lesson_id` đã ẩn — hệ thống tự điền. Không cần chọn. Collection cũ `lesson_theory_cards` đã gộp vào `content` (không còn dùng).
 
 ### 3️⃣ & 5️⃣ Bài Tập (`quiz_vocab` / `quiz_grammar`)
 - Chọn `lesson_type` = `quiz_vocab` (hoặc `quiz_grammar`).
@@ -73,7 +98,7 @@ Khi tạo mới trong **`course_lessons`**:
 | :--- | :--- | :--- |
 | `video_vocab` | `lesson_video` + `lesson_vocab` | Video mp4 + srt; từ vựng có `time_start/time_end` |
 | `video_grammar` | `lesson_video` | Video mp4 + srt (không cần từ vựng theo giây) |
-| `vocab_theory` | `lesson_theory` + `lesson_theory_cards` | Chọn nhóm từ điển; thêm card chữ/ảnh tùy chọn |
+| `vocab_theory` | `lesson_theory` | Chọn nhóm từ điển + nội dung lý thuyết bổ sung (1 dòng/lesson) |
 | `quiz_vocab` / `quiz_grammar` | `lesson_questions` | Có `audio_id` tùy chọn; chấm + giải thích tại chỗ |
 | `dictation` | `lesson_dictation` | Mỗi câu 1 `audio_id` + 1 `answer_text` |
 | `conversation` | `lesson_dialogues` | Tự điền hội thoại A/B |

@@ -1,6 +1,6 @@
 import apiInstance from "@/api/authConfig";
 import { API_URL } from "@/lib/constants";
-import { CourseChapter, CourseItem, CourseLesson, LessonVideo, LessonTheory, LessonExtra, LessonVocab, LessonQuestion, LessonTheoryCard, LessonDictation, LessonDialogue, Banner } from "@/lib/types/course";
+import { CourseChapter, CourseItem, CourseLesson, LessonVideo, LessonTheory, LessonExtra, LessonVocab, LessonQuestion, LessonDictation, LessonDialogue, Banner } from "@/lib/types/course";
 import { logger } from "@/services/logger";
 
 const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,chapter_id";
@@ -165,9 +165,18 @@ export const coursesApi = {
     };
   },
 
-  /** Lý thuyết 1:1 của lesson (vocab_theory) — chứa vocab_display_map_id. */
+  /** Lý thuyết 1:1 của lesson (vocab_theory) — vocab_display_map_id + nội dung bổ sung. */
   async getLessonTheory(lessonId: string | number): Promise<LessonTheory | null> {
-    return fetchLessonSingle("lesson_theory", lessonId, "id,vocab_display_map_id,status");
+    const row = await fetchLessonSingle(
+      "lesson_theory",
+      lessonId,
+      "id,vocab_display_map_id,title,content,image_id,image_id.filename_disk,status"
+    );
+    if (!row) return null;
+    return {
+      ...row,
+      image_url: assetUrl(row.image_id),
+    };
   },
 
   /** Bài tập bổ sung 1:1 của lesson (extra). */
@@ -204,30 +213,6 @@ export const coursesApi = {
             ? `${API_URL}/assets/${audio.filename_disk}`
             : audio.id
             ? `${API_URL}/assets/${audio.id}`
-            : undefined
-          : undefined,
-      };
-    });
-  },
-
-  async getLessonTheoryCards(lessonId: string | number): Promise<LessonTheoryCard[]> {
-    const items = await fetchLessonItems(
-      "lesson_theory_cards",
-      lessonId,
-      "id,title,content,image_id,image_id.filename_disk,sort,status",
-      "sort"
-    );
-    return items.map((c: any) => {
-      const img = c.image_id;
-      return {
-        ...c,
-        image_url: img
-          ? typeof img === "string"
-            ? `${API_URL}/assets/${img}`
-            : img.filename_disk
-            ? `${API_URL}/assets/${img.filename_disk}`
-            : img.id
-            ? `${API_URL}/assets/${img.id}`
             : undefined
           : undefined,
       };
