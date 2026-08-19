@@ -3,7 +3,7 @@ import { API_URL } from "@/lib/constants";
 import { CourseChapter, CourseItem, CourseLesson, LessonVideo, LessonTheory, LessonExtra, LessonVocab, LessonQuestion, LessonDictation, LessonDialogue, Banner } from "@/lib/types/course";
 import { logger } from "@/services/logger";
 
-const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,chapter_id";
+const LESSON_FIELDS_REST = "id,status,sort,title,title_trans,lesson_type,chapter_id,is_free_preview";
 
 function escapeFilterString(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, String.raw`\"`);
@@ -61,7 +61,7 @@ export const coursesApi = {
       if (params?.level) filters.push(`filter[level][_eq]=${encodeURIComponent(params.level)}`);
       if (params?.script) filters.push(`filter[script_type][_eq]=${encodeURIComponent(params.script)}`);
       const qs = filters.join("&");
-      const r = await apiInstance.get(`/items/course?fields=id,status,sort,title,title_trans,description,level,script_type,duration,isBilingual,subtext,is_featured,image.id,image.filename_disk&sort=sort&${qs}`);
+      const r = await apiInstance.get(`/items/course?fields=id,status,sort,title,title_trans,description,level,script_type,duration,isBilingual,subtext,is_featured,access_tier,image.id,image.filename_disk&sort=sort&${qs}`);
       const items: CourseItem[] = r.data?.data || [];
       return items.map(normalizeCourse);
     } catch (error: any) {
@@ -72,7 +72,7 @@ export const coursesApi = {
 
   async getCourseById(id: string | number): Promise<CourseItem | null> {
     try {
-      const r = await apiInstance.get(`/items/course/${id}?fields=id,status,sort,title,title_trans,description,level,script_type,duration,isBilingual,subtext,is_featured,image.id,image.filename_disk`);
+      const r = await apiInstance.get(`/items/course/${id}?fields=id,status,sort,title,title_trans,description,level,script_type,duration,isBilingual,subtext,is_featured,access_tier,image.id,image.filename_disk`);
       const raw = r.data?.data;
       if (!raw) return null;
       const normalized = normalizeCourse(raw);

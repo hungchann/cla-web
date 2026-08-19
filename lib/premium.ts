@@ -93,3 +93,56 @@ export function getAccountTypeName(data: unknown): string | null {
   const v = t?.name ?? t?.type;
   return typeof v === "string" ? v : null;
 }
+
+/**
+ * Kiểm tra xem người dùng có quyền đọc/học bài học trong khóa học không.
+ * - Paid User (isPremium=true): Toàn quyền 100%.
+ * - Free / Guest User: Chỉ được xem các bài có cờ `is_free_preview = true`.
+ */
+export function canAccessCourseLesson(
+  lesson?: { is_free_preview?: boolean | null } | null,
+  isPremium = false,
+): boolean {
+  if (isPremium) return true;
+  if (!lesson) return false;
+  return Boolean(lesson.is_free_preview);
+}
+
+/**
+ * Kiểm tra quyền đọc chương sách/truyện.
+ * - Paid User (isPremium=true): Toàn quyền đọc mọi chương.
+ * - Free / Guest User: Đọc được chương 1 hoặc các chương có `is_free_preview = true`.
+ */
+export function canAccessStoryChapter(
+  chapter?: { sort_id?: string | number | null; is_free_preview?: boolean | null } | null,
+  chapterIndex = 0,
+  isPremium = false,
+): boolean {
+  if (isPremium) return true;
+  if (!chapter) return chapterIndex === 0;
+  if (chapter.is_free_preview) return true;
+  const sort = Number(chapter.sort_id);
+  return sort === 1 || chapterIndex === 0;
+}
+
+/**
+ * Kiểm tra quyền đọc bài đọc song ngữ.
+ * - Paid User: Toàn quyền mọi bài.
+ * - Free User: Đọc được bài `access_tier = 'free'` hoặc các bài HSK 1-3.
+ */
+export function canAccessBilingualSection(
+  section?: { level?: string | null; access_tier?: string | null } | null,
+  isPremium = false,
+): boolean {
+  if (isPremium) return true;
+  if (!section) return false;
+  if (section.access_tier === "free") return true;
+  if (section.access_tier === "premium") return false;
+  // Fallback theo HSK level nếu chưa gán tier: HSK 1-3 free, HSK 4-6 premium
+  const level = (section.level || "").toLowerCase();
+  if (level.includes("hsk 1") || level.includes("hsk 2") || level.includes("hsk 3") || level.includes("sơ cấp")) {
+    return true;
+  }
+  return false;
+}
+

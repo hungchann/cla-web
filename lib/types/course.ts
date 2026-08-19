@@ -17,6 +17,7 @@ export interface CourseLesson {
   lesson_type: CourseLessonType;
   status?: string;
   sort?: number;
+  is_free_preview?: boolean;
 }
 
 export interface LessonVideo {
@@ -79,6 +80,7 @@ export interface CourseItem {
   is_featured?: boolean;
   isBilingual?: boolean;
   subtext?: string;
+  access_tier?: "free" | "registered" | "premium" | string;
   image?: string | { id: string; filename_disk?: string; title?: string };
   image_url?: string;
   chapters?: CourseChapter[];

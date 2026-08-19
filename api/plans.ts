@@ -79,7 +79,7 @@ export function buildAffiliateLink(userId: string | number): string {
   return `${origin}/pricing?ref=${encodeURIComponent(String(userId))}`;
 }
 
-/** Lấy gói cước published theo code voucher. */
+/** Lấy voucher published theo code voucher. */
 export async function getVoucherByCode(code: string): Promise<Voucher | null> {
   try {
     const clean = code.trim();
@@ -119,7 +119,7 @@ export function isVoucherValid(voucher: Voucher | null): string | null {
 /** Tính số tiền giảm từ voucher cho gói. Trả về { discountVnd, amountVnd }. */
 export function applyVoucher(plan: AccountPlan, voucher: Voucher | null) {
   const base = plan.price_vnd ?? 0;
-  if (!voucher || !voucher.value) return { discountVnd: 0, amountVnd: base };
+  if (!voucher?.value) return { discountVnd: 0, amountVnd: base };
   const discountVnd = voucher.is_percent
     ? Math.round((base * voucher.value) / 100)
     : Math.round(voucher.value);
@@ -128,7 +128,20 @@ export function applyVoucher(plan: AccountPlan, voucher: Voucher | null) {
 }
 
 /**
- * Tạo bản ghi `payments` (status=pending) — chờ admin xác nhận rồi kích hoạt premium.
+ * Lấy thông tin thanh toán theo ID.
+ */
+export async function getPaymentById(id: string | number): Promise<PaymentRecord | null> {
+  try {
+    const r = await apiInstance.get(`/items/payments/${id}`);
+    return r.data?.data || null;
+  } catch (error) {
+    logger.warn(`[Plans API] getPaymentById(${id}) failed:`, errorStatus(error));
+    return null;
+  }
+}
+
+/**
+ * Tạo bản ghi `payments` (status=pending) — chờ xác nhận rồi kích hoạt premium.
  * Lưu đủ: ai mua (`user_id`), gói nào (`plan_id`), ai giới thiệu (`referrer_user_id`),
  * nội dung nào dẫn tới (`promo_link_id`), voucher (`voucher_id` + `discount_vnd`).
  * Đồng thời ghi `user_vouchers` và tăng `used_count` của voucher.
@@ -158,6 +171,7 @@ export async function createPayment(input: {
     };
     if (userId != null) body.user_id = userId;
 
+
     const r = await apiInstance.post("/items/payments", body);
     const record = r.data?.data || null;
 
@@ -184,3 +198,59 @@ export async function createPayment(input: {
     return null;
   }
 }
+
+/**
+ * Kích hoạt hoặc gia hạn gói cước `account_types` cho người dùng sau khi thanh toán thành công.
+ */
+export async function activateUserSubscription(params: {
+  userId: string | number;
+  plan: AccountPlan;
+  source?: "vietqr" | "revenuecat" | "manual";
+  paymentId?: string | number;
+}): Promise<boolean> {
+  try {
+    const { userId, plan, source = "vietqr", paymentId } = params;
+    const durationDays = plan.duration_days ?? 0;
+    const expiredTime = durationDays > 0
+      ? new Date(Date.now() + durationDays * 86400000).toISOString()
+      : null;
+
+    const planName = plan.name_trans || plan.name || "Premium";
+
+    // Kiểm tra xem user đã có dòng trong account_types chưa
+    const checkRes = await apiInstance.get(
+      `/items/account_types?filter[user_id][_eq]=${userId}&limit=1`,
+    );
+    const existing = checkRes.data?.data?.[0];
+
+    const payload = {
+      user_id: userId,
+      type: planName,
+      status: "active",
+      source,
+      plan_id: plan.id,
+      expired_time: expiredTime,
+      provider_transaction_id: paymentId ? String(paymentId) : null,
+    };
+
+    if (existing) {
+      await apiInstance.patch(`/items/account_types/${existing.id}`, payload);
+    } else {
+      await apiInstance.post("/items/account_types", payload);
+    }
+
+    // Nếu có paymentId, cập nhật payment thành verified
+    if (paymentId) {
+      await apiInstance.patch(`/items/payments/${paymentId}`, {
+        status: "verified",
+        verified_at: new Date().toISOString(),
+      });
+    }
+
+    return true;
+  } catch (error) {
+    logger.error("[Plans API] activateUserSubscription failed:", error);
+    return false;
+  }
+}
+
