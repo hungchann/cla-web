@@ -14,7 +14,29 @@ try {
 }
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "marutek.space",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.marutek.space",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
