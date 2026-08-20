@@ -18,8 +18,8 @@ export interface SubtitleItem {
 export interface ExerciseItem {
   id: number;
   question: string;
-  time_start: string;
-  time_end: string;
+  time_start?: string;
+  time_end?: string;
   sort_id?: number | string;
   [key: string]: any;
 }
@@ -126,6 +126,7 @@ export const useDetailedVideoLogic = (
 
   // ─── Stable playback helpers (no deps, always read from refs) ───
   const pausePlayback = useCallback(() => {
+    console.log("[DEBUG pausePlayback] Called, isYoutubeVideo:", isYoutubeVideoRef.current);
     if (isYoutubeVideoRef.current) {
       youtubePlayerRefRef.current?.current?.pauseVideo?.();
       setYoutubeIsPlayingRef.current?.(false);
@@ -135,6 +136,7 @@ export const useDetailedVideoLogic = (
   }, []);
 
   const resumePlayback = useCallback(() => {
+    console.log("[DEBUG resumePlayback] Called, isYoutubeVideo:", isYoutubeVideoRef.current);
     try {
       if (isYoutubeVideoRef.current) {
         youtubePlayerRefRef.current?.current?.playVideo?.();
@@ -150,13 +152,16 @@ export const useDetailedVideoLogic = (
   }, []);
 
   // ─── Core polling tick (all stable refs, never stale) ───
-  const pollTick = useCallback(async () => {
+  const pollTick = useCallback(async (timeOverride?: number) => {
     if (!isMounted.current) return;
     if (hasCompletedAllRef.current) return;
 
-    // 1. Get current time
-    let t = Number.NaN;
-    if (isYoutubeVideoRef.current) {
+    // 1. Get current time — use override if provided (from onVideoTimeUpdate),
+    //    otherwise fetch from player
+    let t: number = Number.NaN;
+    if (typeof timeOverride === "number" && Number.isFinite(timeOverride)) {
+      t = timeOverride;
+    } else if (isYoutubeVideoRef.current) {
       const api = youtubePlayerRefRef.current?.current;
       if (api?.getCurrentTime) {
         const res = api.getCurrentTime();
@@ -166,6 +171,9 @@ export const useDetailedVideoLogic = (
       t = videoRefRef.current?.current?.currentTime ?? Number.NaN;
     }
     if (!Number.isFinite(t) || t < 0) return;
+
+    // DEBUG: Log current time
+    console.log(`[DEBUG pollTick] t=${t}s, exercises=${exerciseDataRef.current?.length ?? 0}, activeQ=${activeQuestionRef.current?.id ?? "none"}`);
 
     // 2. Subtitle sync
     const flowMode = flowModeRef.current;
@@ -220,19 +228,17 @@ export const useDetailedVideoLogic = (
       return;
     }
 
-    // Find a new question to activate: time_start <= currentTime < time_end
+    // Find a new question to activate: startSec <= currentTime <= maxWindow
     const toActivate = exercises.find((q) => {
       if (answered.some((id) => String(id) === String(q.id))) return false;
       const startSec = timeToSeconds(q.time_start);
       const endSec = timeToSeconds(q.time_end);
-      // Window: time_start reached but time_end not yet passed
-      return t >= startSec && (endSec <= 0 || t <= endSec + 5);
+      const maxWindow = endSec > startSec ? endSec + 6 : startSec + 8;
+      return t >= startSec && t <= maxWindow;
     });
 
     if (toActivate) {
-      logger.debug(
-        `[pollTick] Activating Q${toActivate.id} at t=${t}s (start=${timeToSeconds(toActivate.time_start)}s)`,
-      );
+      console.log(`[useDetailedVideoLogic] ACTIVATING Q${toActivate.id} at t=${t}s`);
       activeQuestionRef.current = toActivate;
       setActiveQuestion(toActivate);
       pausePlayback();
@@ -256,7 +262,7 @@ export const useDetailedVideoLogic = (
     // Only restart when pollTick itself changes (which is "never" since it only reads refs)
   }, [pollTick]);
 
-  // ─── onVideoTimeUpdate (called from <video onTimeUpdate>) ───
+  // ─── onVideoTimeUpdate (called from <video onTimeUpdate> or YouTube polling) ───
   const onVideoTimeUpdate = useCallback((currentTime?: number) => {
     if (!isMounted.current) return;
     let t = typeof currentTime === "number" ? currentTime : Number.NaN;
@@ -264,8 +270,8 @@ export const useDetailedVideoLogic = (
       t = videoRefRef.current?.current?.currentTime ?? Number.NaN;
     }
     if (!Number.isFinite(t) || t < 0) return;
-    // Trigger a poll tick immediately (don't wait for interval)
-    pollTick().catch(() => {});
+    // Pass time directly to pollTick so it doesn't need to re-fetch
+    pollTick(t).catch(() => {});
   }, [pollTick]);
 
   // ─── Video loaded detection ───
@@ -439,15 +445,18 @@ export const useDetailedVideoLogic = (
       if (correctAns) {
         isCorrect = correctAns === kUp || correctAns === `ANSWER${kUp}` || correctAns === `ANSWER_${kUp}`;
       } else {
+        // API không trả Correct_answer — thử tìm trong options
         let raw = question.options;
         if (typeof raw === "string") { try { raw = JSON.parse(raw); } catch { raw = []; } }
         if (Array.isArray(raw)) {
           const opt = raw.find((o: any) => String(o.id || o.key || "") === key);
           if (opt) isCorrect = !!(opt.isCorrect ?? opt.is_correct ?? opt.correct);
         }
+        logger.warn("[useDetailedVideoLogic] No Correct_answer in exercise data, using local guess for Q", question.id);
       }
 
-      const fallbackResult = { status: isCorrect ? "Đúng" : "Sai", correctAnswer: correctAns, isCorrect };
+      const fallbackStatus = !correctAns && !isCorrect ? "Chưa xác nhận" : (isCorrect ? "Đúng" : "Sai");
+      const fallbackResult = { status: fallbackStatus, correctAnswer: correctAns, isCorrect, questionId: question.id };
       setAnswerResults((prev) => [
         ...prev,
         { ...fallbackResult, answerText, question: question.question, sort_id: question.sort_id },
@@ -504,6 +513,19 @@ export const useDetailedVideoLogic = (
     }
   }, [answerResults, videoData, router]);
 
+  const selectQuestion = useCallback((question: ExerciseItem) => {
+    if (!question) return;
+    pausePlayback();
+    const startSec = timeToSeconds(question.time_start);
+    if (isYoutubeVideoRef.current) {
+      youtubePlayerRefRef.current?.current?.seekTo?.(startSec);
+    } else if (videoRefRef.current?.current) {
+      videoRefRef.current.current.currentTime = startSec;
+    }
+    activeQuestionRef.current = question;
+    setActiveQuestion(question);
+  }, [pausePlayback]);
+
   // ─── Cleanup on unmount ───
   useEffect(() => {
     return () => {
@@ -537,6 +559,7 @@ export const useDetailedVideoLogic = (
     ytSavedTime: 0,
     handleVideoLoaded,
     onVideoTimeUpdate,
+    selectQuestion,
     // legacy player shape (for callers that still use it)
     player: {
       play: resumePlayback,

@@ -12,15 +12,16 @@ declare global {
 
 interface YouTubePlayerProps {
   videoId: string;
-  isPlaying: boolean;
-  playerRef: React.MutableRefObject<any>;
+  isPlaying?: boolean;
+  playerRef: React.RefObject<any>;
+  onStateChange?: (state: number) => void;
 }
 
 export function YouTubePlayer({
   videoId,
-  isPlaying,
   playerRef,
-}: YouTubePlayerProps) {
+  onStateChange,
+}: Readonly<YouTubePlayerProps>) {
   const containerId = `yt-player-${videoId}`;
   const ytPlayerRef = useRef<any>(null);
 
@@ -41,62 +42,70 @@ export function YouTubePlayer({
     let checkInterval: NodeJS.Timeout | null = null;
 
     const initPlayer = () => {
-      if (player) return; // Tránh khởi tạo trùng lặp
+      if (player || ytPlayerRef.current) return;
+      const targetElement = document.getElementById(containerId);
+      if (!targetElement) return;
+
       player = new window.YT.Player(containerId, {
         height: "100%",
         width: "100%",
         videoId: videoId,
         playerVars: {
-          autoplay: 1,
+          enablejsapi: 1,
+          origin: typeof window !== "undefined" ? window.location.origin : undefined,
+          autoplay: 0,
           controls: 1,
           rel: 0,
           showinfo: 0,
           mute: 0,
-          cc_load_policy: 0, // ẩn phụ đề mặc định của YT
+          cc_load_policy: 0,
           modestbranding: 1,
         },
         events: {
           onReady: (event: any) => {
             ytPlayerRef.current = event.target;
-            
-            // Expose các API mà hook useDetailedVideoLogic yêu cầu qua ref.
-            playerRef.current = {
+
+            // Cung cấp các hàm điều khiển video trực tiếp, trả về giá trị đồng bộ
+            (playerRef as any).current = {
               getCurrentTime: () => {
-                if (event.target && typeof event.target.getCurrentTime === "function") {
-                  return Promise.resolve(event.target.getCurrentTime());
+                try {
+                  return event.target?.getCurrentTime?.() ?? 0;
+                } catch {
+                  return 0;
                 }
-                return Promise.resolve(0);
               },
               seekTo: (seconds: number) => {
-                if (event.target && typeof event.target.seekTo === "function") {
-                  event.target.seekTo(seconds, true);
+                try {
+                  event.target?.seekTo?.(seconds, true);
+                } catch {
+                  // ignore
                 }
               },
               playVideo: () => {
-                if (event.target && typeof event.target.playVideo === "function") {
-                  event.target.playVideo();
+                try {
+                  event.target?.playVideo?.();
+                } catch {
+                  // ignore
                 }
               },
               pauseVideo: () => {
-                if (event.target && typeof event.target.pauseVideo === "function") {
-                  event.target.pauseVideo();
+                try {
+                  event.target?.pauseVideo?.();
+                } catch {
+                  // ignore
                 }
               },
             };
-
-            // Đồng bộ trạng thái chơi/dừng ban đầu
-            if (isPlaying) {
-              event.target.playVideo();
-            } else {
-              event.target.pauseVideo();
-            }
+          },
+          onStateChange: (event: any) => {
+            onStateChange?.(event.data);
           },
         },
       });
     };
 
     const checkAndInit = () => {
-      if (window.YT && window.YT.Player && typeof window.YT.Player === "function") {
+      if (window.YT?.Player && typeof window.YT.Player === "function") {
         initPlayer();
         return true;
       }
@@ -107,6 +116,7 @@ export function YouTubePlayer({
       checkInterval = setInterval(() => {
         if (checkAndInit() && checkInterval) {
           clearInterval(checkInterval);
+          checkInterval = null;
         }
       }, 100);
 
@@ -115,6 +125,7 @@ export function YouTubePlayer({
         if (prevCallback) prevCallback();
         if (checkAndInit() && checkInterval) {
           clearInterval(checkInterval);
+          checkInterval = null;
         }
       };
     }
@@ -122,27 +133,15 @@ export function YouTubePlayer({
     return () => {
       if (checkInterval) {
         clearInterval(checkInterval);
+        checkInterval = null;
       }
       if (player && typeof player.destroy === "function") {
         player.destroy();
       }
-      playerRef.current = null;
+      ytPlayerRef.current = null;
+      (playerRef as any).current = null;
     };
-  }, [videoId]);
-
-  // Đồng bộ hóa trạng thái play/pause từ prop isPlaying
-  useEffect(() => {
-    const player = ytPlayerRef.current;
-    if (player && typeof player.getPlayerState === "function") {
-      const state = player.getPlayerState();
-      // YT.PlayerState.PLAYING là 1, YT.PlayerState.PAUSED là 2
-      if (isPlaying && state !== 1) {
-        player.playVideo();
-      } else if (!isPlaying && state === 1) {
-        player.pauseVideo();
-      }
-    }
-  }, [isPlaying]);
+  }, [videoId, containerId, onStateChange, playerRef]);
 
   return (
     <div className="w-full h-full bg-black relative">

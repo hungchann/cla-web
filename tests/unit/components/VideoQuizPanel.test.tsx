@@ -30,14 +30,12 @@ const baseProps = {
   activeEx: EXERCISES[0],
   answeredIds: [],
   answerResults: [],
-  showResult: false,
   nextQuestionId: 1,
   hasCompletedAll: false,
   totalExercises: 2,
-  onSubmit: vi.fn(),
-  onContinue: vi.fn(),
   onViewResults: vi.fn(),
   onSeek: vi.fn(),
+  onSelectQuestion: vi.fn(),
 };
 
 describe("VideoQuizPanel", () => {
@@ -49,26 +47,35 @@ describe("VideoQuizPanel", () => {
         activeQuestion={null}
         activeEx={null}
         totalExercises={0}
-      />,
+      />
     );
-    expect(screen.getByText(/chưa có câu hỏi trắc nghiệm/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/chưa có câu hỏi trắc nghiệm/i)
+    ).toBeInTheDocument();
   });
 
-  it("renders question list and active question panel", () => {
+  it("renders question list with questions and timestamps", () => {
     render(<VideoQuizPanel {...baseProps} />);
-    expect(screen.getAllByText("Chọn nghĩa đúng của 你好").length).toBeGreaterThan(0);
+    expect(screen.getByText("Chọn nghĩa đúng của 你好")).toBeInTheDocument();
     expect(screen.getByText("再见 nghĩa là gì?")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /a\. Xin chào/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /b\. Cảm ơn/i })).toBeInTheDocument();
+    expect(screen.getByText("Câu 1")).toBeInTheDocument();
+    expect(screen.getByText("Câu 2")).toBeInTheDocument();
   });
 
-  it("submits the selected answer when clicking option", async () => {
+  it("calls onSelectQuestion when clicking a question item", async () => {
     const user = userEvent.setup();
-    const onSubmit = vi.fn().mockResolvedValue({ status: "Đúng" });
-    render(<VideoQuizPanel {...baseProps} onSubmit={onSubmit} />);
+    const onSelectQuestion = vi.fn();
+    render(
+      <VideoQuizPanel
+        {...baseProps}
+        activeQuestion={null}
+        activeEx={null}
+        onSelectQuestion={onSelectQuestion}
+      />
+    );
 
-    await user.click(screen.getByRole("button", { name: /a\. Xin chào/i }));
-    expect(onSubmit).toHaveBeenCalledWith("A");
+    await user.click(screen.getByText("再见 nghĩa là gì?"));
+    expect(onSelectQuestion).toHaveBeenCalledWith(EXERCISES[1]);
   });
 
   it("shows completed percentage and answered badges", () => {
@@ -79,20 +86,11 @@ describe("VideoQuizPanel", () => {
         activeEx={null}
         answeredIds={[1]}
         answerResults={[{ questionId: 1, status: "Đúng", yourAnswer: "A" }]}
-      />,
+      />
     );
 
     expect(screen.getByText(/50%/i)).toBeInTheDocument();
     expect(screen.getByText(/^\s*Đúng\s*$/i)).toBeInTheDocument();
-  });
-
-  it("calls onContinue when clicking skip button", async () => {
-    const user = userEvent.setup();
-    const onContinue = vi.fn();
-    render(<VideoQuizPanel {...baseProps} onContinue={onContinue} />);
-
-    await user.click(screen.getByRole("button", { name: /bỏ qua/i }));
-    expect(onContinue).toHaveBeenCalled();
   });
 
   it("calls onViewResults when all completed", async () => {
@@ -106,10 +104,12 @@ describe("VideoQuizPanel", () => {
         answeredIds={[1, 2]}
         hasCompletedAll={true}
         onViewResults={onViewResults}
-      />,
+      />
     );
 
-    await user.click(screen.getByRole("button", { name: /xem kết quả tổng quan/i }));
+    await user.click(
+      screen.getByRole("button", { name: /xem kết quả tổng quan/i })
+    );
     expect(onViewResults).toHaveBeenCalled();
   });
 });

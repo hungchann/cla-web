@@ -2,11 +2,11 @@
 "use client";
 
 import { YouTubePlayer } from "./YouTubePlayer";
+import { VideoQuizOverlay } from "./VideoQuizOverlay";
 
 interface VideoPlayerSectionProps {
   isYoutubeVideo: boolean;
   ytVideoId: string | null;
-  youtubeIsPlaying: boolean;
   youtubePlayerRef: React.RefObject<any>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   videoSource: string;
@@ -14,12 +14,17 @@ interface VideoPlayerSectionProps {
   handleVideoLoaded: () => void;
   title?: string;
   titleTrans?: string;
+  activeQuestion?: any;
+  showResult?: boolean;
+  answerResults?: any[];
+  getOptions?: (ex: any) => any[];
+  onSubmitQuiz?: (key: string) => Promise<any>;
+  onContinueQuiz?: () => void;
 }
 
 export function VideoPlayerSection({
   isYoutubeVideo,
   ytVideoId,
-  youtubeIsPlaying,
   youtubePlayerRef,
   videoRef,
   videoSource,
@@ -27,6 +32,12 @@ export function VideoPlayerSection({
   handleVideoLoaded,
   title,
   titleTrans,
+  activeQuestion,
+  showResult = false,
+  answerResults = [],
+  getOptions,
+  onSubmitQuiz,
+  onContinueQuiz,
 }: Readonly<VideoPlayerSectionProps>) {
   return (
     <div className="lg:col-span-2 flex flex-col gap-4">
@@ -34,7 +45,6 @@ export function VideoPlayerSection({
         {isYoutubeVideo && ytVideoId ? (
           <YouTubePlayer
             videoId={ytVideoId}
-            isPlaying={youtubeIsPlaying}
             playerRef={youtubePlayerRef}
           />
         ) : (
@@ -47,6 +57,18 @@ export function VideoPlayerSection({
             onSeeked={handleTimeUpdate}
             onSeeking={handleTimeUpdate}
             onLoadedMetadata={handleVideoLoaded}
+          />
+        )}
+
+        {/* Interactive Overlay when question triggers */}
+        {activeQuestion && onSubmitQuiz && onContinueQuiz && (
+          <VideoQuizOverlay
+            activeQuestion={activeQuestion}
+            showResult={showResult}
+            answerResults={answerResults}
+            getOptions={getOptions}
+            onSubmit={onSubmitQuiz}
+            onContinue={onContinueQuiz}
           />
         )}
       </div>

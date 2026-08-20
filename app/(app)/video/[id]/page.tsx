@@ -142,7 +142,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
 
   // YouTube logic states
   const youtubePlayerRef = useRef<any>(null);
-  const [youtubeIsPlaying, setYoutubeIsPlaying] = useState(false);
 
   const getOptions = (ex: any) => {
     if (!ex) return [];
@@ -174,7 +173,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     if (typeof rawOptions === "string") {
       try {
         rawOptions = JSON.parse(rawOptions);
-      } catch (e) {
+      } catch {
         rawOptions = [];
       }
     }
@@ -240,7 +239,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     videoRef,
     enableAutoSpeakSubtitle: false,
     youtubePlayerRef,
-    setYoutubeIsPlaying,
     fallbackExercises: MOCK_EXERCISES,
     flowMode: rightPanelTab,
   });
@@ -261,6 +259,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     hasCompletedAll,
     handleVideoLoaded,
     onVideoTimeUpdate,
+    selectQuestion,
   } = hookData;
 
   // Tự động chuyển tab sang "quiz" khi có câu hỏi dừng video kích hoạt
@@ -399,8 +398,6 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
     if (nextTab === "subtitles" && activeQuestion) {
       handleContinueWatching();
     }
-    // Khi chuyển sang tab Trắc nghiệm mà chưa có câu hỏi đang dừng video,
-    // tự phát video để quiz bắt kịp timestamp và kích hoạt câu hỏi đúng mốc.
     if (nextTab === "quiz" && !activeQuestion) {
       resumePlayback();
     }
@@ -444,6 +441,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
           const isActive = activeTab === tab.id;
           return (
             <button
+              type="button"
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id as any);
@@ -466,11 +464,10 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
         {/* TAB 1: XEM VIDEO */}
         {activeTab === "video" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-            {/* Column Left: Video player section */}
+            {/* Column Left: Video player section with interactive quiz overlay */}
             <VideoPlayerSection
               isYoutubeVideo={isYoutubeVideo}
               ytVideoId={ytVideoId}
-              youtubeIsPlaying={youtubeIsPlaying}
               youtubePlayerRef={youtubePlayerRef}
               videoRef={videoRef}
               videoSource={videoSource}
@@ -478,6 +475,12 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
               handleVideoLoaded={handleVideoLoaded}
               title={videoData?.title}
               titleTrans={videoData?.title_trans}
+              activeQuestion={activeQuestion}
+              showResult={showResult}
+              answerResults={answerResults}
+              getOptions={getOptions}
+              onSubmitQuiz={handleOptionPress}
+              onContinueQuiz={handleContinueWatching}
             />
 
             {/* Column Right: Subtitles list or Active Quiz Question with Tab Switching */}
@@ -487,6 +490,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                 {/* Sub-tab header inside the right column */}
                 <div className="flex items-center gap-4 text-xs font-black uppercase tracking-wider text-zinc-400 select-none border-b border-zinc-100 dark:border-zinc-800 pb-2.5 mb-2 shrink-0">
                   <button
+                    type="button"
                     onClick={() => handleRightPanelTabChange("subtitles")}
                     className={`pb-1 transition-all cursor-pointer bg-transparent border-none ${
                       rightPanelTab === "subtitles"
@@ -497,6 +501,7 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                     Phụ đề
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleRightPanelTabChange("quiz")}
                     className={`pb-1 transition-all cursor-pointer bg-transparent border-none flex items-center gap-1 ${
                       rightPanelTab === "quiz"
@@ -517,18 +522,16 @@ function VideoDetailContent({ params }: Readonly<{ params: Promise<{ id: string 
                     activeEx={activeEx}
                     answeredIds={answeredIds}
                     answerResults={answerResults}
-                    showResult={showResult}
                     nextQuestionId={nextQuestionId}
                     hasCompletedAll={hasCompletedAll}
                     totalExercises={exerciseData?.length ?? 0}
-                    getOptions={getOptions}
-                    onSubmit={handleOptionPress}
-                    onContinue={handleContinueWatching}
                     onViewResults={handleViewResults}
+                    onSelectQuestion={selectQuestion}
                     onSeek={(timeStr: string) => {
                       const s = timeToSeconds(timeStr);
                       if (isYoutubeVideo && youtubePlayerRef.current?.seekTo) {
                         youtubePlayerRef.current.seekTo(s, true);
+                        youtubePlayerRef.current.playVideo?.();
                       } else if (videoRef.current) {
                         videoRef.current.currentTime = s;
                         videoRef.current.play().catch(() => {});
