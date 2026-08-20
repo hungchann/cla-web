@@ -76,6 +76,7 @@ function StudyContent() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [quizSelected, setQuizSelected] = useState<string | null>(null);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, string | null>>({});
 
   const mockWords = [
     { word: "爱", pinyin: "ài", meaning: "Yêu" },
@@ -177,14 +178,22 @@ function StudyContent() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (words.length === 0) return;
-      if (e.code === "Space" && mode === "flashcard") {
+      if (e.code === "Space") {
         e.preventDefault();
-        setIsFlipped((f) => !f);
+        if (mode === "flashcard") {
+          setIsFlipped((f) => !f);
+        }
         speakChinese(currentItem.word);
       } else if ((e.code === "ArrowRight" || e.code === "Digit1") && mode === "flashcard") {
         handleNext(true);
       } else if ((e.code === "ArrowLeft" || e.code === "Digit2") && mode === "flashcard") {
         handleNext(false);
+      } else if (e.code === "ArrowRight" && mode === "quiz" && currentIndex < words.length - 1) {
+        setQuizSelected(quizAnswers[currentIndex + 1] ?? null);
+        setCurrentIndex((i) => i + 1);
+      } else if (e.code === "ArrowLeft" && mode === "quiz" && currentIndex > 0) {
+        setQuizSelected(quizAnswers[currentIndex - 1] ?? null);
+        setCurrentIndex((i) => i - 1);
       } else if (e.code === "ArrowDown" && currentIndex > 0) {
         setIsFlipped(false);
         setQuizSelected(null);
@@ -343,10 +352,8 @@ function StudyContent() {
                         onClick={() => {
                           if (!quizSelected) {
                             setQuizSelected(opt.k);
+                            setQuizAnswers((prev) => ({ ...prev, [currentIndex]: opt.k }));
                             speakChinese(opt.w);
-                            if (isCorrectOption) {
-                              setTimeout(() => handleNext(true), 1500);
-                            }
                           }
                         }}
                         className={`flex items-center gap-3.5 p-5 rounded-2xl border font-bold text-left transition-all duration-200 active:scale-[0.98] text-sm cursor-pointer shadow-xs ${btnStyle}`}
@@ -357,28 +364,75 @@ function StudyContent() {
                     );
                   })}
                 </div>
+
+                {/* Navigation buttons */}
+                <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                  <button
+                    onClick={() => {
+                      if (currentIndex > 0) {
+                        setQuizSelected(quizAnswers[currentIndex - 1] ?? null);
+                        setCurrentIndex((i) => i - 1);
+                      }
+                    }}
+                    disabled={currentIndex === 0}
+                    className="px-4 py-2 text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-xl text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer"
+                  >
+                    &larr; Quay lại
+                  </button>
+                  <span className="text-xs font-bold text-zinc-400">
+                    {currentIndex + 1} / {words.length}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (currentIndex < words.length - 1) {
+                        setQuizSelected(quizAnswers[currentIndex + 1] ?? null);
+                        setCurrentIndex((i) => i + 1);
+                      } else {
+                        const finalKnown = Object.entries(quizAnswers).filter(([idx, ans]) => {
+                          const item = words[Number(idx)];
+                          if (!item) return false;
+                          const correct = item.options?.find((o: any) => o.m === item.meaning);
+                          return correct && ans === correct.k;
+                        }).length;
+                        const finalUnknown = words.length - finalKnown;
+                        const searchParams = new URLSearchParams({
+                          known: String(finalKnown),
+                          unknown: String(finalUnknown),
+                          total: String(words.length),
+                          type: "personal",
+                        });
+                        router.replace(`/flashcard/results?${searchParams.toString()}`);
+                      }
+                    }}
+                    className="px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl disabled:opacity-40 cursor-pointer"
+                  >
+                    {currentIndex < words.length - 1 ? "Câu tiếp →" : "Xem kết quả"}
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Bottom Controls Nav Bar */}
-            <FlashcardControls
-              mode={mode}
-              onNext={(status) => handleNext(status === "mastered")}
-              onPrevious={() => {
-                if (currentIndex > 0) {
-                  setIsFlipped(false);
-                  setQuizSelected(null);
-                  setCurrentIndex((i) => i - 1);
-                }
-              }}
-              onFlip={() => {
-                setIsFlipped(!isFlipped);
-                speakChinese(currentItem.word);
-              }}
-              onPronounce={() => speakChinese(currentItem.word)}
-              currentIndex={currentIndex}
-              isFirst={currentIndex === 0}
-            />
+            {/* Flashcard Controls (only in flashcard mode) */}
+            {mode === "flashcard" && (
+              <FlashcardControls
+                mode={mode}
+                onNext={(status) => handleNext(status === "mastered")}
+                onPrevious={() => {
+                  if (currentIndex > 0) {
+                    setIsFlipped(false);
+                    setQuizSelected(null);
+                    setCurrentIndex((i) => i - 1);
+                  }
+                }}
+                onFlip={() => {
+                  setIsFlipped(!isFlipped);
+                  speakChinese(currentItem.word);
+                }}
+                onPronounce={() => speakChinese(currentItem.word)}
+                currentIndex={currentIndex}
+                isFirst={currentIndex === 0}
+              />
+            )}
           </div>
 
           {/* Add New Word Button */}

@@ -72,6 +72,8 @@ type VocabItem = {
     senses?: VocabSense[];
 };
 
+import DOMPurify from 'dompurify';
+
 function TheoryContentSection({ theory, loading }: { theory: LessonTheory | null; loading: boolean }) {
     if (loading) {
         return (
@@ -81,6 +83,18 @@ function TheoryContentSection({ theory, loading }: { theory: LessonTheory | null
         );
     }
     if (!theory || (!theory.content && !theory.image_url && !theory.title)) return null;
+
+    // Sanitize content to remove harmful elements and comments
+    let sanitizedContent = theory.content || '';
+    
+    // Remove HTML comments
+    sanitizedContent = sanitizedContent.replace(/<!--[\s\S]*?-->/g, '');
+    
+    // Sanitize using DOMPurify
+    if (typeof window !== 'undefined') {
+        sanitizedContent = DOMPurify.sanitize(sanitizedContent);
+    }
+
     return (
         <div className="max-w-4xl w-full mx-auto space-y-5">
             <div className="px-1">
@@ -101,7 +115,7 @@ function TheoryContentSection({ theory, loading }: { theory: LessonTheory | null
                 {theory.content ? (
                     <div
                         className="prose prose-sm max-w-none text-sm font-semibold leading-relaxed text-zinc-700 dark:text-zinc-300 dark:prose-invert"
-                        dangerouslySetInnerHTML={{ __html: theory.content }}
+                        dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                     />
                 ) : (
                     <p className="text-sm italic text-zinc-400">Chưa có nội dung</p>
@@ -1359,8 +1373,7 @@ className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-non
 
                 {/* STEP 2: Bài tập từ vựng (learn-quiz-vocab) */}
                 {currentStep === "learn-quiz-vocab" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-                        <div className="lg:col-span-2 space-y-6">
+                    <div className="max-w-2xl w-full mx-auto space-y-6">
                             {isLoadingQuiz && (
                                 <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-xs flex items-center justify-center">
                                     <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
@@ -1475,19 +1488,6 @@ className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-non
                                     </div>
                                 </div>
                             )}
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold space-y-3 shadow-2xs">
-                                <div className="text-sm font-bold flex items-center gap-1.5 text-amber-700">
-                                    <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Đặc điểm giao diện
-                                </div>
-                                <ul className="list-disc pl-4 space-y-2">
-                                    <li>Phần này trong câu hỏi trắc nghiệm có thể kèm audio hoặc không</li>
-                                    <li>Chọn xong sẽ hiện đáp án và giải thích luôn</li>
-                                </ul>
-                            </div>
-                        </div>
                     </div>
                 )}
 
@@ -1549,8 +1549,7 @@ className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-non
 
                 {/* STEP 4: Bài tập ngữ pháp (learn-quiz-grammar) */}
                 {currentStep === "learn-quiz-grammar" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-                        <div className="lg:col-span-2 space-y-6">
+                    <div className="max-w-2xl w-full mx-auto space-y-6">
                             {isLoadingQuiz && (
                                 <div className="bg-white rounded-2xl border border-amber-100 p-12 shadow-xs flex items-center justify-center">
                                     <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
@@ -1665,30 +1664,16 @@ className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-non
                                     </div>
                                 </div>
                             )}
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold space-y-3 shadow-2xs">
-                                <div className="text-sm font-bold flex items-center gap-1.5 text-amber-700">
-                                    <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Đặc điểm giao diện
-                                </div>
-                                <ul className="list-disc pl-4 space-y-2">
-                                    <li>Phần này trong câu hỏi trắc nghiệm có thể kèm audio hoặc không</li>
-                                    <li>Chọn xong sẽ hiện đáp án và giải thích luôn</li>
-                                </ul>
-                            </div>
-                        </div>
                     </div>
                 )}
 
                 {/* STEP 5: Bài tập Nghe chép chính tả (learn-dictation) */}
                 {currentStep === "learn-dictation" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full animate-fade-in">
-                        <div className="lg:col-span-2 space-y-6">
+                    <div className="max-w-2xl w-full mx-auto space-y-6">
                             <div className="bg-white rounded-2xl border border-amber-100 p-6 md:p-8 shadow-xs space-y-6">
                                 <div className="flex items-center justify-between border-b border-amber-50 pb-3">
                                     <h3 className="font-black text-amber-800 text-base flex items-center gap-2">
-                                        <Volume2 className="w-5 h-5 text-amber-500" /> Đề bài Nghe chép chính tả (Input Audio)
+                                        <Volume2 className="w-5 h-5 text-amber-500" /> Đề bài Nghe chép chính tả
                                     </h3>
                                 </div>
 
@@ -1780,19 +1765,7 @@ className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-non
 
 
                             </div>
-                        </div>
 
-                        <div className="space-y-6">
-                            <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl text-xs leading-relaxed text-amber-900 font-bold space-y-3 shadow-2xs">
-                                <div className="text-sm font-bold flex items-center gap-1.5 text-amber-700">
-                                    <Lightbulb className="w-4 h-4 text-amber-500 inline mr-1.5" /> Hướng dẫn làm bài
-                                </div>
-                                <ul className="list-disc pl-4 space-y-2">
-                                    <li>Lắng nghe âm thanh và nhập từng ký tự chữ Hán chính xác.</li>
-                                    <li>Hệ thống chấm điểm tự động dựa trên cấu hình nội dung bài học từ Directus.</li>
-                                </ul>
-                            </div>
-                        </div>
                     </div>
                 )}
 
@@ -2022,15 +1995,6 @@ className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-non
                                 </div>
                             </div>
 
-                            {/* Right side: Helper Text */}
-                            <div className="md:col-span-1 text-sm font-bold text-gray-700 leading-relaxed space-y-2 p-2">
-                                <div className="flex items-center gap-1.5 text-amber-600 text-lg">
-                                    <Lightbulb className="w-5 h-5 text-amber-500" />
-                                </div>
-                                <p className="font-semibold text-gray-600">
-                                    Đây là các file để người học tải về máy ôn tập thêm.
-                                </p>
-                            </div>
                         </div>
 
                         <div className="flex justify-end w-full pt-6 border-t border-gray-150 mt-8 max-w-3xl">

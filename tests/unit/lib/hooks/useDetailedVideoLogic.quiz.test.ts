@@ -47,7 +47,7 @@ const MOCK_EXERCISES = [
   { id: 102, question: "Q2", time_start: "00:00:13,400", time_end: "00:00:15,500" },
 ];
 
-describe("useDetailedVideoLogic — quiz activation at time_start (TDD)", () => {
+describe("useDetailedVideoLogic — quiz activation after sentence finishes (time_end)", () => {
   beforeEach(() => {
     vi.mocked(bilingualApi.bilingualApi.getExerciseById).mockResolvedValue({
       exercises: [...MOCK_EXERCISES],
@@ -58,7 +58,7 @@ describe("useDetailedVideoLogic — quiz activation at time_start (TDD)", () => 
     vi.restoreAllMocks();
   });
 
-  it("activates the first question when video reaches its time_start in quiz mode", async () => {
+  it("activates the first question once video PASSES its time_end in quiz mode", async () => {
     const videoEl = makeVideoElement(0);
     const videoRef = { current: videoEl };
 
@@ -71,15 +71,15 @@ describe("useDetailedVideoLogic — quiz activation at time_start (TDD)", () => 
 
     await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
 
-    // Video chạy tới 8s (>= time_start 7.8 của Q1)
-    videoEl.currentTime = 8;
+    // Video chạy tới 11s (> time_end 10.3 của Q1, trong window 3s)
+    videoEl.currentTime = 11;
     videoEl.paused = false;
 
     await waitFor(() => expect(result.current.activeQuestion).not.toBeNull(), { timeout: 3000 });
     expect(result.current.activeQuestion?.id).toBe(101);
   });
 
-  it("pauses video when a question activates (video stopped at time_start)", async () => {
+  it("pauses video when a question activates (video stopped after time_end)", async () => {
     const videoEl = makeVideoElement(0);
     const videoRef = { current: videoEl };
 
@@ -92,7 +92,7 @@ describe("useDetailedVideoLogic — quiz activation at time_start (TDD)", () => 
 
     await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
 
-    videoEl.currentTime = 8;
+    videoEl.currentTime = 11;
     videoEl.paused = false;
 
     await waitFor(() => expect(result.current.activeQuestion).not.toBeNull(), { timeout: 3000 });
@@ -101,7 +101,7 @@ describe("useDetailedVideoLogic — quiz activation at time_start (TDD)", () => 
     expect(videoEl.pause).toHaveBeenCalled();
   });
 
-  it("does NOT activate a question when video has not reached its time_start", async () => {
+  it("does NOT activate a question BEFORE its time_end (sentence still playing)", async () => {
     const videoEl = makeVideoElement(0);
     const videoRef = { current: videoEl };
 
@@ -114,7 +114,7 @@ describe("useDetailedVideoLogic — quiz activation at time_start (TDD)", () => 
 
     await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
 
-    videoEl.currentTime = 5; // < time_start 7.8
+    videoEl.currentTime = 9; // < time_end 10.3 (nhưng > time_start 7.8)
     videoEl.paused = false;
 
     await new Promise((r) => setTimeout(r, 700));
@@ -138,7 +138,7 @@ describe("useDetailedVideoLogic — quiz activation at time_start (TDD)", () => 
     await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
     expect(result.current.exerciseData?.length).toBeGreaterThan(0);
 
-    videoEl.currentTime = 8;
+    videoEl.currentTime = 11;
     videoEl.paused = false;
 
     await waitFor(() => expect(result.current.activeQuestion).not.toBeNull(), { timeout: 3000 });
@@ -158,11 +158,11 @@ describe("useDetailedVideoLogic — quiz activation at time_start (TDD)", () => 
 
     await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
 
-    videoEl.currentTime = 9;
+    videoEl.currentTime = 11;
 
     // Giả lập sự kiện timeupdate của video element mà page gọi onVideoTimeUpdate
     await act(async () => {
-      result.current.onVideoTimeUpdate?.(9);
+      result.current.onVideoTimeUpdate?.(11);
     });
 
     await waitFor(() => expect(result.current.activeQuestion).not.toBeNull(), { timeout: 3000 });

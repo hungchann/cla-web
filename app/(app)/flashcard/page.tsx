@@ -19,7 +19,7 @@ import { FREE_NOTEBOOK_LIMIT } from "@/lib/premium";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Folder, Lightbulb, User, Library, Notebook, Key, Trophy, FolderOpen, ChevronDown, ChevronUp, Heart, Check, X, Layers, PenLine, Volume2 } from "lucide-react";
+import { Folder, Lightbulb, User, Library, Notebook, Key, Trophy, FolderOpen, ChevronDown, ChevronUp, Heart, Check, X, Layers, PenLine, Volume2, ArrowRight, Undo2 } from "lucide-react";
 
 // Mock data từ vựng phong phú làm fallback
 const MOCK_FLASHCARDS = [
@@ -194,208 +194,208 @@ function FlashcardDashboard() {
 
   return (
     <PageContainer className="max-w-4xl">
-          <PremiumGate
-            isOpen={premiumModalVisible}
-            onClose={() => setPremiumModalVisible(false)}
-            feature="tạo sổ tay từ vựng cá nhân không giới hạn"
-            upgradeUrl={buildCheckoutUrl(undefined, "flashcard")}
-          />
-          <PageHeader
-            title="Thẻ Ghi Nhớ Flashcard"
-            description="Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS)."
-            icon={<Folder className="w-7 h-7" />}
-          />
+      <PremiumGate
+        isOpen={premiumModalVisible}
+        onClose={() => setPremiumModalVisible(false)}
+        feature="tạo sổ tay từ vựng cá nhân không giới hạn"
+        upgradeUrl={buildCheckoutUrl(undefined, "flashcard")}
+      />
+      <PageHeader
+        title="Thẻ Ghi Nhớ Flashcard"
+        description="Chọn một bộ từ vựng dưới đây để bắt đầu ôn tập theo phương pháp lặp lại ngắt quãng (SRS)."
+        icon={<Folder className="w-7 h-7" />}
+      />
 
-          {/* Tabs */}
-          <div className="flex border-b border-zinc-200 dark:border-zinc-800">
-            {(["suggest", "personal", "system"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 sm:flex-none px-6 py-3.5 text-sm font-extrabold border-b-2 transition-all duration-200 cursor-pointer ${activeTab === tab
-                    ? "border-amber-500 text-amber-600 dark:text-amber-500"
-                    : "border-transparent text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200"
-                  }`}
-              >
-                {tab === "suggest" && <><Lightbulb className="w-4 h-4 mr-2 inline" /> Gợi ý học nhanh</>}
-                {tab === "personal" && <><User className="w-4 h-4 mr-2 inline" /> Sổ tay của tôi</>}
-                {tab === "system" && <><Library className="w-4 h-4 mr-2 inline" /> Trình độ HSK</>}
-              </button>
-            ))}
+      {/* Tabs */}
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+        {(["suggest", "personal", "system"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 sm:flex-none px-6 py-3.5 text-sm font-extrabold border-b-2 transition-all duration-200 cursor-pointer ${activeTab === tab
+              ? "border-amber-500 text-amber-600 dark:text-amber-500"
+              : "border-transparent text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200"
+              }`}
+          >
+            {tab === "suggest" && <><Lightbulb className="w-4 h-4 mr-2 inline" /> Gợi ý học nhanh</>}
+            {tab === "personal" && <><User className="w-4 h-4 mr-2 inline" /> Sổ tay của tôi</>}
+            {tab === "system" && <><Library className="w-4 h-4 mr-2 inline" /> Trình độ HSK</>}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[300px]">
+        {/* Suggest Tab */}
+        {activeTab === "suggest" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Link href="/flashcard?type=suggest" className="block group">
+              <Card className="flex flex-col justify-between p-6 rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900 h-full">
+                <div className="space-y-3">
+                  <Lightbulb className="w-6 h-6" />
+                  <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-lg tracking-tight">
+                    Bộ từ gợi ý hệ thống
+                  </h3>
+                  <p className="text-xs text-zinc-550 dark:text-zinc-400 font-semibold leading-relaxed">
+                    Luyện tập nhanh với các từ vựng thiết yếu và phổ biến nhất (học thử demo).
+                  </p>
+                </div>
+                <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
+                  Bắt đầu học ngay →
+                </span>
+              </Card>
+            </Link>
           </div>
+        )}
 
-          {/* Tab Content */}
-          <div className="min-h-[300px]">
-            {/* Suggest Tab */}
-            {activeTab === "suggest" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Link href="/flashcard?type=suggest" className="block group">
-                  <Card className="flex flex-col justify-between p-6 rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900 h-full">
-                    <div className="space-y-3">
-                        <Lightbulb className="w-6 h-6" />
-                      <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-lg tracking-tight">
-                        Bộ từ gợi ý hệ thống
-                      </h3>
-                      <p className="text-xs text-zinc-550 dark:text-zinc-400 font-semibold leading-relaxed">
-                        Luyện tập nhanh với các từ vựng thiết yếu và phổ biến nhất (học thử demo).
-                      </p>
-                    </div>
-                    <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
-                      Bắt đầu học ngay →
-                    </span>
-                  </Card>
-                </Link>
-              </div>
-            )}
-
-            {/* Personal Tab */}
-            {activeTab === "personal" && (
+        {/* Personal Tab */}
+        {activeTab === "personal" && (
+          <div className="flex flex-col gap-6">
+            {!isAuthenticated ? (
+              <Card className="flex flex-col items-center justify-center p-12 text-center gap-4 border-dashed border-zinc-250 dark:border-zinc-800">
+                <Key className="w-10 h-10 text-zinc-400" />
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-250">Yêu cầu đăng nhập</h3>
+                  <p className="text-xs text-zinc-550 dark:text-zinc-400 font-medium">Bạn cần đăng nhập để quản lý và học sổ tay từ vựng cá nhân của mình.</p>
+                </div>
+                <Button asChild size="sm">
+                  <Link href="/sign-in">Đăng nhập ngay</Link>
+                </Button>
+              </Card>
+            ) : (
               <div className="flex flex-col gap-6">
-                {!isAuthenticated ? (
-                  <Card className="flex flex-col items-center justify-center p-12 text-center gap-4 border-dashed border-zinc-250 dark:border-zinc-800">
-                    <Key className="w-10 h-10 text-zinc-400" />
-                    <div className="space-y-1">
-                      <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-250">Yêu cầu đăng nhập</h3>
-                      <p className="text-xs text-zinc-550 dark:text-zinc-400 font-medium">Bạn cần đăng nhập để quản lý và học sổ tay từ vựng cá nhân của mình.</p>
-                    </div>
-                    <Button asChild size="sm">
-                      <Link href="/sign-in">Đăng nhập ngay</Link>
-                    </Button>
-                  </Card>
-                ) : (
-                  <div className="flex flex-col gap-6">
-                    {/* Create Deck Form */}
-                    <form onSubmit={handleCreateDeck} className="flex gap-3 w-full max-w-md">
-                      <Input
-                        type="text"
-                        placeholder="Tên sổ tay mới... (vd: Từ vựng giao tiếp)"
-                        value={newDeckTitle}
-                        onChange={(e) => setNewDeckTitle(e.target.value)}
-                        required
-                        className="flex-1 font-medium"
-                      />
-                      <Button
-                        type="submit"
-                        disabled={isCreatingDeck}
-                        size="default"
-                      >
-                        {isCreatingDeck ? "Đang tạo..." : "Tạo mới"}
-                      </Button>
-                    </form>
+                {/* Create Deck Form */}
+                <form onSubmit={handleCreateDeck} className="flex gap-3 w-full max-w-md">
+                  <Input
+                    type="text"
+                    placeholder="Tên sổ tay mới... (vd: Từ vựng giao tiếp)"
+                    value={newDeckTitle}
+                    onChange={(e) => setNewDeckTitle(e.target.value)}
+                    required
+                    className="flex-1 font-medium"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isCreatingDeck}
+                    size="default"
+                  >
+                    {isCreatingDeck ? "Đang tạo..." : "Tạo mới"}
+                  </Button>
+                </form>
 
-                    {/* Decks list */}
-                    {loadingPersonal ? (
-                      <div className="flex justify-center py-10">
-                        <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-600 border-t-transparent"></div>
-                      </div>
-                    ) : personalDecks.length === 0 ? (
-                      <p className="text-sm text-zinc-500 italic">Bạn chưa tạo sổ tay từ vựng nào.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {personalDecks.map((deck) => (
-                          <Link
-                            key={deck.id}
-                            href={`/flashcard?type=personal&notebookId=${deck.id}`}
-                            className="block group"
-                          >
-                            <Card className="flex flex-col justify-between p-6 rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900 h-full">
-                              <div className="space-y-3">
-                                  <Notebook className="w-6 h-6" />
-                                <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors line-clamp-1">
-                                  {deck.title}
-                                </h3>
-                              </div>
-                              <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
-                                Luyện tập sổ tay →
-                              </span>
-                            </Card>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* System (HSK) Tab */}
-            {activeTab === "system" && (
-              <div className="flex flex-col gap-4">
-                {loadingHsk ? (
+                {/* Decks list */}
+                {loadingPersonal ? (
                   <div className="flex justify-center py-10">
                     <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-600 border-t-transparent"></div>
                   </div>
-                ) : hskLevels.length === 0 ? (
-                  <p className="text-sm text-zinc-500 italic">Không tải được cấp độ HSK.</p>
+                ) : personalDecks.length === 0 ? (
+                  <p className="text-sm text-zinc-500 italic">Bạn chưa tạo sổ tay từ vựng nào.</p>
                 ) : (
-                  <div className="flex flex-col gap-4 w-full">
-                    {hskLevels.map((level) => {
-                      const isExpanded = expandedHskId === level.id;
-                      const topicsList = hskTopics[level.id] || [];
-                      const topicsLoading = loadingTopics[level.id];
-
-                      return (
-                        <Card
-                          key={level.id}
-                          className="overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-                        >
-                          {/* Header */}
-                          <button
-                            onClick={() => handleToggleHsk(level.id)}
-                            className="w-full flex items-center justify-between p-5 text-left font-black text-base text-zinc-900 dark:text-white cursor-pointer select-none bg-transparent border-none"
-                          >
-                            <span className="flex items-center gap-3">
-                              <Trophy className="w-5 h-5 text-amber-500" /> {level.name}
-                            </span>
-                            <span className="text-zinc-400 font-bold transition-transform duration-250">
-                              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                            </span>
-                          </button>
-
-                          {/* Content */}
-                          {isExpanded && (
-                            <div className="border-t border-zinc-100 dark:border-zinc-800/80 p-5 bg-zinc-50/50 dark:bg-zinc-900/30">
-                              {topicsLoading ? (
-                                <div className="flex justify-center py-4">
-                                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-600 border-t-transparent"></div>
-                                </div>
-                              ) : topicsList.length === 0 ? (
-                                <p className="text-xs text-zinc-500 italic">Không có chủ đề nào.</p>
-                              ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                  {topicsList.map((item: any) => (
-                                    <Link
-                                      key={item.id}
-                                      href={`/flashcard?type=system&notebookId=${level.id}&topicId=${item.topic_id?.id}`}
-                                      className="block group"
-                                    >
-                                      <Card className="flex items-center gap-3 p-4 rounded-xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 text-sm font-bold text-zinc-800 dark:text-zinc-200 h-full">
-                                        <FolderOpen className="w-5 h-5 text-amber-500" />
-                                        <div className="flex flex-col gap-0.5 min-w-0">
-                                          <span className="group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors truncate">
-                                            {item.topic_id?.name}
-                                          </span>
-                                          {item.topic_id?.chinese_name && (
-                                            <span className="text-[10px] text-zinc-400 font-medium">
-                                              {item.topic_id.chinese_name}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </Card>
-                                    </Link>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {personalDecks.map((deck) => (
+                      <Link
+                        key={deck.id}
+                        href={`/flashcard?type=personal&notebookId=${deck.id}`}
+                        className="block group"
+                      >
+                        <Card className="flex flex-col justify-between p-6 rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900 h-full">
+                          <div className="space-y-3">
+                            <Notebook className="w-6 h-6" />
+                            <h3 className="text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors line-clamp-1">
+                              {deck.title}
+                            </h3>
+                          </div>
+                          <span className="mt-6 inline-flex items-center text-xs font-bold text-amber-600 hover:underline">
+                            Luyện tập sổ tay →
+                          </span>
                         </Card>
-                      );
-                    })}
+                      </Link>
+                    ))}
                   </div>
                 )}
               </div>
             )}
           </div>
+        )}
+
+        {/* System (HSK) Tab */}
+        {activeTab === "system" && (
+          <div className="flex flex-col gap-4">
+            {loadingHsk ? (
+              <div className="flex justify-center py-10">
+                <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-600 border-t-transparent"></div>
+              </div>
+            ) : hskLevels.length === 0 ? (
+              <p className="text-sm text-zinc-500 italic">Không tải được cấp độ HSK.</p>
+            ) : (
+              <div className="flex flex-col gap-4 w-full">
+                {hskLevels.map((level) => {
+                  const isExpanded = expandedHskId === level.id;
+                  const topicsList = hskTopics[level.id] || [];
+                  const topicsLoading = loadingTopics[level.id];
+
+                  return (
+                    <Card
+                      key={level.id}
+                      className="overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                    >
+                      {/* Header */}
+                      <button
+                        onClick={() => handleToggleHsk(level.id)}
+                        className="w-full flex items-center justify-between p-5 text-left font-black text-base text-zinc-900 dark:text-white cursor-pointer select-none bg-transparent border-none"
+                      >
+                        <span className="flex items-center gap-3">
+                          <Trophy className="w-5 h-5 text-amber-500" /> {level.name}
+                        </span>
+                        <span className="text-zinc-400 font-bold transition-transform duration-250">
+                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </span>
+                      </button>
+
+                      {/* Content */}
+                      {isExpanded && (
+                        <div className="border-t border-zinc-100 dark:border-zinc-800/80 p-5 bg-zinc-50/50 dark:bg-zinc-900/30">
+                          {topicsLoading ? (
+                            <div className="flex justify-center py-4">
+                              <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-600 border-t-transparent"></div>
+                            </div>
+                          ) : topicsList.length === 0 ? (
+                            <p className="text-xs text-zinc-500 italic">Không có chủ đề nào.</p>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                              {topicsList.map((item: any) => (
+                                <Link
+                                  key={item.id}
+                                  href={`/flashcard?type=system&notebookId=${level.id}&topicId=${item.topic_id?.id}`}
+                                  className="block group"
+                                >
+                                  <Card className="flex items-center gap-3 p-4 rounded-xl border border-amber-950/10 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 text-sm font-bold text-zinc-800 dark:text-zinc-200 h-full">
+                                    <FolderOpen className="w-5 h-5 text-amber-500" />
+                                    <div className="flex flex-col gap-0.5 min-w-0">
+                                      <span className="group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors truncate">
+                                        {item.topic_id?.name}
+                                      </span>
+                                      {item.topic_id?.chinese_name && (
+                                        <span className="text-[10px] text-zinc-400 font-medium">
+                                          {item.topic_id.chinese_name}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </Card>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </PageContainer>
   );
 }
@@ -587,11 +587,8 @@ function FlashcardStudySession({
     if (!option) return;
     setQuizSelected(optionKey);
     speakChinese(option.word);
-    const isCorrect = option.isCorrect;
-    globalThis.setTimeout(() => {
-      handleNextAction(isCorrect ? "mastered" : "learning");
-    }, isCorrect ? 900 : 1500);
-  }, [quizSelected, currentQuizWord, quizOptions, handleNextAction]);
+    // Không tự submit — user bấm "Tiếp theo" để chuyển câu
+  }, [quizSelected, currentQuizWord, quizOptions]);
 
   // Lắng nghe phím tắt bàn phím
   useEffect(() => {
@@ -606,18 +603,28 @@ function FlashcardStudySession({
         } else if (studyMode === "quiz" && currentQuizWord?.word) {
           speakChinese(currentQuizWord.word);
         }
-      } else if (e.code === "ArrowRight") {
-        // Thuộc từ
-        handleNextAction("mastered");
-      } else if (e.code === "ArrowLeft") {
-        // Chưa thuộc
-        handleNextAction("learning");
-      } else if (e.code === "ArrowUp") {
-        // Xem lại
-        handleNextAction("uncertain");
-      } else if (e.code === "ArrowDown") {
-        // Quay lại
-        handlePrevAction();
+      } else if (studyMode === "quiz" && quizSelected) {
+        // Quiz mode: sau khi chọn đáp án, mũi tên phải = Tiếp theo, mũi tên trái = Quay lại
+        if (e.code === "ArrowRight") {
+          const isCorrect = quizOptions.find(o => o.key === quizSelected)?.isCorrect;
+          handleNextAction(isCorrect ? "mastered" : "learning");
+        } else if (e.code === "ArrowLeft") {
+          handlePrevAction();
+        }
+      } else if (studyMode === "flashcard") {
+        if (e.code === "ArrowRight") {
+          handleNextAction("mastered");
+        } else if (e.code === "ArrowLeft") {
+          handleNextAction("learning");
+        } else if (e.code === "ArrowUp") {
+          handleNextAction("uncertain");
+        } else if (e.code === "ArrowDown") {
+          handlePrevAction();
+        } else if (e.code === "Digit1") {
+          handleNextAction("mastered");
+        } else if (e.code === "Digit2") {
+          handleNextAction("learning");
+        }
       } else if (studyMode === "quiz" && !quizSelected) {
         if (e.key === "a" || e.key === "A" || e.code === "Digit1") {
           handleQuizSelect("A");
@@ -627,12 +634,6 @@ function FlashcardStudySession({
           handleQuizSelect("C");
         } else if (e.key === "d" || e.key === "D" || e.code === "Digit4") {
           handleQuizSelect("D");
-        }
-      } else if (studyMode === "flashcard") {
-        if (e.code === "Digit1") {
-          handleNextAction("mastered");
-        } else if (e.code === "Digit2") {
-          handleNextAction("learning");
         }
       }
     };
@@ -716,11 +717,10 @@ function FlashcardStudySession({
           type="button"
           onClick={toggleFavorite}
           title={isFavorite ? "Bỏ yêu thích" : "Lưu vào yêu thích"}
-          className={`p-2.5 rounded-xl border transition-all active:scale-90 cursor-pointer ${
-            isFavorite
+          className={`p-2.5 rounded-xl border transition-all active:scale-90 cursor-pointer ${isFavorite
               ? "border-rose-200 bg-rose-50/60 dark:border-rose-900/40 dark:bg-rose-950/20 text-rose-500 shadow-xs"
               : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-rose-500 hover:border-rose-200"
-          }`}
+            }`}
         >
           <Heart className="w-5 h-5" fill={isFavorite ? "currentColor" : "none"} />
         </button>
@@ -739,11 +739,10 @@ function FlashcardStudySession({
                 setStudyMode("flashcard");
                 setQuizSelected(null);
               }}
-              className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer border-none flex items-center gap-1.5 ${
-                studyMode === "flashcard"
+              className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer border-none flex items-center gap-1.5 ${studyMode === "flashcard"
                   ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white"
                   : "bg-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-              }`}
+                }`}
             >
               <Layers className="w-4 h-4" /> Flashcard
             </button>
@@ -753,11 +752,10 @@ function FlashcardStudySession({
                 setStudyMode("quiz");
                 setQuizSelected(null);
               }}
-              className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer border-none flex items-center gap-1.5 ${
-                studyMode === "quiz"
+              className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer border-none flex items-center gap-1.5 ${studyMode === "quiz"
                   ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white"
                   : "bg-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-              }`}
+                }`}
             >
               <PenLine className="w-4 h-4" /> Chọn đáp án
             </button>
@@ -847,26 +845,42 @@ function FlashcardStudySession({
                 );
               })}
             </div>
-
-            {/* Quick hint for shortcuts */}
-            <p className="text-center text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">
-              Chọn đáp án bằng cách nhấp chuột hoặc ấn phím <kbd className="font-bold">A</kbd>, <kbd className="font-bold">B</kbd>, <kbd className="font-bold">C</kbd>, <kbd className="font-bold">D</kbd> (hoặc <kbd className="font-bold">1</kbd>, <kbd className="font-bold">2</kbd>, <kbd className="font-bold">3</kbd>, <kbd className="font-bold">4</kbd>)
-            </p>
           </div>
 
-          {/* Action Controls for Quiz Mode */}
-          <FlashcardControls
-            mode="quiz"
-            onNext={handleNextAction}
-            onPrevious={handlePrevAction}
-            onPronounce={() => {
-              if (currentQuizWord?.word) {
-                speakChinese(currentQuizWord.word);
-              }
-            }}
-            currentIndex={displayIndex}
-            isFirst={displayIndex === 0}
-          />
+          {/* Quiz Navigation: Quay lại / Tiếp theo */}
+          <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <button
+              type="button"
+              onClick={handlePrevAction}
+              disabled={displayIndex === 0}
+              className="h-10 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+            >
+              <Undo2 className="w-4 h-4" /> Quay lại
+            </button>
+
+            {/* Chấm điểm khi đã chọn đáp án */}
+            {quizSelected && (
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${quizOptions.find(o => o.key === quizSelected)?.isCorrect
+                  ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                  : "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                }`}>
+                {quizOptions.find(o => o.key === quizSelected)?.isCorrect ? "✓ Chính xác!" : "✗ Sai rồi"}
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!quizSelected) return;
+                const isCorrect = quizOptions.find(o => o.key === quizSelected)?.isCorrect;
+                handleNextAction(isCorrect ? "mastered" : "learning");
+              }}
+              disabled={!quizSelected}
+              className="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5 shadow-sm"
+            >
+              {displayIndex === totalCards - 1 ? "Hoàn thành" : "Tiếp theo"} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">

@@ -61,10 +61,11 @@ export const vocabularyApi = {
 
   /**
    * Lấy danh sách từ vựng + nghĩa + ví dụ của một "bài học từ vựng" (Lý thuyết)
-   * thông qua vocab_display_map (junction level ↔ topic ↔ vocab_items).
+   * thông qua vocab_display_map (sử dụng junction table vocab_display_map_vocab_items).
    */
   getVocabByDisplayMap: async (displayMapId: string | number): Promise<any[]> => {
     try {
+      // Lấy junction items để lấy vocab items
       const itemsRes = await apiInstance.get(
         `/items/vocab_display_map_vocab_items?filter[vocab_display_map_id][_eq]=${displayMapId}&fields=id,vocab_items_id.id,vocab_items_id.name,vocab_items_id.pinyin,vocab_items_id.note`,
       );

@@ -207,7 +207,8 @@ export const useDetailedVideoLogic = (
       }
     }
 
-    // 3. Quiz activation (ALWAYS runs regardless of flowMode)
+    // 3. Quiz activation — only when flowMode is "quiz" or "both"
+    if (flowMode === "subtitles") return;
     if (t <= 0.1) return;
     if (isAnswerTransitionRef.current) return;
 
@@ -216,7 +217,7 @@ export const useDetailedVideoLogic = (
 
     const answered = answeredIdsRef.current;
 
-    // Find first unanswered question whose time_start has been reached
+    // Find first unanswered question whose time_end has been reached
     const firstUnanswered = exercises.find(
       (q) => !answered.some((id) => String(id) === String(q.id))
     );
@@ -228,13 +229,19 @@ export const useDetailedVideoLogic = (
       return;
     }
 
-    // Find a new question to activate: startSec <= currentTime <= maxWindow
+    // Find a new question to activate: appear ONLY AFTER the sentence has
+    // finished playing (currentTime >= time_end). Activation is MONOTONIC —
+    // no upper window — so once the video crosses time_end the quiz is shown
+    // regardless of poll granularity (mirrors CHINESE-LEARNING-APP intent).
     const toActivate = exercises.find((q) => {
       if (answered.some((id) => String(id) === String(q.id))) return false;
       const startSec = timeToSeconds(q.time_start);
       const endSec = timeToSeconds(q.time_end);
-      const maxWindow = endSec > startSec ? endSec + 6 : startSec + 8;
-      return t >= startSec && t <= maxWindow;
+      // Fallback: if time_end is missing/invalid, treat time_start as trigger.
+      if (endSec > 0 && endSec > startSec) {
+        return t >= endSec;
+      }
+      return t >= startSec;
     });
 
     if (toActivate) {
@@ -348,7 +355,7 @@ export const useDetailedVideoLogic = (
 
         const raw = Array.isArray(response.exercises) ? response.exercises : [];
         const sorted = [...raw].sort(
-          (a: any, b: any) => timeToSeconds(a.time_start) - timeToSeconds(b.time_start),
+          (a: any, b: any) => timeToSeconds(a.time_end) - timeToSeconds(b.time_end),
         );
 
         if (cancelled) return;
@@ -381,6 +388,72 @@ export const useDetailedVideoLogic = (
   }, [videoData?.id]);
 
   // ─── Answer submission ───
+  // Get current playback time from whichever player is active (synchronous).
+  const getCurrentTimeNow = useCallback((): number => {
+    try {
+      if (isYoutubeVideoRef.current) {
+        const api = youtubePlayerRefRef.current?.current;
+        const res = api?.getCurrentTime?.();
+        const t = typeof res?.then === "function" ? Number.NaN : res;
+        return typeof t === "number" && Number.isFinite(t) ? t : Number.NaN;
+      }
+      const t = videoRefRef.current?.current?.currentTime;
+      return typeof t === "number" && Number.isFinite(t) ? t : Number.NaN;
+    } catch {
+      return Number.NaN;
+    }
+  }, []);
+
+  // Called ~1.5s after answering: close result phase, then either open the next
+  // question immediately (if video is already inside its time window) or resume.
+  const completeAnswerTransition = useCallback(
+    (answeredQuestionId: number) => {
+      setShowResult(false);
+      setActiveQuestion(null);
+      activeQuestionRef.current = null;
+
+      const nextCount = answeredIdsRef.current.length;
+      const total = exerciseDataRef.current?.length ?? 0;
+
+      // If the next unanswered question is already in progress, open it right
+      // away instead of resuming (mirrors CHINESE-LEARNING-APP so back-to-back
+      // sentences don't require replaying).
+      try {
+        const exercises = exerciseDataRef.current;
+        if (Array.isArray(exercises) && exercises.length > 0) {
+          const nextUnanswered = exercises.find(
+            (q) => !answeredIdsRef.current.some((id) => String(id) === String(q.id)),
+          );
+          const nowT = getCurrentTimeNow();
+          if (nextUnanswered && Number.isFinite(nowT)) {
+            const s = timeToSeconds(nextUnanswered.time_start);
+            const e = timeToSeconds(nextUnanswered.time_end);
+            const inWindow =
+              e > 0 && e > s
+                ? nowT >= s && nowT <= e
+                : nowT >= s && nowT <= s + 3;
+            if (inWindow && String(nextUnanswered.id) !== String(answeredQuestionId)) {
+              activeQuestionRef.current = nextUnanswered;
+              setActiveQuestion(nextUnanswered);
+              pausePlayback();
+              isAnswerTransitionRef.current = false;
+              return;
+            }
+          }
+        }
+      } catch {}
+
+      isAnswerTransitionRef.current = false;
+      if (total > 0 && nextCount >= total) {
+        setHasCompletedAll(true);
+        setShowCompletionOverlay(true);
+      } else if (isMounted.current) {
+        resumePlayback();
+      }
+    },
+    [getCurrentTimeNow, pausePlayback, resumePlayback],
+  );
+
   const handleOptionPress = async (key: string) => {
     if (!activeQuestionRef.current) return;
     const question = activeQuestionRef.current;
@@ -419,17 +492,7 @@ export const useDetailedVideoLogic = (
       setAnsweredIds((prev) => [...prev, question.id]);
 
       setTimeout(() => {
-        setShowResult(false);
-        setActiveQuestion(null);
-        activeQuestionRef.current = null;
-        isAnswerTransitionRef.current = false;
-
-        if (total > 0 && nextCount >= total) {
-          setHasCompletedAll(true);
-          setShowCompletionOverlay(true);
-        } else if (isMounted.current) {
-          resumePlayback();
-        }
+        completeAnswerTransition(question.id);
       }, 1500);
 
       return result;
@@ -469,17 +532,7 @@ export const useDetailedVideoLogic = (
       setAnsweredIds((prev) => [...prev, question.id]);
 
       setTimeout(() => {
-        setShowResult(false);
-        setActiveQuestion(null);
-        activeQuestionRef.current = null;
-        isAnswerTransitionRef.current = false;
-
-        if (total > 0 && nextCount >= total) {
-          setHasCompletedAll(true);
-          setShowCompletionOverlay(true);
-        } else if (isMounted.current) {
-          resumePlayback();
-        }
+        completeAnswerTransition(question.id);
       }, 1500);
 
       return fallbackResult;

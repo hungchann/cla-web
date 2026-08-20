@@ -18,7 +18,8 @@ import { PageContainer } from "@/components/PageContainer";
 
 function BookCard({ book, badge }: { book: any; badge?: string }) {
   const cover = getAssetUrl(book?.image?.filename_disk, null);
-  const displayName = book.title_trans || book.title;
+  const cnName = book.title;
+  const vnName = book.title_trans;
   return (
     <Link
       key={book.id}
@@ -27,17 +28,23 @@ function BookCard({ book, badge }: { book: any; badge?: string }) {
     >
       <div className="aspect-[3/4] w-full rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-amber-950/10 dark:border-zinc-800/50 relative shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10">
         {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={cover}
-            alt={displayName}
-            className="w-full h-full object-cover"
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={cover}
+              alt={cnName}
+              className="w-full h-full object-cover"
+            />
+            {/* Name overlay at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3 pt-8">
+              {cnName && <p className="text-white font-black text-sm leading-tight">{cnName}</p>}
+              {vnName && <p className="text-amber-300 font-bold text-[11px] mt-0.5 leading-tight">{vnName}</p>}
+            </div>
+          </>
         ) : (
-          <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center p-4 text-center">
-            <span className="text-xs font-extrabold text-zinc-600 dark:text-zinc-400 line-clamp-3">
-              {displayName}
-            </span>
+          <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex flex-col items-center justify-center p-4 text-center gap-1">
+            {cnName && <span className="text-xs font-extrabold text-zinc-600 dark:text-zinc-400 line-clamp-2">{cnName}</span>}
+            {vnName && <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-500 line-clamp-2">{vnName}</span>}
           </div>
         )}
         {badge && (
@@ -48,9 +55,12 @@ function BookCard({ book, badge }: { book: any; badge?: string }) {
       </div>
 
       <div className="px-1">
-        <h4 className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-sm tracking-tight">
-          {displayName}
-        </h4>
+        {cnName && <h4 className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-sm tracking-tight">
+          {cnName}
+        </h4>}
+        {vnName && <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 line-clamp-1 mt-0.5">
+          {vnName}
+        </p>}
         <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
           {book.author || book.author_trans || "Khuyết danh"}
         </p>

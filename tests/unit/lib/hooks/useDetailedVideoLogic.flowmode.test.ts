@@ -36,23 +36,46 @@ function makeVideoElement(currentTime: number) {
   return el;
 }
 
-describe("useDetailedVideoLogic — quiz auto-activation regardless of tab (video-stopping quiz)", () => {
+// time_start 1s, time_end 5s. Activation now happens AFTER time_end (>=5s).
+const ACTIVE_TIME = 6;
+
+describe("useDetailedVideoLogic — quiz becomes active only in 'quiz'/'both' flow", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("activates the question when video reaches time_start even while in 'subtitles' mode", async () => {
+  it("does NOT activate the question while in 'subtitles' mode (guard exists)", async () => {
     vi.mocked(bilingualApi.bilingualApi.getExerciseById).mockResolvedValue({
       exercises: [
         { id: 1, question: "Q1", time_start: "00:00:01,000", time_end: "00:00:05,000" },
       ],
     });
-    const videoRef = { current: makeVideoElement(10) };
+    const videoRef = { current: makeVideoElement(ACTIVE_TIME) };
 
     const { result } = renderHook(() =>
       useDetailedVideoLogic(
         { id: "v1", video_file: { filename_disk: "clip.mp4" } },
         { videoRef, flowMode: "subtitles" },
+      ),
+    );
+
+    await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
+    await new Promise((r) => setTimeout(r, 800));
+    expect(result.current.activeQuestion).toBeNull();
+  });
+
+  it("activates the question when video passes time_end in 'quiz' mode", async () => {
+    vi.mocked(bilingualApi.bilingualApi.getExerciseById).mockResolvedValue({
+      exercises: [
+        { id: 1, question: "Q1", time_start: "00:00:01,000", time_end: "00:00:05,000" },
+      ],
+    });
+    const videoRef = { current: makeVideoElement(ACTIVE_TIME) };
+
+    const { result } = renderHook(() =>
+      useDetailedVideoLogic(
+        { id: "v1", video_file: { filename_disk: "clip.mp4" } },
+        { videoRef, flowMode: "quiz" },
       ),
     );
 
@@ -70,7 +93,7 @@ describe("useDetailedVideoLogic — quiz auto-activation regardless of tab (vide
         { id: 1, question: "Q1", time_start: "00:00:01,000", time_end: "00:00:05,000" },
       ],
     });
-    const videoRef = { current: makeVideoElement(10) };
+    const videoRef = { current: makeVideoElement(ACTIVE_TIME) };
 
     const { result, rerender } = renderHook(
       ({ mode }: { mode: "subtitles" | "quiz" | "both" }) =>
