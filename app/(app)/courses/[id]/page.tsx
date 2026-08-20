@@ -94,14 +94,15 @@ export default function CourseDetailPage({
                             </p>
                         )}
                     </div>
-                    <div className="relative w-full md:w-80 h-52 md:h-auto bg-zinc-50 dark:bg-zinc-900 shrink-0 border-t md:border-t-0 md:border-l border-zinc-150 dark:border-zinc-800">
+                    <div className="relative w-full md:w-[360px] lg:w-[400px] aspect-[16/7] bg-zinc-100 dark:bg-zinc-900 shrink-0 border-t md:border-t-0 md:border-l border-zinc-150 dark:border-zinc-800 overflow-hidden flex items-center justify-center">
                         {course?.image_url ? (
                             <Image
                                 src={course.image_url}
-                                alt="Syllabus Study Desk"
+                                alt={courseTitle}
                                 fill
-                                sizes="(max-width: 768px) 100vw, 300px"
-                                className="object-cover"
+                                priority
+                                sizes="(max-width: 768px) 100vw, 400px"
+                                className="object-cover object-center"
                             />
                         ) : (
                             <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">
@@ -138,15 +139,15 @@ export default function CourseDetailPage({
                 {/* Tab content */}
                 {activeTab === "syllabus" && (
                     <section className="space-y-8">
-                        <Card className="bg-white dark:bg-zinc-900 rounded-2xl border-zinc-200/60 dark:border-zinc-800 p-6 flex flex-col md:flex-row gap-6 shadow-2xs">
-                            <div className="relative w-full md:w-56 h-36 rounded-xl overflow-hidden shrink-0 bg-zinc-100 dark:bg-zinc-800">
+                        <Card className="bg-white dark:bg-zinc-900 rounded-2xl border-zinc-200/60 dark:border-zinc-800 p-6 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-2xs">
+                            <div className="relative w-full md:w-72 aspect-[16/7] rounded-xl overflow-hidden shrink-0 border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 shadow-2xs">
                                 {course?.image_url ? (
                                     <Image
                                         src={course.image_url}
-                                        alt="Student studying in Cafe"
+                                        alt={courseTitle}
                                         fill
-                                        sizes="(max-width: 768px) 100vw, 224px"
-                                        className="object-cover"
+                                        sizes="(max-width: 768px) 100vw, 288px"
+                                        className="object-cover object-center"
                                     />
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">No image</div>
@@ -190,6 +191,7 @@ export default function CourseDetailPage({
                                         className="rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-2xs"
                                     >
                                         <button
+                                            type="button"
                                             onClick={() => toggleLesson(chapter.id)}
                                             className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
                                         >
@@ -221,6 +223,7 @@ export default function CourseDetailPage({
                                             <div className="border-t border-zinc-100 dark:border-zinc-800/60 divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/30 dark:bg-zinc-950/20">
                                                 {chapter.lessons.map((sub) => (
                                                     <button
+                                                        type="button"
                                                         key={sub.id}
                                                         onClick={() => handleLessonClick(sub)}
                                                         className="w-full py-3.5 px-6 pl-12 text-left flex items-center justify-between hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors group cursor-pointer"

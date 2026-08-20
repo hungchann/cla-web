@@ -137,14 +137,14 @@ function CoursesPageContent() {
                                 className="group block"
                             >
                                 <Card className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 text-left shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900">
-                                    <div className="relative h-40 w-full bg-zinc-100 dark:bg-zinc-800">
+                                    <div className="relative w-full aspect-[16/7] bg-zinc-100 dark:bg-zinc-800">
                                         {course.image_url ? (
                                             <Image
                                                 src={course.image_url}
                                                 alt={course.title}
                                                 fill
                                                 sizes="(max-width: 768px) 100vw, 33vw"
-                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                className="object-contain object-center group-hover:scale-105 transition-transform duration-500"
                                             />
                                         ) : (
                                             <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">
@@ -190,14 +190,14 @@ function CoursesPageContent() {
                                 className="group block"
                             >
                                 <Card className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-amber-950/10 bg-white/90 text-left shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-lg group-hover:shadow-amber-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:group-hover:border-amber-900">
-                                    <div className="relative h-40 w-full bg-zinc-100 dark:bg-zinc-800">
+                                    <div className="relative w-full aspect-[16/7] bg-zinc-100 dark:bg-zinc-800">
                                         {course.image_url ? (
                                             <Image
                                                 src={course.image_url}
                                                 alt={course.title}
                                                 fill
                                                 sizes="(max-width: 768px) 100vw, 33vw"
-                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                className="object-contain object-center group-hover:scale-105 transition-transform duration-500"
                                             />
                                         ) : (
                                             <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">
@@ -249,7 +249,7 @@ export default function CoursesPage() {
                     description="Hệ thống khóa học bài bản từ Giản thể đến Phồn thể. Chọn khóa học phù hợp với mục tiêu của bạn."
                     icon={<GraduationCap className="w-7 h-7" />}
                 />
-                <div className="animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800 h-40" />
+                <div className="animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800 aspect-[16/7]" />
             </PageContainer>
         }>
             <CoursesPageContent />

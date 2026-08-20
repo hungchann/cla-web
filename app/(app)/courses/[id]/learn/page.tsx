@@ -96,7 +96,7 @@ function TheoryContentSection({ theory, loading }: { theory: LessonTheory | null
                 )}
                 {theory.image_url && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={theory.image_url} alt={theory.title || "Ảnh minh họa"} className="mb-4 w-full max-h-80 rounded-xl border border-zinc-100 object-cover dark:border-zinc-800" />
+                    <img src={theory.image_url} alt={theory.title || "Ảnh minh họa"} className="mb-4 w-full max-h-80 rounded-xl border border-zinc-100 object-contain bg-zinc-50 dark:bg-zinc-800 dark:border-zinc-800" />
                 )}
                 {theory.content ? (
                     <div

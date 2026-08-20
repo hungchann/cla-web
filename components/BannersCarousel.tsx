@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { coursesApi } from "@/api/courses";
@@ -31,17 +32,21 @@ export function BannersCarousel() {
     if (banners.length === 0) return null;
 
     return (
-        <Carousel autoPlay autoPlayInterval={5000} className="rounded-2xl border border-amber-950/10 shadow-sm">
-            {banners.map((banner) => {
+        <Carousel autoPlay autoPlayInterval={5000} className="rounded-2xl border border-amber-950/10 shadow-sm overflow-hidden">
+            {banners.map((banner, index) => {
                 const inner = banner.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={banner.image_url}
-                        alt="Quảng cáo khóa học"
-                        className="h-44 w-full object-cover sm:h-52 md:h-64"
-                    />
+                    <div className="relative w-full aspect-[3/1] min-h-[160px] bg-zinc-100 dark:bg-zinc-800">
+                        <Image
+                            src={banner.image_url}
+                            alt="Quảng cáo khóa học"
+                            fill
+                            priority={index === 0}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                            className="object-cover"
+                        />
+                    </div>
                 ) : (
-                    <div className="flex h-44 w-full items-center justify-center bg-amber-100 text-xs font-bold text-amber-700 sm:h-52 md:h-64">
+                    <div className="flex w-full aspect-[3/1] min-h-[160px] items-center justify-center bg-amber-100 text-xs font-bold text-amber-700">
                         Chưa có ảnh banner
                     </div>
                 );
