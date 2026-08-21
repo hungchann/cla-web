@@ -19,6 +19,7 @@ interface YouTubePlayerProps {
 
 export function YouTubePlayer({
   videoId,
+  isPlaying,
   playerRef,
   onStateChange,
 }: Readonly<YouTubePlayerProps>) {
@@ -142,6 +143,20 @@ export function YouTubePlayer({
       (playerRef as any).current = null;
     };
   }, [videoId, containerId, onStateChange, playerRef]);
+
+  useEffect(() => {
+    if (isPlaying === undefined || !ytPlayerRef.current) return;
+    try {
+      const state = ytPlayerRef.current.getPlayerState?.();
+      if (isPlaying && state !== 1) {
+        ytPlayerRef.current.playVideo?.();
+      } else if (!isPlaying && state === 1) {
+        ytPlayerRef.current.pauseVideo?.();
+      }
+    } catch {
+      // ignore
+    }
+  }, [isPlaying]);
 
   return (
     <div className="w-full h-full bg-black relative">

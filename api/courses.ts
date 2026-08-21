@@ -151,7 +151,16 @@ export const coursesApi = {
   },
 
   async getLessonVocab(lessonId: string | number): Promise<LessonVocab[]> {
-    return fetchLessonItems("lesson_vocab", lessonId, "id,word,pinyin,meaning,time_start,time_end,sort,status", "sort");
+    const items = await fetchLessonItems(
+      "lesson_vocab",
+      lessonId,
+      "id,word,pinyin,meaning,time_start,time_end,gif_id,sort,status",
+      "sort",
+    );
+    return items.map((v: any) => ({
+      ...v,
+      gif_url: assetUrl(v.gif_id),
+    }));
   },
 
   /** Nội dung video 1:1 của lesson (video_vocab / video_grammar). */

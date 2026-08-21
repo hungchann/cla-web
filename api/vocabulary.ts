@@ -2,6 +2,7 @@ import apiInstance from "@/api/authConfig";
 import { DictionaryTopic } from "@/lib/types/bilingual";
 import {
   ADD_NOTE_TO_VOCAB_FLOW_PATH,
+  API_URL,
   UPDATE_NOTE_VOCAB_FLOW_PATH,
   VOCAB_DETAIL_FLOW_PATH,
 } from "@/lib/constants";
@@ -67,7 +68,7 @@ export const vocabularyApi = {
     try {
       // Lấy junction items để lấy vocab items
       const itemsRes = await apiInstance.get(
-        `/items/vocab_display_map_vocab_items?filter[vocab_display_map_id][_eq]=${displayMapId}&fields=id,vocab_items_id.id,vocab_items_id.name,vocab_items_id.pinyin,vocab_items_id.note`,
+        `/items/vocab_display_map_vocab_items?filter[vocab_display_map_id][_eq]=${displayMapId}&fields=id,vocab_items_id.id,vocab_items_id.name,vocab_items_id.pinyin,vocab_items_id.note,vocab_items_id.gif_id`,
       );
       const rawItems: any[] = itemsRes.data?.data || [];
       const vocabItems = rawItems
@@ -113,11 +114,24 @@ export const vocabularyApi = {
 
       return vocabItems.map((item: any) => {
         const itemMeanings = meaningsByItemId[String(item.id)] || [];
+        const gifId = item.gif_id;
+        const gifUrl = gifId
+          ? typeof gifId === "string"
+            ? `${API_URL}/assets/${gifId}`
+            : gifId.filename_disk
+            ? `${API_URL}/assets/${gifId.filename_disk}`
+            : gifId.id
+            ? `${API_URL}/assets/${gifId.id}`
+            : undefined
+          : undefined;
+
         return {
           id: item.id,
           word: item.name || "",
           pinyin: item.pinyin || "",
           note: item.note || "",
+          gif_id: gifId,
+          gif_url: gifUrl,
           senses: itemMeanings.map((m: any) => ({
             id: m.id,
             pos_label: m.pos_id?.label_vi || undefined,

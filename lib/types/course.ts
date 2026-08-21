@@ -94,6 +94,8 @@ export interface LessonVocab {
   meaning?: string;
   time_start?: string;
   time_end?: string;
+  gif_id?: string | { id: string; filename_disk?: string } | null;
+  gif_url?: string;
   sort?: number;
   status?: string;
 }

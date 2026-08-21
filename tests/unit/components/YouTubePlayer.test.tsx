@@ -90,7 +90,7 @@ describe("YouTubePlayer", () => {
 
     await waitFor(() => expect(playerRef.current).not.toBeNull());
     const api = playerRef.current!;
-    await expect(api.getCurrentTime()).resolves.toBe(10);
+    expect(api.getCurrentTime()).toBe(10);
   });
 
   it("pauses player when isPlaying=false and player is playing", async () => {

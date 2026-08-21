@@ -24,9 +24,11 @@ describe("parseSRTtoArray", () => {
       chinese: "你好",
       pinyin: "nǐ hǎo",
       vietnamese: "Xin chào",
+      rawText: "你好\nnǐ hǎo\nXin chào",
     });
     expect(result[1].chinese).toBe("谢谢");
     expect(result[1].vietnamese).toBe("Cảm ơn");
+    expect(result[1].rawText).toBe("谢谢\nCảm ơn");
   });
 
   it("handles CRLF line endings", () => {
@@ -48,6 +50,7 @@ Xin chào`,
       chinese: "你好",
       vietnamese: "Xin chào",
       pinyin: undefined,
+      rawText: "你好\nXin chào",
     });
   });
 

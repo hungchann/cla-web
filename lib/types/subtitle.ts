@@ -5,6 +5,7 @@ export interface SubtitleEntry {
   chinese: string;
   vietnamese: string;
   pinyin?: string;
+  rawText?: string;
   segmentedWords?: { word: string; pinyin: string }[];
 }
 
@@ -14,3 +15,4 @@ export interface ParsedSubtitle {
   end: string;
   text: string;
 }
+

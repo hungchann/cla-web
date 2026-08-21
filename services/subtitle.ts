@@ -49,6 +49,7 @@ export function parseSRTtoArray(srtContent: string): SubtitleEntry[] {
       chinese,
       vietnamese,
       pinyin: pinyin || undefined,
+      rawText: textLines.join("\n"),
     });
   }
 
