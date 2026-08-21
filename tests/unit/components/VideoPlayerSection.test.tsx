@@ -48,6 +48,12 @@ describe("VideoPlayerSection", () => {
     expect(screen.getByRole("heading", { name: "Bài 1" })).toBeInTheDocument();
   });
 
+  it("renders loading state when videoSource is empty", () => {
+    render(<VideoPlayerSection {...baseProps} videoSource="" />);
+    expect(document.querySelector("video")).toBeNull();
+    expect(screen.getByText("Đang tải video...")).toBeInTheDocument();
+  });
+
   it("uses default titles when missing", () => {
     render(<VideoPlayerSection {...baseProps} />);
     expect(screen.getByText("Video Bài Giảng")).toBeInTheDocument();

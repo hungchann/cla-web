@@ -225,7 +225,6 @@ export const useDetailedVideoLogic = (
 
     // If there's already an active question, just keep pausing
     if (activeQuestionRef.current) {
-      pausePlayback();
       return;
     }
 
@@ -248,7 +247,6 @@ export const useDetailedVideoLogic = (
       console.log(`[useDetailedVideoLogic] ACTIVATING Q${toActivate.id} at t=${t}s`);
       activeQuestionRef.current = toActivate;
       setActiveQuestion(toActivate);
-      pausePlayback();
     }
   }, [pausePlayback]);
 

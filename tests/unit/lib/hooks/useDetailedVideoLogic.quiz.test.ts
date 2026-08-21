@@ -79,7 +79,7 @@ describe("useDetailedVideoLogic — quiz activation after sentence finishes (tim
     expect(result.current.activeQuestion?.id).toBe(101);
   });
 
-  it("pauses video when a question activates (video stopped after time_end)", async () => {
+  it("activates the question WITHOUT pausing the video (video keeps playing)", async () => {
     const videoEl = makeVideoElement(0);
     const videoRef = { current: videoEl };
 
@@ -97,8 +97,8 @@ describe("useDetailedVideoLogic — quiz activation after sentence finishes (tim
 
     await waitFor(() => expect(result.current.activeQuestion).not.toBeNull(), { timeout: 3000 });
 
-    // pausePlayback được gọi -> video bị pause
-    expect(videoEl.pause).toHaveBeenCalled();
+    // Video KHÔNG bị pause khi câu hỏi kích hoạt
+    expect(videoEl.pause).not.toHaveBeenCalled();
   });
 
   it("does NOT activate a question BEFORE its time_end (sentence still playing)", async () => {

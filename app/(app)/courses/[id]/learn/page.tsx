@@ -13,6 +13,7 @@ import { CourseLesson, CourseLessonType, LessonTheory, LessonVideo, LessonExtra 
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { speakChinese } from "@/lib/utils/speech";
 import { parseSRTtoArray } from "@/services/subtitle";
+import { playAnswerFeedback } from "@/services/audioFeedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Play, Check, Star, Folder, Volume2, Target, XCircle, User, Mic, PartyPopper, Lightbulb, FileText, Plus, RefreshCw, MessageCircle, Download } from "lucide-react";
@@ -689,6 +690,7 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
     const handleVocabSelect = (option: string) => {
         if (vocabSelected) return;
         setVocabSelected(option);
+        playAnswerFeedback(!!currentQuiz && option === currentQuiz.Correct_answer);
     };
     const resetVocabQuiz = () => {
         setVocabSelected(null);
@@ -929,13 +931,14 @@ function LearnRoomContent({ params }: Readonly<{ params: { id: string } }>) {
                                         <div className="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
                                     </div>
                                 ) : videoVocabSource ? (
-                                    <video
-                                        ref={vocabVideoRef}
-                                        src={videoVocabSource}
-                                        controls
-                                        className="h-full w-full object-contain"
-                                        onTimeUpdate={handleVocabVideoTimeUpdate}
-                                    />
+                                     <video
+                                         ref={vocabVideoRef}
+                                         src={videoVocabSource}
+                                         controls
+                                         controlsList="nodownload"
+                                         className="h-full w-full object-contain"
+                                         onTimeUpdate={handleVocabVideoTimeUpdate}
+                                     />
                                 ) : (
                                     <>
                                         <Image
@@ -1501,11 +1504,12 @@ className="text-amber-600 hover:text-amber-700 text-sm cursor-pointer select-non
                                         <div className="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
                                     </div>
                                 ) : grammarVideoSource ? (
-                                    <video
-                                        ref={grammarVideoRef}
-                                        src={grammarVideoSource}
-                                        controls
-                                        className="h-full w-full object-contain"
+                                     <video
+                                         ref={grammarVideoRef}
+                                         src={grammarVideoSource}
+                                         controls
+                                         controlsList="nodownload"
+                                         className="h-full w-full object-contain"
                                         onTimeUpdate={handleGrammarTimeUpdate}
                                     />
                                 ) : (

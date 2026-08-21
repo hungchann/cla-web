@@ -47,17 +47,25 @@ export function VideoPlayerSection({
             videoId={ytVideoId}
             playerRef={youtubePlayerRef}
           />
-        ) : (
+        ) : videoSource ? (
           <video
             ref={videoRef}
             src={videoSource}
             controls
+            controlsList="nodownload"
             className="h-full w-full object-contain"
             onTimeUpdate={handleTimeUpdate}
             onSeeked={handleTimeUpdate}
             onSeeking={handleTimeUpdate}
             onLoadedMetadata={handleVideoLoaded}
           />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-black/40 text-sm text-zinc-400">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+              <span>Đang tải video...</span>
+            </div>
+          </div>
         )}
 
         {/* Interactive Overlay when question triggers */}
