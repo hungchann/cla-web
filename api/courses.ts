@@ -16,9 +16,14 @@ function buildCourseImageUrl(image: CourseItem["image"]): string | undefined {
   return undefined;
 }
 
-/** Build asset URL từ field file (string id hoặc object có filename_disk). */
-function assetUrl(file: string | { id?: string; filename_disk?: string } | null | undefined): string | undefined {
+/** Build asset URL từ field file (string id, object có filename_disk, hoặc array junction). */
+function assetUrl(file: any): string | undefined {
   if (!file) return undefined;
+  if (Array.isArray(file)) {
+    const first = file[0];
+    if (!first) return undefined;
+    return assetUrl(first.directus_files_id || first);
+  }
   if (typeof file === "string") return `${API_URL}/assets/${file}`;
   if (file.filename_disk) return `${API_URL}/assets/${file.filename_disk}`;
   if (file.id) return `${API_URL}/assets/${file.id}`;
@@ -174,12 +179,12 @@ export const coursesApi = {
     };
   },
 
-  /** Lý thuyết 1:1 của lesson (vocab_theory) — vocab_display_map_id + nội dung bổ sung. */
+  /** Lý thuyết 1:1 của lesson (vocab_theory) — vocab_items M2M + notes + image. */
   async getLessonTheory(lessonId: string | number): Promise<LessonTheory | null> {
     const row = await fetchLessonSingle(
       "lesson_theory",
       lessonId,
-      "id,vocab_display_map_id,title,content,image_id,image_id.filename_disk,status"
+      "id,title,notes,content,image_id,image_id.filename_disk,status,vocab_display_map_id,vocab_items.id,vocab_items.sort,vocab_items.vocab_items_id.id,vocab_items.vocab_items_id.name,vocab_items.vocab_items_id.pinyin,vocab_items.vocab_items_id.note,vocab_items.vocab_items_id.gif_id"
     );
     if (!row) return null;
     return {
@@ -193,7 +198,7 @@ export const coursesApi = {
     const row = await fetchLessonSingle(
       "lesson_extra",
       lessonId,
-      "id,extra_pdf_id,extra_pdf_id.filename_disk,extra_answer_id,extra_answer_id.filename_disk,extra_audio_id,extra_audio_id.filename_disk,status"
+      "id,extra_pdf_id,extra_pdf_id.directus_files_id.id,extra_pdf_id.directus_files_id.filename_disk,extra_answer_id,extra_answer_id.directus_files_id.id,extra_answer_id.directus_files_id.filename_disk,extra_audio_id,extra_audio_id.directus_files_id.id,extra_audio_id.directus_files_id.filename_disk,status"
     );
     if (!row) return null;
     return {

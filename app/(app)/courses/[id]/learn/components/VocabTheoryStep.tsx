@@ -179,11 +179,11 @@ export function VocabTheoryStep({
                 <div className="max-w-4xl w-full mx-auto rounded-2xl border border-amber-100 bg-white p-10 text-center shadow-2xs dark:bg-zinc-900">
                     <div className="mx-auto h-7 w-7 animate-spin rounded-full border-4 border-amber-600 border-t-transparent" />
                 </div>
-            ) : theory && (theory.content || theory.image_url || theory.title) ? (
+            ) : theory && (theory.notes || theory.content || theory.image_url || theory.title) ? (
                 <div className="max-w-4xl w-full mx-auto space-y-5">
                     <div className="px-1">
                         <h3 className="text-lg font-black text-zinc-900 dark:text-white">Ghi chú & giải thích</h3>
-                        <p className="text-xs font-semibold text-zinc-500">Nội dung lý thuyết bổ sung</p>
+                        <p className="text-xs font-semibold text-zinc-500">Mẹo nhớ từ & lưu ý từ giáo viên</p>
                     </div>
                     <article className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:p-6">
                         {theory.title && (
@@ -200,7 +200,11 @@ export function VocabTheoryStep({
                                 className="mb-4 w-full max-h-80 rounded-xl border border-zinc-100 object-contain bg-zinc-50 dark:bg-zinc-800 dark:border-zinc-800"
                             />
                         )}
-                        {theory.content ? (
+                        {theory.notes ? (
+                            <div className="whitespace-pre-line text-sm font-semibold leading-relaxed text-zinc-700 dark:text-zinc-300">
+                                {theory.notes}
+                            </div>
+                        ) : theory.content ? (
                             <div
                                 className="prose prose-sm max-w-none text-sm font-semibold leading-relaxed text-zinc-700 dark:text-zinc-300 dark:prose-invert"
                                 dangerouslySetInnerHTML={{
@@ -210,9 +214,7 @@ export function VocabTheoryStep({
                                             : theory.content,
                                 }}
                             />
-                        ) : (
-                            <p className="text-sm italic text-zinc-400">Chưa có nội dung</p>
-                        )}
+                        ) : null}
                     </article>
                 </div>
             ) : null}

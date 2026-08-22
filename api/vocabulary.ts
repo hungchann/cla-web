@@ -61,23 +61,19 @@ export const vocabularyApi = {
   },
 
   /**
-   * Lấy danh sách từ vựng + nghĩa + ví dụ của một "bài học từ vựng" (Lý thuyết)
-   * thông qua vocab_display_map (sử dụng junction table vocab_display_map_vocab_items).
+   * Lấy chi tiết các tầng nghĩa, từ loại, ví dụ và GIF cho một danh sách vocab_items.
    */
-  getVocabByDisplayMap: async (displayMapId: string | number): Promise<any[]> => {
+  getVocabDetailsForItems: async (vocabItems: any[]): Promise<any[]> => {
+    if (!vocabItems || vocabItems.length === 0) return [];
     try {
-      // Lấy junction items để lấy vocab items
-      const itemsRes = await apiInstance.get(
-        `/items/vocab_display_map_vocab_items?filter[vocab_display_map_id][_eq]=${displayMapId}&fields=id,vocab_items_id.id,vocab_items_id.name,vocab_items_id.pinyin,vocab_items_id.note,vocab_items_id.gif_id`,
-      );
-      const rawItems: any[] = itemsRes.data?.data || [];
-      const vocabItems = rawItems
-        .map((r: any) => r.vocab_items_id)
-        .filter((v: any) => v && v.id);
+      const cleanItems = vocabItems
+        .map((v) => (v.vocab_items_id ? v.vocab_items_id : v))
+        .filter((v) => v && (v.id || v.name));
 
-      if (vocabItems.length === 0) return [];
+      if (cleanItems.length === 0) return [];
 
-      const itemIds = vocabItems.map((v: any) => v.id).join(",");
+      const itemIds = cleanItems.map((v: any) => v.id).filter(Boolean).join(",");
+      if (!itemIds) return cleanItems;
 
       const meaningsRes = await apiInstance.get(
         `/items/vocab_meanings?filter[item_id][_in]=${itemIds}&fields=id,meaning_vi,pos_id.id,pos_id.label_vi,item_id.id`,
@@ -112,7 +108,7 @@ export const vocabularyApi = {
         });
       }
 
-      return vocabItems.map((item: any) => {
+      return cleanItems.map((item: any) => {
         const itemMeanings = meaningsByItemId[String(item.id)] || [];
         const gifId = item.gif_id;
         const gifUrl = gifId
@@ -127,10 +123,10 @@ export const vocabularyApi = {
 
         return {
           id: item.id,
-          word: item.name || "",
+          word: item.name || item.word || "",
           pinyin: item.pinyin || "",
           note: item.note || "",
-          gif_id: gifId,
+          gif_id: typeof gifId === "object" ? gifId?.id : gifId,
           gif_url: gifUrl,
           senses: itemMeanings.map((m: any) => ({
             id: m.id,
@@ -146,16 +142,59 @@ export const vocabularyApi = {
         };
       });
     } catch (error) {
+      logger.error("Error fetching vocabulary details for items:", error);
+      return vocabItems;
+    }
+  },
+
+  /**
+   * Lấy danh sách từ vựng + nghĩa + ví dụ của một "bài học từ vựng" (Lý thuyết)
+   * thông qua vocab_display_map (sử dụng junction table vocab_display_map_vocab_items).
+   */
+  getVocabByDisplayMap: async (
+    displayMapIdOrParams: string | number | { displayMapId?: string | number; lessonId?: string | number; lesson_id?: string | number }
+  ): Promise<any[]> => {
+    try {
+      let displayMapId: string | number | undefined;
+      if (typeof displayMapIdOrParams === "object" && displayMapIdOrParams !== null) {
+        if (displayMapIdOrParams.displayMapId) {
+          displayMapId = displayMapIdOrParams.displayMapId;
+        } else {
+          const lId = displayMapIdOrParams.lessonId || displayMapIdOrParams.lesson_id;
+          if (lId) {
+            const theoryRes = await apiInstance.get(
+              `/items/lesson_theory?filter[lesson_id][_eq]=${lId}&filter[status][_eq]=published&limit=1&fields=vocab_display_map_id`
+            );
+            const rawMapId = theoryRes.data?.data?.[0]?.vocab_display_map_id;
+            displayMapId = typeof rawMapId === "object" ? rawMapId?.id : rawMapId;
+          }
+        }
+      } else {
+        displayMapId = displayMapIdOrParams;
+      }
+
+      if (!displayMapId) return [];
+
+      // Lấy junction items để lấy vocab items
+      const itemsRes = await apiInstance.get(
+        `/items/vocab_display_map_vocab_items?filter[vocab_display_map_id][_eq]=${displayMapId}&fields=id,vocab_items_id.id,vocab_items_id.name,vocab_items_id.pinyin,vocab_items_id.note,vocab_items_id.gif_id`,
+      );
+      const rawItems: any[] = itemsRes.data?.data || [];
+      const vocabItems = rawItems
+        .map((r: any) => r.vocab_items_id)
+        .filter((v: any) => v && v.id);
+
+      if (vocabItems.length === 0) return [];
+
+      return vocabularyApi.getVocabDetailsForItems(vocabItems);
+    } catch (error) {
       logger.error("Error fetching vocabulary by display map:", error);
       return [];
     }
   },
 
   getDetailVocabulary: async (idVocab: string): Promise<any[]> => {
-    //Lay user tu secureStore
-    const user = await getUser();
-    // console.log("user", user);
-    // console.log("idVocab", idVocab);
+    await getUser();
     try {
       const response = await apiInstance.get(VOCAB_DETAIL_FLOW_PATH, {
         params: { id: idVocab },
@@ -184,7 +223,7 @@ export const vocabularyApi = {
 
   getVocabularyByCategoryAndTopic: async (categoryId: string, topic_id: string) => {
     try {
-      const user = await getUser();
+      await getUser();
       // // console.log("user", user);
       // console.log(categoryId, topic_id);
 

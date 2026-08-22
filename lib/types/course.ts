@@ -34,8 +34,14 @@ export interface LessonVideo {
 export interface LessonTheory {
   id: string | number;
   lesson_id?: string | number;
-  vocab_display_map_id?: string | null;
+  vocab_display_map_id?: string | number | null;
+  vocab_items?: Array<{
+    id?: string | number;
+    sort?: number;
+    vocab_items_id?: any;
+  }>;
   title?: string;
+  notes?: string;
   content?: string;
   image_id?: string | { id: string; filename_disk?: string } | null;
   image_url?: string;

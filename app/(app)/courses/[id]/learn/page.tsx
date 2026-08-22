@@ -222,41 +222,74 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
         setVocabTheoryLoading(true);
         setLessonTheoryLoading(true);
 
-        // Fetch dictionary-level vocabularies
         (async () => {
             try {
-                const raw = await vocabularyApi.getVocabByDisplayMap({
-                    lesson_id: currentLesson.id,
-                });
+                // 1. Fetch lesson theory content first
+                const theoryData = await coursesApi.getLessonTheory(currentLesson.id);
                 if (!isMounted) return;
-                setVocabTheoryItems(
-                    raw.map((v) => ({
+                setLessonTheory(theoryData);
+                setLessonTheoryLoading(false);
+
+                // 2. Resolve vocabularies: Priority 1: M2M vocab_items linked directly from Dictionary
+                let vocabs: any[] = [];
+                if (theoryData?.vocab_items && theoryData.vocab_items.length > 0) {
+                    vocabs = await vocabularyApi.getVocabDetailsForItems(theoryData.vocab_items);
+                }
+
+                // Priority 2: Preset display map from dictionary
+                if (vocabs.length === 0) {
+                    const rawMapId = theoryData?.vocab_display_map_id;
+                    const displayMapId = typeof rawMapId === "object" ? (rawMapId as any)?.id : rawMapId;
+                    if (displayMapId) {
+                        vocabs = await vocabularyApi.getVocabByDisplayMap(displayMapId);
+                    }
+                }
+
+                // Priority 3: Fallback to lesson_vocab items
+                if (vocabs.length === 0) {
+                    const fallbackVocabs = await coursesApi.getLessonVocab(currentLesson.id);
+                    vocabs = fallbackVocabs.map((v) => ({
                         id: v.id,
                         word: v.word,
                         pinyin: v.pinyin || "",
                         meaning: v.meaning || "",
-                        note: v.note,
-                        gif_id: v.gif_id,
+                        note: (v as any).note,
+                        gif_id: typeof v.gif_id === "object" ? (v.gif_id as any)?.id : v.gif_id,
                         gif_url: v.gif_url,
-                        senses: v.senses || [],
-                    }))
-                );
-            } catch {
-                if (isMounted) setVocabTheoryItems([]);
-            } finally {
-                if (isMounted) setVocabTheoryLoading(false);
-            }
-        })();
+                        senses: (v as any).senses || [
+                            {
+                                id: `fallback-${v.id}`,
+                                meaning: v.meaning || "",
+                                examples: [],
+                            },
+                        ],
+                    }));
+                }
 
-        // Fetch lesson theory content
-        (async () => {
-            try {
-                const t = await coursesApi.getLessonTheory(currentLesson.id);
-                if (isMounted) setLessonTheory(t);
+                if (isMounted) {
+                    setVocabTheoryItems(
+                        vocabs.map((v) => ({
+                            id: v.id,
+                            word: v.word,
+                            pinyin: v.pinyin || "",
+                            meaning: v.meaning || "",
+                            note: v.note,
+                            gif_id: v.gif_id,
+                            gif_url: v.gif_url,
+                            senses: v.senses || [],
+                        }))
+                    );
+                }
             } catch {
-                if (isMounted) setLessonTheory(null);
+                if (isMounted) {
+                    setVocabTheoryItems([]);
+                    setLessonTheory(null);
+                }
             } finally {
-                if (isMounted) setLessonTheoryLoading(false);
+                if (isMounted) {
+                    setVocabTheoryLoading(false);
+                    setLessonTheoryLoading(false);
+                }
             }
         })();
 
@@ -367,7 +400,7 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
 
         (async () => {
             try {
-                const s = await coursesApi.getLessonDictations(currentLesson.id);
+                const s = await coursesApi.getLessonDictation(currentLesson.id);
                 if (isMounted) setDictationSentences(s);
             } catch {
                 if (isMounted) setDictationSentences([]);
@@ -547,7 +580,7 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                                 hasMoreMessages={convHasMoreMessages}
                                 activeRecordingId={activeRecordingId}
                                 onSpeak={handleConvSpeak}
-                                onToggleRecording={handleConvToggleRecording}
+                                onToggleRecording={(id) => handleConvToggleRecording(String(id))}
                                 onContinue={handleConvContinue}
                                 convEndRef={convEndRef}
                             />
