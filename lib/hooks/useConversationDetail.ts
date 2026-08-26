@@ -49,34 +49,7 @@ export function useConversationDetail(conversationId: string | null, overrideIte
     }
   }, []);
 
-  // ---  TỰ ĐỘNG HIỂN THỊ CÂU KẾ TIẾP & PHÁT AUDIO ---
-  useEffect(() => {
-    if (loading || items.length === 0) return;
 
-    const currentMessage = items[visibleCount - 1];
-    if (!currentMessage) return;
-
-    // Nếu đã hết hội thoại thì dừng
-    if (visibleCount >= items.length) return;
-
-    // Nếu là nhân vật A -> tự động phát audio và chuyển câu tiếp theo
-    if (currentMessage.speaker?.toUpperCase() === "A") {
-      handleSpeak(currentMessage.chinese_text);
-
-      const timer = setTimeout(() => {
-        setVisibleCount((prev) => Math.min(prev + 1, items.length));
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-
-    // Nếu là nhân vật B -> chỉ auto chuyển khi đã có kết quả so sánh
-    if (currentMessage.speaker?.toUpperCase() === "B" && currentMessage.recording?.comparison) {
-      const timer = setTimeout(() => {
-        setVisibleCount((prev) => Math.min(prev + 1, items.length));
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [visibleCount, items, loading, handleSpeak]);
 
   useEffect(() => {
     const unsubscribe = audioRecordingService.subscribe((state) => {
