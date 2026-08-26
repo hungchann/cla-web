@@ -1,10 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
   isPremiumAccountType,
   resolvePremiumFromAccountType,
   getAccountTypeName,
   FREE_EXERCISE_LIMIT,
   FREE_NOTEBOOK_LIMIT,
+  getCompletedExerciseCount,
+  incrementCompletedExerciseCount,
+  resetCompletedExerciseCount,
 } from "@/lib/premium";
 
 describe("isPremiumAccountType", () => {
@@ -12,7 +15,12 @@ describe("isPremiumAccountType", () => {
     expect(isPremiumAccountType("Premium", true)).toBe(true);
     expect(isPremiumAccountType("lifetime", true)).toBe(true);
     expect(isPremiumAccountType("Yearly", true)).toBe(true);
-    expect(isPremiumAccountType(" monthly ", true)).toBe(true);
+  });
+
+  it("treats deprecated monthly/weekly/trial as NOT premium (aligned with mobile)", () => {
+    expect(isPremiumAccountType("monthly", true)).toBe(false);
+    expect(isPremiumAccountType(" weekly ", true)).toBe(false);
+    expect(isPremiumAccountType("trial", true)).toBe(false);
   });
 
   it("returns false for free types", () => {
@@ -111,5 +119,27 @@ describe("free limits", () => {
   it("free users get exactly 2 exercises and 1 notebook", () => {
     expect(FREE_EXERCISE_LIMIT).toBe(2);
     expect(FREE_NOTEBOOK_LIMIT).toBe(1);
+  });
+});
+
+describe("completed exercise count (free quota — mirror mobile exerciseStorage)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts at zero", () => {
+    expect(getCompletedExerciseCount()).toBe(0);
+  });
+
+  it("increments per completed exercise", () => {
+    expect(incrementCompletedExerciseCount()).toBe(1);
+    expect(incrementCompletedExerciseCount()).toBe(2);
+    expect(getCompletedExerciseCount()).toBe(2);
+  });
+
+  it("resets to zero", () => {
+    incrementCompletedExerciseCount();
+    resetCompletedExerciseCount();
+    expect(getCompletedExerciseCount()).toBe(0);
   });
 });

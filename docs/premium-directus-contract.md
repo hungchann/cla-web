@@ -25,15 +25,18 @@ Trạng thái premium của user được đọc từ bảng `account_types` (m�
 | `plan_id` | FK → `account_plans` | Gói cước tương ứng (yearly/lifetime) |
 | `provider_transaction_id` | varchar | Mã giao dịch bên provider (RevenueCat transaction / mã VietQR) |
 
-### Bảng lookup `is_premium` (canonical — dùng chung mobile + web)
+### Bảng lookup `is_premium` (canonical — đồng bộ 100% với mobile `premiumStorage.ts`)
 
 Client xác định premium qua flow Directus `ACCOUNT_TYPE_FLOW_ID`, map theo `lib/premium.ts`:
 
 | `account_types.type` | Premium? |
 | :-- | :-- |
 | `free`, `standard`, `basic` | ❌ |
-| `premium`, `monthly`, `yearly`, `lifetime`, `weekly`, `trial` | ✅ (nếu `status=active` & chưa hết hạn) |
-| khác / rỗng / không active | ❌ (mặc định an toàn — tránh cấp nhầm) |
+| `premium`, `yearly`, `lifetime` | ✅ (nếu `status=active` & chưa hết hạn) |
+| khác / rỗng / không active (gồm `monthly`, `weekly`, `trial` đã deprecated) | ❌ (mặc định an toàn — tránh cấp nhầm) |
+
+> ⚠️ Web và mobile phải dùng **cùng một set**. Trước đây web còn coi
+> `monthly/weekly/trial` là premium — đã bỏ để align mobile.
 
 ---
 
@@ -169,16 +172,17 @@ Client ưu tiên `upgrade_url` của nội dung đang xem → fallback `account_
 
 ---
 
-## 6. Rule gate Free/Premium (giống CHINESE-LEARNING-APP)
+## 6. Rule gate Free/Premium (đồng bộ CHINESE-LEARNING-APP)
 
 | Tính năng | Rule | Điểm wire trong code |
 | :-- | :-- | :-- |
-| Bài tập | Free ≤ **2** bài (`FREE_EXERCISE_LIMIT`) | `courses/[id]/learn/page.tsx` |
+| Bài tập | Free hoàn thành tối đa **2** bài (`FREE_EXERCISE_LIMIT`) — **đếm khi HOÀN THÀNH bài** (câu cuối quiz / hết câu dictation), mở-không-làm không tốn lượt; Conversation chỉ gate lúc vào, không tính quota | `courses/[id]/learn/page.tsx` + `QuizStep`/`DictationStep` `onComplete` |
 | Truyện/Sách | chương 1 free, chương > 1 khóa | `stories/[id]/page.tsx` (`canAccessStoryChapter`) |
 | Video chi tiết (vocab + shadowing) | gate toàn màn hình khi mount | `video/[id]` + quiz + subtitles |
-| Bài đọc song ngữ | Free: `access_tier=free` hoặc HSK 1–3 | `bilingual/[id]` (`canAccessBilingualSection`) |
-| AI luyện nói | chỉ xem transcript; chấm điểm = Premium | `speaking/page.tsx` |
+| Bài đọc song ngữ | Nội dung đọc **FREE mọi level**; 4 tab phụ (Từ vựng / Ngữ pháp / Shadowing / Bài tập) cần Premium — mirror mobile | `bilingual/[id]` (`PREMIUM_BILINGUAL_TABS`) |
+| AI luyện nói | chặn xem kết quả/chấm điểm = Premium | `speaking/page.tsx` |
 | Sổ tay từ vựng | Free ≤ **1** (`FREE_NOTEBOOK_LIMIT`) | `flashcard/page.tsx` |
+| Tra từ → lưu sổ tay | cần Premium | `WordInfoModal` (`guardPremium`) |
 
 ---
 

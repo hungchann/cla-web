@@ -13,13 +13,11 @@ import { getAssetUrl } from "@/lib/utils/assets";
 import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
 import { PinyinToggle } from "@/components/PinyinToggle";
-import { BookmarkPlus, Lock, Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { BookmarkPlus, Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import { useSubtitleSync } from "@/lib/hooks/useSubtitleSync";
 import { timeToSeconds } from "@/lib/utils/subtitleUtils";
 import { usePremium } from "@/lib/hooks/usePremium";
-import { canAccessBilingualSection } from "@/lib/premium";
 import { PremiumGate } from "@/components/PremiumGate";
-import { Button } from "@/components/ui/button";
 import { BilingualContent } from "@/components/bilingual/BilingualContent";
 import { BilingualVocab } from "@/components/bilingual/BilingualVocab";
 import { BilingualGrammar } from "@/components/bilingual/BilingualGrammar";
@@ -44,7 +42,7 @@ const MOCK_SRT_CONTENT: Record<string, string> = {
 00:00:01,000 --> 00:00:05,000
 面对同辈压力，核心是建立自我坐标系。
 miànduì tóngbèi yālì, héxīn shì jiànlì zìwǒ zuòbiāoxì.
-Đối mặt với áp lực từ đồng trang lứa, cốt lõi là xây dựng hệ quy chiếu của riêng mình.
+Đối mặt với áp lực đồng trang lứa, cốt lõi là thiết lập hệ quy chiếu của riêng mình.
 
 2
 00:00:06,000 --> 00:00:10,000
@@ -52,6 +50,9 @@ miànduì tóngbèi yālì, héxīn shì jiànlì zìwǒ zuòbiāoxì.
 guǎnlǐ xìnxī input, zhuānzhù zòngxiàng chéngzhǎng, ér fēi héngxiàng bǐjiào.
 Quản lý lượng thông tin tiếp nhận, tập trung vào sự phát triển theo chiều dọc của bản thân, thay vì liên tục so sánh theo chiều ngang với người khác.`,
 };
+
+/** Các tab phụ cần Premium (mirror mobile bilingual detail — gate mọi level). */
+const PREMIUM_BILINGUAL_TABS = new Set(["vocab", "grammar", "shadowing", "exercise"]);
 
 export default function BilingualDetailPage({
     params,
@@ -108,16 +109,17 @@ export default function BilingualDetailPage({
     const grammarList = grammarResult || [];
     const exerciseList = exerciseResult?.exercises || [];
 
-    // --- Premium gate: HSK 4-6 / tier=premium chỉ dành cho user Premium ---
-    const { isPremium, isLoading: premiumLoading } = usePremium();
-    const [gateOpen, setGateOpen] = useState(true);
-    const sectionLocked =
-        !premiumLoading &&
-        !!item &&
-        !canAccessBilingualSection(
-            { level: item?.level ?? null, access_tier: item?.access_tier ?? null },
-            isPremium,
-        );
+    // --- Premium gate (mirror CHINESE-LEARNING-APP): nội dung đọc FREE mọi level;
+    // 4 tab phụ (Từ vựng / Ngữ pháp / Shadowing / Bài tập) cần Premium ---
+    const { isPremium } = usePremium();
+    const [gateOpen, setGateOpen] = useState(false);
+    const handleTabPress = (tabId: string) => {
+        if (PREMIUM_BILINGUAL_TABS.has(tabId) && !isPremium) {
+            setGateOpen(true);
+            return;
+        }
+        setActiveTab(tabId as typeof activeTab);
+    };
 
     const { activeIndex, setActiveIndex, binarySearchSubtitle } = useSubtitleSync({
         subtitles: srtData,
@@ -343,38 +345,18 @@ export default function BilingualDetailPage({
         }
     };
 
-    // Bài đọc premium: Free chỉ xem được HSK 1–3 / tier=free — chặn trước khi render nội dung
-    if (sectionLocked) {
-        return (
-            <PageContainer maxWidth="narrow" className="gap-6">
-                <BackButton href="/bilingual" label="Danh sách bài đọc" />
-                <div className="w-full rounded-3xl border border-amber-200 bg-white p-12 text-center dark:border-amber-900/40 dark:bg-zinc-900">
-                    <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
-                        <Lock className="size-6 text-white" />
-                    </div>
-                    <p className="mt-4 text-sm font-black text-zinc-900 dark:text-white">
-                        Bài đọc này dành cho tài khoản Premium
-                    </p>
-                    <p className="mt-2 text-xs font-semibold leading-relaxed text-zinc-400">
-                        Gói Free mở các bài HSK 1–3. Nâng cấp Premium để đọc toàn bộ bài đọc song ngữ kèm từ vựng, ngữ pháp và luyện tập.
-                    </p>
-                    <Button asChild className="mt-6 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 font-bold text-white hover:from-amber-600 hover:to-orange-600">
-                        <Link href="/pricing">Nâng cấp Premium</Link>
-                    </Button>
-                </div>
-                <PremiumGate
-                    isOpen={gateOpen}
-                    onClose={() => setGateOpen(false)}
-                    feature="bài đọc song ngữ nâng cao"
-                />
-            </PageContainer>
-        );
-    }
-
     return (
         <>
             <PageContainer maxWidth="narrow" className="gap-6">
                 <BackButton href="/bilingual" label="Danh sách bài đọc" />
+
+                {/* PremiumGate: mở khi free user bấm tab phụ (Từ vựng/Ngữ pháp/Shadowing/Bài tập) */}
+                <PremiumGate
+                    isOpen={gateOpen}
+                    onClose={() => setGateOpen(false)}
+                    feature="từ vựng, ngữ pháp, shadowing và bài tập của bài đọc"
+                    description="Nội dung bài đọc luôn miễn phí. Nâng cấp Premium để mở khóa phần Từ vựng, Ngữ pháp, Shadowing và Bài tập kèm theo cho mọi bài đọc."
+                />
 
                 {/* Header titles */}
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-zinc-150 dark:border-zinc-800 pb-4 w-full">
@@ -542,7 +524,7 @@ export default function BilingualDetailPage({
                                 type="button"
                                 key={tab.id}
                                 onClick={() => {
-                                    setActiveTab(tab.id as any);
+                                    handleTabPress(tab.id);
                                     setSelectedWord(null);
                                 }}
                                 className={`pb-2 transition-all cursor-pointer bg-transparent border-none ${

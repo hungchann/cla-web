@@ -15,9 +15,11 @@ interface DictationSentence {
 interface DictationStepProps {
     sentences: DictationSentence[];
     loading: boolean;
+    /** Gọi khi tất cả câu đã được kiểm tra (dùng để đếm bài hoàn thành cho free quota). */
+    onComplete?: () => void;
 }
 
-export function DictationStep({ sentences, loading }: DictationStepProps) {
+export function DictationStep({ sentences, loading, onComplete }: DictationStepProps) {
     const [results, setResults] = useState<
         Record<string, { input: string; checked: boolean; score: number }>
     >({});
@@ -47,6 +49,7 @@ export function DictationStep({ sentences, loading }: DictationStepProps) {
                 ...p,
                 [key]: { ...(p[key] || { input: "" }), checked: true, score: 0 },
             }));
+            notifyAllChecked(key);
             return;
         }
 
@@ -55,6 +58,7 @@ export function DictationStep({ sentences, loading }: DictationStepProps) {
                 ...p,
                 [key]: { ...(p[key] || { input: "" }), checked: true, score: 100 },
             }));
+            notifyAllChecked(key);
             return;
         }
 
@@ -75,6 +79,16 @@ export function DictationStep({ sentences, loading }: DictationStepProps) {
             ...p,
             [key]: { ...(p[key] || { input: "" }), checked: true, score },
         }));
+        notifyAllChecked(key);
+    };
+
+    /** Kiểm tra sau khi check 1 câu: tất cả câu đã checked chưa → hoàn thành bài. */
+    const notifyAllChecked = (justCheckedKey: string) => {
+        if (!onComplete || sentences.length === 0) return;
+        const allChecked = sentences.every(
+            (s) => String(s.id) === justCheckedKey || results[String(s.id)]?.checked,
+        );
+        if (allChecked) onComplete();
     };
 
     if (loading) {

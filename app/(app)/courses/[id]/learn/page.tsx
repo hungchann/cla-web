@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, Suspense, useRef, useMemo } from "react";
+import { use, useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
@@ -12,8 +12,8 @@ import { PremiumGate } from "@/components/PremiumGate";
 import { usePremium } from "@/lib/hooks/usePremium";
 import {
   FREE_EXERCISE_LIMIT,
-  getFreeExerciseOpens,
-  markExerciseOpened,
+  getCompletedExerciseCount,
+  incrementCompletedExerciseCount,
 } from "@/lib/premium";
 import { parseSRTtoArray } from "@/services/subtitle";
 import { Button } from "@/components/ui/button";
@@ -495,33 +495,28 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
     const [wordInfo, setWordInfo] = useState<any>(null);
     const [isTranslating] = useState(false);
 
-    // --- Premium gate: Free chỉ được mở FREE_EXERCISE_LIMIT bài tập ---
+    // --- Premium gate: Free chỉ được làm FREE_EXERCISE_LIMIT bài tập (đếm khi HOÀN THÀNH — mirror mobile) ---
     const { isPremium, isLoading: premiumLoading } = usePremium();
     const [gateDismissedFor, setGateDismissedFor] = useState<string | null>(null);
+    const [completedCount, setCompletedCount] = useState(() => getCompletedExerciseCount());
 
     const currentLessonId = currentLesson?.id != null ? String(currentLesson.id) : null;
     const isExerciseStep =
         currentLesson?.lesson_type != null &&
         EXERCISE_LESSON_TYPES.has(String(currentLesson.lesson_type));
 
-    // Ghi nhận bài tập Free đã mở (side-effect localStorage — không setState trong effect)
-    useEffect(() => {
-        if (premiumLoading || !currentLessonId || !isExerciseStep || isPremium) return;
-        if (!getFreeExerciseOpens().includes(currentLessonId)) {
-            const opens = getFreeExerciseOpens();
-            if (opens.length < FREE_EXERCISE_LIMIT) {
-                markExerciseOpened(currentLessonId);
-            }
-        }
-    }, [currentLessonId, isExerciseStep, isPremium, premiumLoading]);
+    // Free hoàn thành 1 bài → tăng bộ đếm (mirror mobile exerciseStorage)
+    const handleExerciseComplete = () => {
+        if (isPremium) return;
+        setCompletedCount(incrementCompletedExerciseCount());
+    };
 
     // Derived: bài hiện tại có bị khóa theo hạn mức Free không
-    const exerciseBlocked = useMemo(() => {
-        if (premiumLoading || !currentLessonId || !isExerciseStep || isPremium) return false;
-        const opens = getFreeExerciseOpens();
-        if (opens.includes(currentLessonId)) return false;
-        return opens.length >= FREE_EXERCISE_LIMIT;
-    }, [currentLessonId, isExerciseStep, isPremium, premiumLoading]);
+    const exerciseBlocked =
+        !premiumLoading &&
+        isExerciseStep &&
+        !isPremium &&
+        completedCount >= FREE_EXERCISE_LIMIT;
 
     // Render the main learn content based on lesson status, loading states, and active steps
     const renderMainContent = () => {
@@ -609,6 +604,7 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                         loading={isLoadingQuiz}
                         currentIndex={currentQuizIdx}
                         onIndexChange={setCurrentQuizIdx}
+                        onComplete={handleExerciseComplete}
                     />
                 )}
 
@@ -630,6 +626,7 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                         loading={isLoadingQuiz}
                         currentIndex={currentQuizIdx}
                         onIndexChange={setCurrentQuizIdx}
+                        onComplete={handleExerciseComplete}
                     />
                 )}
 
@@ -638,6 +635,7 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                     <DictationStep
                         sentences={dictationSentences}
                         loading={dictationLoading}
+                        onComplete={handleExerciseComplete}
                     />
                 )}
 

@@ -1,15 +1,8 @@
 // Free/premium helpers — mirror CHINESE-LEARNING-APP premiumStorage rules.
 // Canonical source: Directus `account_types.type` (name) + `is_active`.
 
-/** Tên gói được coi là premium (so khớp case-insensitive). */
-export const PREMIUM_ACCOUNT_TYPE_NAMES = new Set([
-  "premium",
-  "lifetime",
-  "yearly",
-  "monthly",
-  "weekly",
-  "trial",
-]);
+/** Tên gói được coi là premium (so khớp case-insensitive) — đồng bộ 100% với mobile. */
+export const PREMIUM_ACCOUNT_TYPE_NAMES = new Set(["premium", "lifetime", "yearly"]);
 
 /** Tên gói chắc chắn KHÔNG phải premium. */
 export const FREE_ACCOUNT_TYPE_NAMES = new Set(["free", "standard", "basic"]);
@@ -24,31 +17,37 @@ export const FREE_NOTEBOOK_LIMIT = 1;
 export const PREMIUM_CACHE_KEY = "cla_premium_status";
 export const PREMIUM_CACHE_TTL_MS = 5 * 60 * 1000;
 
-/** Danh sách lesson-id bài tập user Free đã mở (enforce FREE_EXERCISE_LIMIT bền qua phiên). */
-export const FREE_EXERCISE_OPENS_KEY = "cla_free_exercise_opens";
+/**
+ * Bộ đếm số bài tập Free đã HOÀN THÀNH (mirror CHINESE-LEARNING-APP exerciseStorage:
+ * tăng khi nộp/hoàn thành bài, không phải khi mở bài). Key: `cla_exercise_completed_count`.
+ */
+export const COMPLETED_EXERCISE_COUNT_KEY = "cla_exercise_completed_count";
 
-/** Đọc danh sách bài tập user Free đã mở. */
-export function getFreeExerciseOpens(): string[] {
+/** Đọc số bài tập Free đã hoàn thành. */
+export function getCompletedExerciseCount(): number {
   try {
-    const raw = window.localStorage.getItem(FREE_EXERCISE_OPENS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.map(String) : [];
+    const value = window.localStorage.getItem(COMPLETED_EXERCISE_COUNT_KEY);
+    return value ? Number.parseInt(value, 10) || 0 : 0;
   } catch {
-    return [];
+    return 0;
   }
 }
 
-/** Ghi nhận 1 bài tập user Free đã mở (idempotent theo lessonId). */
-export function markExerciseOpened(lessonId: string | number): void {
+/** Tăng số bài tập đã hoàn thành lên 1, trả về giá trị mới. */
+export function incrementCompletedExerciseCount(): number {
   try {
-    const opens = getFreeExerciseOpens();
-    const id = String(lessonId);
-    if (!opens.includes(id)) {
-      window.localStorage.setItem(
-        FREE_EXERCISE_OPENS_KEY,
-        JSON.stringify([...opens, id]),
-      );
-    }
+    const next = getCompletedExerciseCount() + 1;
+    window.localStorage.setItem(COMPLETED_EXERCISE_COUNT_KEY, String(next));
+    return next;
+  } catch {
+    return getCompletedExerciseCount();
+  }
+}
+
+/** Reset bộ đếm (testing / logout). */
+export function resetCompletedExerciseCount(): void {
+  try {
+    window.localStorage.setItem(COMPLETED_EXERCISE_COUNT_KEY, "0");
   } catch {
     // ignore
   }
@@ -153,26 +152,5 @@ export function canAccessStoryChapter(
   if (chapter.is_free_preview) return true;
   const sort = Number(chapter.sort_id);
   return sort === 1 || chapterIndex === 0;
-}
-
-/**
- * Kiểm tra quyền đọc bài đọc song ngữ.
- * - Paid User: Toàn quyền mọi bài.
- * - Free User: Đọc được bài `access_tier = 'free'` hoặc các bài HSK 1-3.
- */
-export function canAccessBilingualSection(
-  section?: { level?: string | null; access_tier?: string | null } | null,
-  isPremium = false,
-): boolean {
-  if (isPremium) return true;
-  if (!section) return false;
-  if (section.access_tier === "free") return true;
-  if (section.access_tier === "premium") return false;
-  // Fallback theo HSK level nếu chưa gán tier: HSK 1-3 free, HSK 4-6 premium
-  const level = (section.level || "").toLowerCase();
-  if (level.includes("hsk 1") || level.includes("hsk 2") || level.includes("hsk 3") || level.includes("sơ cấp")) {
-    return true;
-  }
-  return false;
 }
 

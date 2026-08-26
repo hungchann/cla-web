@@ -11,10 +11,8 @@ import { Pagination } from "@/components/ui/pagination";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, ArrowRight, AlertCircle, Lock, PackageOpen } from "lucide-react";
+import { BookOpen, ArrowRight, AlertCircle, PackageOpen } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
-import { usePremium } from "@/lib/hooks/usePremium";
-import { canAccessBilingualSection } from "@/lib/premium";
 
 const LIMIT = 6;
 
@@ -59,15 +57,6 @@ function BilingualListPageContent() {
     const displayItems = data?.items || [];
     const totalCount = data?.totalCount || 0;
     const totalPages = Math.ceil(totalCount / LIMIT) || 1;
-
-    // Premium badge: bài HSK 4-6 / tier=premium cần tài khoản Premium
-    const { isPremium, isLoading: premiumLoading } = usePremium();
-    const isItemLocked = (itemLevel?: string | null) =>
-        !premiumLoading &&
-        !canAccessBilingualSection(
-            { level: typeof itemLevel === "string" ? itemLevel.replace("HSK", "HSK ") : null },
-            isPremium,
-        );
 
     // Reset page when filter changes
     const handleLevelChange = (level: string) => {
@@ -140,14 +129,6 @@ function BilingualListPageContent() {
                                     {item.genre?.some((g: any) => (typeof g === "string" && g === "Văn hóa") || (g?.genre_of_section_id?.title === "Văn hóa")) && (
                                         <Badge className="absolute top-2 left-2 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-0.5 text-[10px] uppercase tracking-wider border-none shadow-sm z-10">
                                             Văn hóa
-                                        </Badge>
-                                    )}
-
-                                    {/* Premium lock badge (HSK 4-6) */}
-                                    {isItemLocked(item.level) && (
-                                        <Badge className="absolute right-3 bottom-3 rounded-full bg-zinc-900/85 hover:bg-zinc-900/85 text-white border-none px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-sm z-10">
-                                            <Lock className="mr-1 -mt-0.5 inline size-3" />
-                                            Premium
                                         </Badge>
                                     )}
                                 </div>

@@ -4,6 +4,20 @@ import userEvent from "@testing-library/user-event";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import * as notebookApi from "@/api/notebook";
 
+const guardPremiumMock = vi.fn(() => true);
+
+vi.mock("@/lib/hooks/usePremiumGate", () => ({
+  usePremiumGate: () => ({
+    isPremium: true,
+    loading: false,
+    isLocked: false,
+    premiumModalVisible: false,
+    setPremiumModalVisible: vi.fn(),
+    showPremiumModal: vi.fn(),
+    guardPremium: (...args: unknown[]) => guardPremiumMock(...(args as [])),
+  }),
+}));
+
 vi.mock("@/api/notebook", async (importOriginal) => {
   const actual = await importOriginal<typeof notebookApi>();
   return {
@@ -42,6 +56,8 @@ describe("WordInfoModal", () => {
   afterEach(() => {
     localStorage.clear();
     document.cookie = "";
+    guardPremiumMock.mockReset();
+    guardPremiumMock.mockImplementation(() => true);
     vi.restoreAllMocks();
   });
 
@@ -80,6 +96,18 @@ describe("WordInfoModal", () => {
 
     await user.click(screen.getByRole("button", { name: /lưu từ vào flashcard/i }));
     expect(screen.getByText(/vui lòng đăng nhập để lưu flashcard/i)).toBeInTheDocument();
+  });
+
+  it("blocks saving for non-premium user without loading decks (premium gate)", async () => {
+    guardPremiumMock.mockReturnValue(false);
+    const user = userEvent.setup();
+    localStorage.setItem("user_data", JSON.stringify({ id: "u1" }));
+    render(<WordInfoModal {...baseProps} />);
+
+    await user.click(screen.getByRole("button", { name: /lưu từ vào flashcard/i }));
+
+    expect(notebookApi.notebookApi.getPersonalNotebooks).not.toHaveBeenCalled();
+    expect(screen.queryByText(/chọn bộ flashcard/i)).not.toBeInTheDocument();
   });
 
   it("loads personal decks when logged in and saves word to selected deck", async () => {

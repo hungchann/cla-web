@@ -4,6 +4,8 @@ import { WordInfo } from "@/lib/types/vocabulary";
 import { RubyText } from "../RubyText";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
+import { usePremiumGate } from "@/lib/hooks/usePremiumGate";
+import { PremiumGate } from "@/components/PremiumGate";
 import { Star, Folder, Plus } from "lucide-react";
 
 interface WordInfoModalProps {
@@ -37,6 +39,9 @@ const WordInfoModalContent = ({
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Lưu từ vào sổ tay cần Premium (mirror mobile detailVocab.openSelectNotebook)
+  const { guardPremium, premiumModalVisible, setPremiumModalVisible } = usePremiumGate();
+
   // Clear message and selector on word change
   useEffect(() => {
     setShowDecksList(false);
@@ -59,6 +64,8 @@ const WordInfoModalContent = ({
       setMessage({ type: "error", text: "Vui lòng đăng nhập để lưu flashcard." });
       return;
     }
+
+    if (!guardPremium()) return;
 
     setLoadingDecks(true);
     setShowDecksList(true);
@@ -139,6 +146,12 @@ const WordInfoModalContent = ({
       style={{ backgroundColor: colors.background.secondary }}
       onClick={(e) => e.stopPropagation()}
     >
+      <PremiumGate
+        isOpen={premiumModalVisible}
+        onClose={() => setPremiumModalVisible(false)}
+        feature="lưu từ vựng vào sổ tay"
+        description="Nâng cấp Premium để lưu từ vựng vào sổ tay cá nhân và ôn tập không giới hạn."
+      />
       <div className="flex justify-center mb-4">
         <RubyText
           word={selectedWord || ""}

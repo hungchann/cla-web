@@ -11,6 +11,8 @@ interface QuizStepProps {
     readonly loading: boolean;
     readonly currentIndex: number;
     readonly onIndexChange: (idx: number) => void;
+    /** Gọi khi người dùng trả lời câu cuối cùng (dùng để đếm bài hoàn thành cho free quota). */
+    readonly onComplete?: () => void;
 }
 
 export function QuizStep({
@@ -18,6 +20,7 @@ export function QuizStep({
     loading,
     currentIndex,
     onIndexChange,
+    onComplete,
 }: QuizStepProps) {
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
@@ -27,6 +30,9 @@ export function QuizStep({
         if (selectedAnswer) return;
         setSelectedAnswer(option);
         playAnswerFeedback(Boolean(currentQuiz && option === currentQuiz.Correct_answer));
+        if (currentIndex >= exercises.length - 1) {
+            onComplete?.();
+        }
     };
 
     const handleReset = () => {
