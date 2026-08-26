@@ -314,8 +314,10 @@ sequenceDiagram
     actor U as User
     participant PP as pricing page
     participant PL as api/plans
+    participant API as POST /api/payments<br/>(Next.js server)
     participant DR as Directus REST /items/*
     participant QR as img.vietqr.io
+    participant FLOW as Directus Flows
     participant ADM as Admin (Directus panel)
 
     U->>PP: chọn gói
@@ -324,13 +326,22 @@ sequenceDiagram
     U->>PP: nhập voucher (tuỳ chọn)
     PP->>PL: getVoucherByCode(code)
     PL->>DR: GET vouchers
-    PP->>QR: buildVietQrUrl(amount, email) → ảnh QR
+    PP->>QR: buildVietQrUrl(amount, email) → ảnh QR preview
     U->>PP: "Tôi đã chuyển khoản"
-    PP->>PL: createPayment(...)
-    PL->>DR: POST payments (status=pending, amount_vnd,<br/>voucher_id, discount_vnd, referrer_user_id, promo_link_id)
-    PL->>DR: POST user_vouchers + PATCH vouchers.used_count
-    ADM->>DR: đối soát → payments.status=verified,<br/>tạo/cập nhật account_types
+    PP->>API: createPayment(planId, voucherCode, promo, ref)
+    API->>DR: GET /users/me (bearer user)
+    API->>DR: GET plan + voucher → validate + recompute amount
+    API->>DR: POST payments (status=pending, amount_vnd tính server-side)
+    API->>DR: POST user_vouchers (status=used)
+    Note over API: used_count do Flow tăng, client không PATCH vouchers
+    ADM->>DR: đối soát → payments.status = verified
+    FLOW->>DR: Flow "Payment Verified" → upsert account_types
+    FLOW->>DR: Flow "Voucher Used Count++" → vouchers.used_count +1
+    U->>PP: bấm "Làm mới Premium" ở Lịch sử thanh toán
+    PP->>PP: refreshPremium(true) → gate mở khoá
 ```
+
+Chi tiết cấu hình Flow xem [`directus-flows-setup.md`](./directus-flows-setup.md).
 
 ### 4.8. Hồ sơ & mục tiêu học tập
 

@@ -7,6 +7,7 @@ import {
   resolvePlanFeatures,
   buildCheckoutUrl,
   createPayment,
+  getMyPayments,
   applyVoucher,
   isVoucherValid,
   getVoucherByCode,
@@ -178,7 +179,7 @@ describe("buildAffiliateLink", () => {
 
 describe("createPayment", () => {
   beforeEach(() => {
-    document.cookie = "";
+    document.cookie = "access_token=tok-123";
     localStorage.clear();
   });
 
@@ -188,80 +189,91 @@ describe("createPayment", () => {
     vi.restoreAllMocks();
   });
 
-  it("posts a pending payment with user_id and referrer", async () => {
-    localStorage.setItem("user_data", JSON.stringify({ id: "user-1" }));
+  it("posts plan + voucher code to /api/payments (amount decided server-side)", async () => {
     let capturedBody: Record<string, unknown> | null = null;
-    let requestedUrl = "";
+    let capturedAuth: string | null = null;
     server.use(
-      http.post(`${API}/items/payments*`, async ({ request }) => {
+      http.post("*/api/payments", async ({ request }) => {
         capturedBody = (await request.json()) as Record<string, unknown>;
-        requestedUrl = request.url;
-        return HttpResponse.json({ data: { id: 10, status: "pending" } });
+        capturedAuth = request.headers.get("authorization");
+        return HttpResponse.json(
+          {
+            payment: { id: 10, status: "pending" },
+            amountVnd: 479200,
+            discountVnd: 119800,
+            duplicate: false,
+          },
+          { status: 201 },
+        );
       }),
     );
 
     const result = await createPayment({
-      plan: { id: 2, key: "yearly" },
-      amountVnd: 499000,
-      transferContent: "test@example.com",
+      plan: { id: 2 },
+      voucherCode: "X20",
       promoLinkId: "video-1",
       referrerUserId: "user-ref-9",
     });
 
-    expect(requestedUrl).toContain("/items/payments");
     expect(capturedBody).toEqual({
-      plan_id: 2,
-      amount_vnd: 499000,
-      discount_vnd: 0,
-      voucher_id: null,
-      status: "pending",
-      transfer_content: "test@example.com",
-      promo_link_id: "video-1",
-      referrer_user_id: "user-ref-9",
-      user_id: "user-1",
+      planId: 2,
+      voucherCode: "X20",
+      promoLinkId: "video-1",
+      referrerUserId: "user-ref-9",
     });
-    expect(result).toEqual({ id: 10, status: "pending" });
+    expect(capturedAuth).toBe("Bearer tok-123");
+    expect(result).toMatchObject({
+      payment: { id: 10, status: "pending" },
+      amountVnd: 479200,
+      discountVnd: 119800,
+      duplicate: false,
+    });
   });
 
-  it("omits user_id when user_data missing", async () => {
-    let capturedBody: Record<string, unknown> | null = null;
+  it("returns null when access token missing", async () => {
+    document.cookie = "";
+    const result = await createPayment({ plan: { id: 2 } });
+    expect(result).toBeNull();
+  });
+
+  it("returns null on API error", async () => {
     server.use(
-      http.post(`${API}/items/payments*`, async ({ request }) => {
-        capturedBody = (await request.json()) as Record<string, unknown>;
-        return HttpResponse.json({ data: { id: 11, status: "pending" } });
+      http.post("*/api/payments", () =>
+        HttpResponse.json({ error: "Gói cước không khả dụng." }, { status: 400 }),
+      ),
+    );
+
+    const result = await createPayment({ plan: { id: 2 }, voucherCode: "BAD" });
+    expect(result).toBeNull();
+  });
+});
+
+describe("getMyPayments", () => {
+  beforeEach(() => {
+    document.cookie = "access_token=tok-123";
+  });
+
+  afterEach(() => {
+    document.cookie = "";
+    vi.restoreAllMocks();
+  });
+
+  it("fetches payment history from /api/payments", async () => {
+    server.use(
+      http.get("*/api/payments", ({ request }) => {
+        expect(request.headers.get("authorization")).toBe("Bearer tok-123");
+        return HttpResponse.json({
+          payments: [{ id: 3, status: "verified", amount_vnd: 599000 }],
+        });
       }),
     );
 
-    await createPayment({
-      plan: { id: 2 },
-      amountVnd: 99000,
-      transferContent: "a@b.com",
-    });
-
-    expect(capturedBody).toEqual({
-      plan_id: 2,
-      amount_vnd: 99000,
-      discount_vnd: 0,
-      voucher_id: null,
-      status: "pending",
-      transfer_content: "a@b.com",
-      promo_link_id: null,
-      referrer_user_id: null,
-    });
+    const payments = await getMyPayments();
+    expect(payments).toEqual([{ id: 3, status: "verified", amount_vnd: 599000 }]);
   });
 
-  it("returns null on failure", async () => {
-    localStorage.setItem("user_data", JSON.stringify({ id: "user-1" }));
-    server.use(
-      http.post(`${API}/items/payments*`, () => HttpResponse.json({}, { status: 400 })),
-    );
-
-    const result = await createPayment({
-      plan: { id: 2 },
-      amountVnd: 99000,
-      transferContent: "a@b.com",
-    });
-
-    expect(result).toBeNull();
+  it("returns empty array when unauthenticated", async () => {
+    document.cookie = "";
+    expect(await getMyPayments()).toEqual([]);
   });
 });

@@ -28,6 +28,8 @@ export interface BilingualItem {
   date: string;
   genre: BilingualGenreLink[];
   level: string;
+  /** Tier truy cập (`free` / `premium`) — dùng cho premium gate. */
+  access_tier?: string | null;
   image: {
     uri: string;
   };

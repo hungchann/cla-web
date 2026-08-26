@@ -1,12 +1,20 @@
 "use client";
 
-import { use, useEffect, useState, Suspense, useRef } from "react";
+import { use, useEffect, useState, Suspense, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
 import { coursesApi } from "@/api/courses";
 import { vocabularyApi } from "@/api/vocabulary";
 import { CourseLesson, CourseLessonType, LessonTheory, LessonVideo, LessonExtra } from "@/lib/types/course";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
+import { PremiumGate } from "@/components/PremiumGate";
+import { usePremium } from "@/lib/hooks/usePremium";
+import {
+  FREE_EXERCISE_LIMIT,
+  getFreeExerciseOpens,
+  markExerciseOpened,
+} from "@/lib/premium";
 import { parseSRTtoArray } from "@/services/subtitle";
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +38,9 @@ const LEARN_TO_STEP_TYPE: Record<string, string> = {
     conversation: "learn-conversation",
     extra: "learn-extra",
 };
+
+/** Các step tính là BÀI TẬP — user Free giới hạn FREE_EXERCISE_LIMIT bài (contract premium). */
+const EXERCISE_LESSON_TYPES = new Set<string>(["quiz_vocab", "quiz_grammar", "dictation", "conversation"]);
 
 function LearnRoomContent({ params }: { readonly params: { id: string } }) {
     const courseId = params.id;
@@ -63,10 +74,16 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
     // Fetch current lesson based on search params
     useEffect(() => {
         let isMounted = true;
-        const fetchLesson = async () => {
-            const filterValidLessons = (lessons: CourseLesson[]) =>
-                lessons.filter((l) => (l as any).is_published !== false);
 
+        const filterValidLessons = (lessons: CourseLesson[]) =>
+            lessons.filter((l) => (l as any).is_published !== false);
+
+        const getFlatLessons = async () => {
+            const chapters = await coursesApi.getCourseChapters(courseId);
+            return filterValidLessons(chapters.flatMap((c) => c.lessons || []));
+        };
+
+        const fetchLesson = async () => {
             try {
                 if (lessonParam) {
                     const lesson = await coursesApi.getCourseLessonById(lessonParam);
@@ -75,9 +92,12 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                         setCurrentLesson(lesson);
                         return;
                     }
-                    const chapters = await coursesApi.getCourseChapters(courseId);
-                    if (!isMounted) return;
-                    const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
+                }
+
+                const flat = await getFlatLessons();
+                if (!isMounted) return;
+
+                if (lessonParam) {
                     const fallback = flat[0] || null;
                     setCurrentLesson(fallback);
                     if (fallback) {
@@ -85,20 +105,11 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                             scroll: false,
                         });
                     }
-                    return;
-                } else if (stepParam) {
-                    const chapters = await coursesApi.getCourseChapters(courseId);
-                    if (!isMounted) return;
-                    const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
-                    const match = flat.find((l) => l.lesson_type === fallbackType);
-                    if (isMounted) setCurrentLesson(match || flat[0] || null);
-                    return;
                 } else {
-                    const chapters = await coursesApi.getCourseChapters(courseId);
-                    if (!isMounted) return;
-                    const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
-                    if (isMounted) setCurrentLesson(flat[0] || null);
-                    return;
+                    const target = stepParam
+                        ? (flat.find((l) => l.lesson_type === fallbackType) || flat[0] || null)
+                        : (flat[0] || null);
+                    setCurrentLesson(target);
                 }
             } catch {
                 if (isMounted) setCurrentLesson(null);
@@ -484,6 +495,177 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
     const [wordInfo, setWordInfo] = useState<any>(null);
     const [isTranslating] = useState(false);
 
+    // --- Premium gate: Free chỉ được mở FREE_EXERCISE_LIMIT bài tập ---
+    const { isPremium, isLoading: premiumLoading } = usePremium();
+    const [gateDismissedFor, setGateDismissedFor] = useState<string | null>(null);
+
+    const currentLessonId = currentLesson?.id != null ? String(currentLesson.id) : null;
+    const isExerciseStep =
+        currentLesson?.lesson_type != null &&
+        EXERCISE_LESSON_TYPES.has(String(currentLesson.lesson_type));
+
+    // Ghi nhận bài tập Free đã mở (side-effect localStorage — không setState trong effect)
+    useEffect(() => {
+        if (premiumLoading || !currentLessonId || !isExerciseStep || isPremium) return;
+        if (!getFreeExerciseOpens().includes(currentLessonId)) {
+            const opens = getFreeExerciseOpens();
+            if (opens.length < FREE_EXERCISE_LIMIT) {
+                markExerciseOpened(currentLessonId);
+            }
+        }
+    }, [currentLessonId, isExerciseStep, isPremium, premiumLoading]);
+
+    // Derived: bài hiện tại có bị khóa theo hạn mức Free không
+    const exerciseBlocked = useMemo(() => {
+        if (premiumLoading || !currentLessonId || !isExerciseStep || isPremium) return false;
+        const opens = getFreeExerciseOpens();
+        if (opens.includes(currentLessonId)) return false;
+        return opens.length >= FREE_EXERCISE_LIMIT;
+    }, [currentLessonId, isExerciseStep, isPremium, premiumLoading]);
+
+    // Render the main learn content based on lesson status, loading states, and active steps
+    const renderMainContent = () => {
+        if (!currentLesson) {
+            return (
+                <div className="max-w-2xl w-full mx-auto bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xs dark:bg-zinc-900 dark:border-zinc-800">
+                    <p className="text-sm font-black text-zinc-600 dark:text-zinc-300">
+                        Khóa học chưa có bài học nào.
+                    </p>
+                    <p className="mt-2 text-xs font-semibold text-zinc-400">
+                        Hãy quay lại trang khóa học và chọn một bài học khác.
+                    </p>
+                    <Button
+                        onClick={() => router.push(`/courses/${courseId}`)}
+                        className="mt-6 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"
+                    >
+                        Về khóa học
+                    </Button>
+                </div>
+            );
+        }
+
+        if (exerciseBlocked) {
+            return (
+                <div className="max-w-2xl w-full mx-auto bg-white rounded-2xl border border-amber-200 p-12 text-center shadow-2xs dark:bg-zinc-900 dark:border-amber-900/40">
+                    <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
+                        <Lock className="size-6 text-white" />
+                    </div>
+                    <p className="mt-4 text-sm font-black text-zinc-900 dark:text-white">
+                        Bạn đã hết lượt bài tập miễn phí
+                    </p>
+                    <p className="mt-2 text-xs font-semibold text-zinc-400 leading-relaxed">
+                        Gói Free được thử tối đa {FREE_EXERCISE_LIMIT} bài tập. Nâng cấp Premium để luyện tập không giới hạn.
+                    </p>
+                    <div className="mt-6 flex items-center justify-center gap-3">
+                        <Button
+                            onClick={() => router.push("/pricing")}
+                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold"
+                        >
+                            Nâng cấp Premium
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => router.push(`/courses/${courseId}`)}
+                            className="text-xs font-bold"
+                        >
+                            Về khóa học
+                        </Button>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <>
+                {/* STEP 1: Video Từ Vựng (learn-video-vocab) */}
+                {currentStep === "learn-video-vocab" && (
+                    <VideoVocabStep
+                        videoSource={lessonVideo?.video_url || null}
+                        videoLoading={videoVocabLoading}
+                        subtitles={videoVocabSubtitles}
+                        currentTime={videoVocabTime}
+                        onTimeUpdate={setVideoVocabTime}
+                        vocabItems={vocabItems}
+                        vocabLoading={vocabLoading}
+                        selectedVocabIdx={selectedVocabIdx}
+                        onSelectVocab={setSelectedVocabIdx}
+                    />
+                )}
+
+                {/* STEP 1.5: Lý thuyết: Giải nghĩa từ vựng (learn-vocab-theory) */}
+                {currentStep === "learn-vocab-theory" && (
+                    <VocabTheoryStep
+                        vocabItems={vocabTheoryItems}
+                        vocabLoading={vocabTheoryLoading}
+                        theory={lessonTheory}
+                        theoryLoading={lessonTheoryLoading}
+                    />
+                )}
+
+                {/* STEP 2: Trắc nghiệm từ vựng (learn-quiz-vocab) */}
+                {currentStep === "learn-quiz-vocab" && (
+                    <QuizStep
+                        exercises={quizExercises}
+                        loading={isLoadingQuiz}
+                        currentIndex={currentQuizIdx}
+                        onIndexChange={setCurrentQuizIdx}
+                    />
+                )}
+
+                {/* STEP 3: Video ngữ pháp (learn-video-grammar) */}
+                {currentStep === "learn-video-grammar" && (
+                    <VideoGrammarStep
+                        videoSource={grammarVideo?.video_url || null}
+                        videoLoading={grammarVideoLoading}
+                        subtitles={grammarSubtitles}
+                        currentTime={grammarVideoTime}
+                        onTimeUpdate={setGrammarVideoTime}
+                    />
+                )}
+
+                {/* STEP 4: Bài tập ngữ pháp (learn-quiz-grammar) */}
+                {currentStep === "learn-quiz-grammar" && (
+                    <QuizStep
+                        exercises={quizExercises}
+                        loading={isLoadingQuiz}
+                        currentIndex={currentQuizIdx}
+                        onIndexChange={setCurrentQuizIdx}
+                    />
+                )}
+
+                {/* STEP 5: Bài tập Nghe chép chính tả (learn-dictation) */}
+                {currentStep === "learn-dictation" && (
+                    <DictationStep
+                        sentences={dictationSentences}
+                        loading={dictationLoading}
+                    />
+                )}
+
+                {/* STEP 6: Thực hành hội thoại (learn-conversation) */}
+                {currentStep === "learn-conversation" && (
+                    <ConversationStep
+                        loading={convLoading}
+                        visibleMessages={convVisibleMessages}
+                        hasMoreMessages={convHasMoreMessages}
+                        activeRecordingId={activeRecordingId}
+                        onSpeak={handleConvSpeak}
+                        onToggleRecording={(id) => handleConvToggleRecording(String(id))}
+                        onContinue={handleConvContinue}
+                        convEndRef={convEndRef}
+                    />
+                )}
+
+                {/* STEP 7: Bài tập bổ sung (learn-extra) */}
+                {currentStep === "learn-extra" && (
+                    <ExtraLessonStep
+                        lessonExtra={lessonExtra}
+                        onBackToCourse={() => router.push(`/courses/${courseId}`)}
+                    />
+                )}
+            </>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans dark:bg-zinc-950">
             {/* Header & Navigation */}
@@ -491,110 +673,15 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
 
             {/* Main Content Body */}
             <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col items-center">
-                {!currentLesson ? (
-                    <div className="max-w-2xl w-full mx-auto bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xs dark:bg-zinc-900 dark:border-zinc-800">
-                        <p className="text-sm font-black text-zinc-600 dark:text-zinc-300">
-                            Khóa học chưa có bài học nào.
-                        </p>
-                        <p className="mt-2 text-xs font-semibold text-zinc-400">
-                            Hãy quay lại trang khóa học và chọn một bài học khác.
-                        </p>
-                        <Button
-                            onClick={() => router.push(`/courses/${courseId}`)}
-                            className="mt-6 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"
-                        >
-                            Về khóa học
-                        </Button>
-                    </div>
-                ) : (
-                    <>
-                        {/* STEP 1: Video Từ Vựng (learn-video-vocab) */}
-                        {currentStep === "learn-video-vocab" && (
-                            <VideoVocabStep
-                                videoSource={lessonVideo?.video_url || null}
-                                videoLoading={videoVocabLoading}
-                                subtitles={videoVocabSubtitles}
-                                currentTime={videoVocabTime}
-                                onTimeUpdate={setVideoVocabTime}
-                                vocabItems={vocabItems}
-                                vocabLoading={vocabLoading}
-                                selectedVocabIdx={selectedVocabIdx}
-                                onSelectVocab={setSelectedVocabIdx}
-                            />
-                        )}
+                {renderMainContent()}
 
-                        {/* STEP 1.5: Lý thuyết: Giải nghĩa từ vựng (learn-vocab-theory) */}
-                        {currentStep === "learn-vocab-theory" && (
-                            <VocabTheoryStep
-                                vocabItems={vocabTheoryItems}
-                                vocabLoading={vocabTheoryLoading}
-                                theory={lessonTheory}
-                                theoryLoading={lessonTheoryLoading}
-                            />
-                        )}
-
-                        {/* STEP 2: Trắc nghiệm từ vựng (learn-quiz-vocab) */}
-                        {currentStep === "learn-quiz-vocab" && (
-                            <QuizStep
-                                exercises={quizExercises}
-                                loading={isLoadingQuiz}
-                                currentIndex={currentQuizIdx}
-                                onIndexChange={setCurrentQuizIdx}
-                            />
-                        )}
-
-                        {/* STEP 3: Video ngữ pháp (learn-video-grammar) */}
-                        {currentStep === "learn-video-grammar" && (
-                            <VideoGrammarStep
-                                videoSource={grammarVideo?.video_url || null}
-                                videoLoading={grammarVideoLoading}
-                                subtitles={grammarSubtitles}
-                                currentTime={grammarVideoTime}
-                                onTimeUpdate={setGrammarVideoTime}
-                            />
-                        )}
-
-                        {/* STEP 4: Bài tập ngữ pháp (learn-quiz-grammar) */}
-                        {currentStep === "learn-quiz-grammar" && (
-                            <QuizStep
-                                exercises={quizExercises}
-                                loading={isLoadingQuiz}
-                                currentIndex={currentQuizIdx}
-                                onIndexChange={setCurrentQuizIdx}
-                            />
-                        )}
-
-                        {/* STEP 5: Bài tập Nghe chép chính tả (learn-dictation) */}
-                        {currentStep === "learn-dictation" && (
-                            <DictationStep
-                                sentences={dictationSentences}
-                                loading={dictationLoading}
-                            />
-                        )}
-
-                        {/* STEP 6: Thực hành hội thoại (learn-conversation) */}
-                        {currentStep === "learn-conversation" && (
-                            <ConversationStep
-                                loading={convLoading}
-                                visibleMessages={convVisibleMessages}
-                                hasMoreMessages={convHasMoreMessages}
-                                activeRecordingId={activeRecordingId}
-                                onSpeak={handleConvSpeak}
-                                onToggleRecording={(id) => handleConvToggleRecording(String(id))}
-                                onContinue={handleConvContinue}
-                                convEndRef={convEndRef}
-                            />
-                        )}
-
-                        {/* STEP 7: Bài tập bổ sung (learn-extra) */}
-                        {currentStep === "learn-extra" && (
-                            <ExtraLessonStep
-                                lessonExtra={lessonExtra}
-                                onBackToCourse={() => router.push(`/courses/${courseId}`)}
-                            />
-                        )}
-                    </>
-                )}
+                {/* PremiumGate cho bài tập vượt hạn mức Free */}
+                <PremiumGate
+                    isOpen={exerciseBlocked && gateDismissedFor !== currentLessonId}
+                    onClose={() => setGateDismissedFor(currentLessonId)}
+                    feature="bài tập luyện tập"
+                    description={`Gói Free chỉ gồm ${FREE_EXERCISE_LIMIT} bài tập thử nghiệm. Nâng cấp Premium để mở khóa toàn bộ bài tập, nghe chép chính tả và luyện hội thoại không giới hạn.`}
+                />
 
                 {/* WordInfoModal for translations and flashcard saves */}
                 {selectedWord && (

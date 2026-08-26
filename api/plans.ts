@@ -1,7 +1,16 @@
 import apiInstance from "@/api/authConfig";
 import { logger } from "@/services/logger";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
-import type { AccountPlan, PaymentRecord, PaymentStatus, Voucher } from "@/lib/types/plan";
+import {
+  computePricing,
+  validateVoucher,
+} from "@/lib/payment";
+import type {
+  AccountPlan,
+  PaymentRecord,
+  PaymentStatus,
+  Voucher,
+} from "@/lib/types/plan";
 
 type ErrorLike = { response?: { status?: number }; message?: string };
 
@@ -100,157 +109,97 @@ export async function getVoucherByCode(code: string): Promise<Voucher | null> {
   }
 }
 
-/** Kiểm tra voucher còn hiệu lực (hạn dùng, số lượt). */
-export function isVoucherValid(voucher: Voucher | null): string | null {
-  if (!voucher) return "Mã giảm giá không tồn tại hoặc đã bị khoá.";
-  if (voucher.max_uses != null && (voucher.used_count ?? 0) >= voucher.max_uses) {
-    return "Mã giảm giá đã hết lượt sử dụng.";
-  }
-  const now = new Date();
-  if (voucher.valid_from && new Date(voucher.valid_from) > now) {
-    return "Mã giảm giá chưa tới hạn sử dụng.";
-  }
-  if (voucher.valid_until && new Date(voucher.valid_until) < now) {
-    return "Mã giảm giá đã hết hạn.";
-  }
-  return null;
-}
-
-/** Tính số tiền giảm từ voucher cho gói. Trả về { discountVnd, amountVnd }. */
-export function applyVoucher(plan: AccountPlan, voucher: Voucher | null) {
-  const base = plan.price_vnd ?? 0;
-  if (!voucher?.value) return { discountVnd: 0, amountVnd: base };
-  const discountVnd = voucher.is_percent
-    ? Math.round((base * voucher.value) / 100)
-    : Math.round(voucher.value);
-  const capped = Math.max(0, Math.min(discountVnd, base));
-  return { discountVnd: capped, amountVnd: base - capped };
-}
-
 /**
- * Lấy thông tin thanh toán theo ID.
+ * Kiểm tra voucher còn hiệu lực (hạn dùng, số lượt).
+ * Logic canonical nằm ở `lib/payment.ts#validateVoucher`.
  */
-export async function getPaymentById(id: string | number): Promise<PaymentRecord | null> {
-  try {
-    const r = await apiInstance.get(`/items/payments/${id}`);
-    return r.data?.data || null;
-  } catch (error) {
-    logger.warn(`[Plans API] getPaymentById(${id}) failed:`, errorStatus(error));
-    return null;
-  }
+export function isVoucherValid(voucher: Voucher | null): string | null {
+  return validateVoucher(voucher);
 }
 
 /**
- * Tạo bản ghi `payments` (status=pending) — chờ xác nhận rồi kích hoạt premium.
- * Lưu đủ: ai mua (`user_id`), gói nào (`plan_id`), ai giới thiệu (`referrer_user_id`),
- * nội dung nào dẫn tới (`promo_link_id`), voucher (`voucher_id` + `discount_vnd`).
- * Đồng thời ghi `user_vouchers` và tăng `used_count` của voucher.
+ * Tính số tiền giảm từ voucher cho gói — preview phía client.
+ * Số tiền chính thức do server `/api/payments` quyết định khi tạo payment.
+ */
+export function applyVoucher(plan: AccountPlan, voucher: Voucher | null) {
+  return computePricing(plan.price_vnd, voucher);
+}
+
+export type PaymentStatusType = PaymentStatus;
+
+/** Kết quả tạo payment qua server. */
+export interface CreatePaymentResult {
+  payment: PaymentRecord;
+  amountVnd?: number;
+  discountVnd?: number;
+  /** true nếu đã có đơn pending trùng user+plan, hệ thống trả lại đơn cũ. */
+  duplicate: boolean;
+}
+
+/**
+ * Tạo payment pending qua route handler `/api/payments` (amount tính server-side,
+ * client KHÔNG tự gửi số tiền). Trả về null nếu lỗi network/không đăng nhập.
  */
 export async function createPayment(input: {
-  plan: AccountPlan;
-  amountVnd: number;
-  discountVnd?: number;
-  voucher?: Voucher | null;
-  transferContent: string;
+  plan: Pick<AccountPlan, "id">;
+  voucherCode?: string | null;
   promoLinkId?: string | number | null;
   referrerUserId?: string | number | null;
-}): Promise<PaymentRecord | null> {
+}): Promise<CreatePaymentResult | null> {
   try {
-    const userData = tokenUtils.getUserData();
-    const userId = userData?.id ?? userData?.user_id ?? null;
+    const token = tokenUtils.getAccessToken();
+    if (!token) return null;
 
-    const body: Record<string, unknown> = {
-      plan_id: input.plan.id,
-      amount_vnd: input.amountVnd,
-      discount_vnd: input.discountVnd ?? 0,
-      voucher_id: input.voucher?.id ?? null,
-      status: "pending" as PaymentStatus,
-      transfer_content: input.transferContent,
-      promo_link_id: input.promoLinkId ?? null,
-      referrer_user_id: input.referrerUserId ?? null,
-    };
-    if (userId != null) body.user_id = userId;
+    const res = await fetch("/api/payments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        planId: input.plan.id,
+        voucherCode: input.voucherCode ?? null,
+        promoLinkId: input.promoLinkId ?? null,
+        referrerUserId: input.referrerUserId ?? null,
+      }),
+    });
 
-
-    const r = await apiInstance.post("/items/payments", body);
-    const record = r.data?.data || null;
-
-    // Ghi user_vouchers + tăng used_count nếu có voucher và đủ thông tin
-    if (record && input.voucher?.id && userId != null) {
+    if (!res.ok) {
+      let message = "";
       try {
-        await apiInstance.post("/items/user_vouchers", {
-          user_id: userId,
-          voucher_id: input.voucher.id,
-          payment_id: record.id,
-          status: "used",
-        });
-        await apiInstance.patch(`/items/vouchers/${input.voucher.id}`, {
-          used_count: (input.voucher.used_count ?? 0) + 1,
-        });
-      } catch (err) {
-        logger.warn("[Plans API] user_vouchers/voucher count update failed:", errorStatus(err));
+        message = ((await res.json()) as { error?: string }).error ?? "";
+      } catch {
+        // ignore parse errors
       }
+      logger.warn("[Plans API] createPayment failed:", res.status, message);
+      return null;
     }
 
-    return record;
+    return (await res.json()) as CreatePaymentResult;
   } catch (error) {
-    logger.warn("[Plans API] createPayment failed:", errorStatus(error));
+    logger.warn("[Plans API] createPayment error:", errorStatus(error));
     return null;
   }
 }
 
-/**
- * Kích hoạt hoặc gia hạn gói cước `account_types` cho người dùng sau khi thanh toán thành công.
- */
-export async function activateUserSubscription(params: {
-  userId: string | number;
-  plan: AccountPlan;
-  source?: "vietqr" | "revenuecat" | "manual";
-  paymentId?: string | number;
-}): Promise<boolean> {
+/** Lịch sử payment của user hiện tại (qua route handler). */
+export async function getMyPayments(): Promise<PaymentRecord[]> {
   try {
-    const { userId, plan, source = "vietqr", paymentId } = params;
-    const durationDays = plan.duration_days ?? 0;
-    const expiredTime = durationDays > 0
-      ? new Date(Date.now() + durationDays * 86400000).toISOString()
-      : null;
+    const token = tokenUtils.getAccessToken();
+    if (!token) return [];
 
-    const planName = plan.name_trans || plan.name || "Premium";
-
-    // Kiểm tra xem user đã có dòng trong account_types chưa
-    const checkRes = await apiInstance.get(
-      `/items/account_types?filter[user_id][_eq]=${userId}&limit=1`,
-    );
-    const existing = checkRes.data?.data?.[0];
-
-    const payload = {
-      user_id: userId,
-      type: planName,
-      status: "active",
-      source,
-      plan_id: plan.id,
-      expired_time: expiredTime,
-      provider_transaction_id: paymentId ? String(paymentId) : null,
-    };
-
-    if (existing) {
-      await apiInstance.patch(`/items/account_types/${existing.id}`, payload);
-    } else {
-      await apiInstance.post("/items/account_types", payload);
+    const res = await fetch("/api/payments", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      logger.warn("[Plans API] getMyPayments failed:", res.status);
+      return [];
     }
-
-    // Nếu có paymentId, cập nhật payment thành verified
-    if (paymentId) {
-      await apiInstance.patch(`/items/payments/${paymentId}`, {
-        status: "verified",
-        verified_at: new Date().toISOString(),
-      });
-    }
-
-    return true;
+    const json = (await res.json()) as { payments?: PaymentRecord[] };
+    return json.payments ?? [];
   } catch (error) {
-    logger.error("[Plans API] activateUserSubscription failed:", error);
-    return false;
+    logger.warn("[Plans API] getMyPayments error:", errorStatus(error));
+    return [];
   }
 }
-

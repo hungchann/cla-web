@@ -55,12 +55,12 @@ function PlanCard({
   featured = false,
   onSelect,
   selectLabel,
-}: {
+}: Readonly<{
   plan: AccountPlan;
   featured?: boolean;
   onSelect?: () => void;
   selectLabel: string;
-}) {
+}>) {
   const features = resolvePlanFeatures(plan);
   return (
     <Card
@@ -136,11 +136,11 @@ function CheckoutView({
   plan,
   refId,
   promoId,
-}: {
+}: Readonly<{
   plan: AccountPlan;
   refId: string | null;
   promoId: string | null;
-}) {
+}>) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -200,17 +200,14 @@ function CheckoutView({
     setError(null);
     // Người cho link affiliate: ưu tiên ref trên URL, fallback ref đã lưu khi bấm link chia sẻ.
     const referrerUserId = refId ?? getReferrer();
-    const record = await createPayment({
+    const result = await createPayment({
       plan,
-      amountVnd,
-      discountVnd,
-      voucher,
-      transferContent: email,
+      voucherCode: voucher?.code ?? null,
       promoLinkId: promoId,
       referrerUserId,
     });
     setSubmitting(false);
-    if (record) {
+    if (result) {
       clearReferrer();
       setSubmitted(true);
     } else {
@@ -346,6 +343,7 @@ function CheckoutView({
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={handleRemoveVoucher}
                   className="shrink-0 text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
                 >
@@ -461,7 +459,7 @@ function PricingContent() {
   });
 
   const premiumPlans = useMemo(
-    () => (plans || []).filter((p) => p.is_premium !== false),
+    () => (plans ?? []).filter((p) => p.is_premium !== false),
     [plans],
   );
 
@@ -480,6 +478,42 @@ function PricingContent() {
 
   const handleSelect = (plan: AccountPlan) => {
     router.push(`/pricing?plan=${encodeURIComponent(String(plan.id))}`);
+  };
+
+  const renderPlansList = () => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {[1, 2, 3].map((n) => (
+            <Skeleton key={n} className="h-72 rounded-2xl" />
+          ))}
+        </div>
+      );
+    }
+    if (premiumPlans.length === 0) {
+      return (
+        <Card className="rounded-3xl">
+          <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
+            <p className="text-sm font-bold text-zinc-500">
+              Chưa có gói cước nào được cấu hình trên hệ thống.
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+    return (
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        {premiumPlans.map((plan) => (
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            featured={featuredPlan ? String(featuredPlan.id) === String(plan.id) : false}
+            onSelect={isAuthenticated ? () => handleSelect(plan) : undefined}
+            selectLabel={isAuthenticated ? "Chọn gói này" : "Đăng nhập để nâng cấp"}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -540,33 +574,7 @@ function PricingContent() {
             </p>
           </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {[1, 2, 3].map((n) => (
-                <Skeleton key={n} className="h-72 rounded-2xl" />
-              ))}
-            </div>
-          ) : premiumPlans.length === 0 ? (
-            <Card className="rounded-3xl">
-              <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
-                <p className="text-sm font-bold text-zinc-500">
-                  Chưa có gói cước nào được cấu hình trên hệ thống.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {premiumPlans.map((plan) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  featured={featuredPlan ? String(featuredPlan.id) === String(plan.id) : false}
-                  onSelect={isAuthenticated ? () => handleSelect(plan) : undefined}
-                  selectLabel={isAuthenticated ? "Chọn gói này" : "Đăng nhập để nâng cấp"}
-                />
-              ))}
-            </div>
-          )}
+          {renderPlansList()}
 
           <Card className="rounded-3xl bg-zinc-50/60 dark:bg-zinc-950/20">
             <CardContent className="flex items-start gap-3 p-5 text-xs text-zinc-500 dark:text-zinc-400">
@@ -579,10 +587,7 @@ function PricingContent() {
                   target="_blank"
                   rel="noreferrer"
                   className="font-bold text-amber-600 underline"
-                >
-                  Sun Chinese
-                </a>
-                .
+                >Sun Chinese</a>.
               </p>
             </CardContent>
           </Card>

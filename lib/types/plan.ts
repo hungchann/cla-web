@@ -38,6 +38,8 @@ export interface PaymentRecord {
   referrer_user_id?: string | number | null;
   verified_by?: string | null;
   verified_at?: string | null;
+  /** Directus auto timestamp. */
+  date_created?: string | null;
 }
 
 /** Mã giảm giá trong Directus `vouchers`. */

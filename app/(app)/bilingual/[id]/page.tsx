@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { translateWord, getVocabularyByIdSection } from "@/api/apiService";
 import { segmentChineseText as apiSegmentChineseText } from "@/api/segment";
@@ -13,9 +13,13 @@ import { getAssetUrl } from "@/lib/utils/assets";
 import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
 import { PinyinToggle } from "@/components/PinyinToggle";
-import { BookmarkPlus, Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { BookmarkPlus, Lock, Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import { useSubtitleSync } from "@/lib/hooks/useSubtitleSync";
 import { timeToSeconds } from "@/lib/utils/subtitleUtils";
+import { usePremium } from "@/lib/hooks/usePremium";
+import { canAccessBilingualSection } from "@/lib/premium";
+import { PremiumGate } from "@/components/PremiumGate";
+import { Button } from "@/components/ui/button";
 import { BilingualContent } from "@/components/bilingual/BilingualContent";
 import { BilingualVocab } from "@/components/bilingual/BilingualVocab";
 import { BilingualGrammar } from "@/components/bilingual/BilingualGrammar";
@@ -40,7 +44,7 @@ const MOCK_SRT_CONTENT: Record<string, string> = {
 00:00:01,000 --> 00:00:05,000
 面对同辈压力，核心是建立自我坐标系。
 miànduì tóngbèi yālì, héxīn shì jiànlì zìwǒ zuòbiāoxì.
-Đối mặt với áp lực đồng trang lứa, cốt lõi là thiết lập hệ quy chiếu của riêng mình.
+Đối mặt với áp lực từ đồng trang lứa, cốt lõi là xây dựng hệ quy chiếu của riêng mình.
 
 2
 00:00:06,000 --> 00:00:10,000
@@ -70,6 +74,7 @@ export default function BilingualDetailPage({
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Quiz State
     const [quizSelected, setQuizSelected] = useState<string | null>(null);
@@ -103,6 +108,17 @@ export default function BilingualDetailPage({
     const grammarList = grammarResult || [];
     const exerciseList = exerciseResult?.exercises || [];
 
+    // --- Premium gate: HSK 4-6 / tier=premium chỉ dành cho user Premium ---
+    const { isPremium, isLoading: premiumLoading } = usePremium();
+    const [gateOpen, setGateOpen] = useState(true);
+    const sectionLocked =
+        !premiumLoading &&
+        !!item &&
+        !canAccessBilingualSection(
+            { level: item?.level ?? null, access_tier: item?.access_tier ?? null },
+            isPremium,
+        );
+
     const { activeIndex, setActiveIndex, binarySearchSubtitle } = useSubtitleSync({
         subtitles: srtData,
         timeToSeconds,
@@ -121,10 +137,11 @@ export default function BilingualDetailPage({
     const handleReplayLine = (lineItem: any, index: number) => {
         if (lineItem?.start) {
             const targetTime = timeToSeconds(String(lineItem.start));
-            if (audio) {
-                audio.currentTime = targetTime;
+            const audioEl = audioRef.current;
+            if (audioEl) {
+                audioEl.currentTime = targetTime;
                 setCurrentTime(targetTime);
-                audio.play().catch((e) => console.log("Play line failed", e));
+                audioEl.play().catch((e) => console.log("Play line failed", e));
                 setIsPlaying(true);
             } else {
                 speakChinese(lineItem.chinese);
@@ -140,6 +157,7 @@ export default function BilingualDetailPage({
     useEffect(() => {
         if (audioUrl) {
             const newAudio = new Audio(audioUrl);
+            audioRef.current = newAudio;
             setAudio(newAudio);
 
             const handleTimeUpdate = () => setCurrentTime(newAudio.currentTime);
@@ -152,6 +170,7 @@ export default function BilingualDetailPage({
 
             return () => {
                 newAudio.pause();
+                audioRef.current = null;
                 newAudio.removeEventListener("timeupdate", handleTimeUpdate);
                 newAudio.removeEventListener("durationchange", handleDurationChange);
                 newAudio.removeEventListener("ended", handleEnded);
@@ -160,12 +179,13 @@ export default function BilingualDetailPage({
     }, [audioUrl]);
 
     const handlePlayPause = () => {
-        if (audio) {
+        const audioEl = audioRef.current;
+        if (audioEl) {
             if (isPlaying) {
-                audio.pause();
+                audioEl.pause();
                 setIsPlaying(false);
             } else {
-                audio.play().catch(e => console.log("Play failed", e));
+                audioEl.play().catch(e => console.log("Play failed", e));
                 setIsPlaying(true);
             }
         } else {
@@ -181,11 +201,12 @@ export default function BilingualDetailPage({
     };
 
     const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (audio && duration > 0) {
+        const audioEl = audioRef.current;
+        if (audioEl && duration > 0) {
             const rect = e.currentTarget.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const newTime = (clickX / rect.width) * duration;
-            audio.currentTime = newTime;
+            audioEl.currentTime = newTime;
             setCurrentTime(newTime);
         }
     };
@@ -196,6 +217,31 @@ export default function BilingualDetailPage({
         return `${m}:${s < 10 ? "0" : ""}${s}`;
     };
 
+    // Phân đoạn chữ Hán giả lập sang các từ rời để click
+    const segmentChineseTextFallback = useCallback((text: string) => {
+        const words: { word: string; pinyin: string }[] = [];
+        let i = 0;
+        while (i < text.length) {
+            let matched = false;
+            for (let len = 4; len >= 1; len--) {
+                if (i + len <= text.length) {
+                    const chunk = text.substring(i, i + len);
+                    if (MOCK_DICTIONARY[chunk]) {
+                        words.push({ word: chunk, pinyin: MOCK_DICTIONARY[chunk].pinyin });
+                        i += len;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (!matched) {
+                const singleChar = text[i];
+                words.push({ word: singleChar, pinyin: "" });
+                i++;
+            }
+        }
+        return words;
+    }, []);
 
     useEffect(() => {
         const loadSubtitle = async () => {
@@ -204,23 +250,23 @@ export default function BilingualDetailPage({
                 try {
                     const srtUrl = `https://marutek.space/assets/${item.SubRip_Subtitle.filename_disk}`;
                     const res = await fetch(srtUrl);
-                    const srtText = await res.text();
-                    const parsed = parseSRTtoArray(srtText);
-                    if (parsed && parsed.length > 0) {
-                        parsedSubtitles = parsed;
+                    if (res.ok) {
+                        const srtContent = await res.text();
+                        parsedSubtitles = parseSRTtoArray(srtContent);
                     }
                 } catch (e) {
-                    console.error("Error loading remote subtitle:", e);
+                    console.error("Failed to load SRT file:", e);
                 }
+            } else if (item?.slug && MOCK_SRT_CONTENT[item.slug]) {
+                parsedSubtitles = parseSRTtoArray(MOCK_SRT_CONTENT[item.slug]);
             }
 
-            // Fallback sang Mock SRT
             if (parsedSubtitles.length === 0) {
-                const mockSrt = MOCK_SRT_CONTENT[id] || MOCK_SRT_CONTENT["bilingual-pressure"] || MOCK_SRT_CONTENT["1"];
-                parsedSubtitles = parseSRTtoArray(mockSrt);
+                setSrtData([]);
+                return;
             }
 
-            // Phân tách từ Hán ngữ thực thông qua API
+            // Gọi API segment backend
             try {
                 const chineseTexts = parsedSubtitles.map((p) => p.chinese);
                 const segmentResult = await apiSegmentChineseText(chineseTexts);
@@ -252,33 +298,7 @@ export default function BilingualDetailPage({
         };
 
         loadSubtitle();
-    }, [item, id]);
-
-    // Phân đoạn chữ Hán giả lập sang các từ rời để click
-    const segmentChineseTextFallback = (text: string) => {
-        const words: { word: string; pinyin: string }[] = [];
-        let i = 0;
-        while (i < text.length) {
-            let matched = false;
-            for (let len = 4; len >= 1; len--) {
-                if (i + len <= text.length) {
-                    const chunk = text.substring(i, i + len);
-                    if (MOCK_DICTIONARY[chunk]) {
-                        words.push({ word: chunk, pinyin: MOCK_DICTIONARY[chunk].pinyin });
-                        i += len;
-                        matched = true;
-                        break;
-                    }
-                }
-            }
-            if (!matched) {
-                const singleChar = text[i];
-                words.push({ word: singleChar, pinyin: "" });
-                i++;
-            }
-        }
-        return words;
-    };
+    }, [item, id, segmentChineseTextFallback]);
 
 
 
@@ -323,6 +343,33 @@ export default function BilingualDetailPage({
         }
     };
 
+    // Bài đọc premium: Free chỉ xem được HSK 1–3 / tier=free — chặn trước khi render nội dung
+    if (sectionLocked) {
+        return (
+            <PageContainer maxWidth="narrow" className="gap-6">
+                <BackButton href="/bilingual" label="Danh sách bài đọc" />
+                <div className="w-full rounded-3xl border border-amber-200 bg-white p-12 text-center dark:border-amber-900/40 dark:bg-zinc-900">
+                    <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
+                        <Lock className="size-6 text-white" />
+                    </div>
+                    <p className="mt-4 text-sm font-black text-zinc-900 dark:text-white">
+                        Bài đọc này dành cho tài khoản Premium
+                    </p>
+                    <p className="mt-2 text-xs font-semibold leading-relaxed text-zinc-400">
+                        Gói Free mở các bài HSK 1–3. Nâng cấp Premium để đọc toàn bộ bài đọc song ngữ kèm từ vựng, ngữ pháp và luyện tập.
+                    </p>
+                    <Button asChild className="mt-6 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 font-bold text-white hover:from-amber-600 hover:to-orange-600">
+                        <Link href="/pricing">Nâng cấp Premium</Link>
+                    </Button>
+                </div>
+                <PremiumGate
+                    isOpen={gateOpen}
+                    onClose={() => setGateOpen(false)}
+                    feature="bài đọc song ngữ nâng cao"
+                />
+            </PageContainer>
+        );
+    }
 
     return (
         <>
@@ -356,10 +403,12 @@ export default function BilingualDetailPage({
                 <div className="bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/50 dark:border-zinc-800 p-5 rounded-2xl flex flex-col items-center gap-3 w-full shadow-3xs">
                     <div className="flex items-center gap-6 justify-center">
                         <button
+                            type="button"
                             onClick={() => {
-                                if (audio) {
-                                    audio.currentTime = Math.max(0, audio.currentTime - 5);
-                                    setCurrentTime(audio.currentTime);
+                                const audioEl = audioRef.current;
+                                if (audioEl) {
+                                    audioEl.currentTime = Math.max(0, audioEl.currentTime - 5);
+                                    setCurrentTime(audioEl.currentTime);
                                 }
                             }}
                             className="text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors text-xl font-bold cursor-pointer border-none bg-transparent"
@@ -368,16 +417,19 @@ export default function BilingualDetailPage({
                             <SkipBack className="h-5 w-5" />
                         </button>
                         <button
+                            type="button"
                             onClick={handlePlayPause}
                             className="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center hover:bg-amber-600 transition-all shadow-xs active:scale-95 cursor-pointer font-bold border-none"
                         >
                             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                         </button>
                         <button
+                            type="button"
                             onClick={() => {
-                                if (audio) {
-                                    audio.currentTime = Math.min(duration, audio.currentTime + 5);
-                                    setCurrentTime(audio.currentTime);
+                                const audioEl = audioRef.current;
+                                if (audioEl) {
+                                    audioEl.currentTime = Math.min(duration, audioEl.currentTime + 5);
+                                    setCurrentTime(audioEl.currentTime);
                                 }
                             }}
                             className="text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors text-xl font-bold cursor-pointer border-none bg-transparent"
@@ -393,7 +445,24 @@ export default function BilingualDetailPage({
                             {formatTime(currentTime)}
                         </span>
                         <div
+                            role="slider"
+                            aria-label="Progress bar"
+                            aria-valuenow={currentTime}
+                            aria-valuemin={0}
+                            aria-valuemax={duration || 1}
+                            tabIndex={0}
                             onClick={handleProgressClick}
+                            onKeyDown={(e) => {
+                                const audioEl = audioRef.current;
+                                if (!audioEl) return;
+                                if (e.key === "ArrowLeft") {
+                                    audioEl.currentTime = Math.max(0, audioEl.currentTime - 5);
+                                    setCurrentTime(audioEl.currentTime);
+                                } else if (e.key === "ArrowRight") {
+                                    audioEl.currentTime = Math.min(duration, audioEl.currentTime + 5);
+                                    setCurrentTime(audioEl.currentTime);
+                                }
+                            }}
                             className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full relative cursor-pointer overflow-hidden"
                         >
                             <div
@@ -428,6 +497,7 @@ export default function BilingualDetailPage({
                             </div>
                             <div className="flex items-center gap-3 mt-1">
                                 <button
+                                    type="button"
                                     onClick={() => speakChinese(selectedWord.word)}
                                     className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border-none cursor-pointer"
                                 >
@@ -436,11 +506,13 @@ export default function BilingualDetailPage({
                                 </button>
                                 {selectedWord.id && (
                                     <button
+                                        type="button"
                                         onClick={async () => {
                                             try {
                                                 await bilingualApi.getVocabularyById(selectedWord.id!);
                                                 alert("Đã lưu từ vựng vào sổ tay thành công!");
                                             } catch (e) {
+                                                console.warn("Lưu từ vựng thất bại:", e);
                                                 alert("Lưu từ vựng thất bại hoặc từ đã được lưu!");
                                             }
                                         }}
@@ -467,6 +539,7 @@ export default function BilingualDetailPage({
                         const isActive = activeTab === tab.id;
                         return (
                             <button
+                                type="button"
                                 key={tab.id}
                                 onClick={() => {
                                     setActiveTab(tab.id as any);

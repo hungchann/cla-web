@@ -11,12 +11,13 @@ import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
 import { PremiumGate } from "@/components/PremiumGate";
 import { usePremiumGate } from "@/lib/hooks/usePremiumGate";
+import { canAccessStoryChapter } from "@/lib/premium";
 import { buildCheckoutUrl } from "@/api/plans";
 import { RubyText } from "@/components/RubyText";
 import { PinyinToggle } from "@/components/PinyinToggle";
 import { X } from "lucide-react";
 
-export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function StoryDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
   const queryClient = useQueryClient();
   
@@ -158,7 +159,9 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
 
     const formatMeaning = (raw: unknown): string => {
       if (Array.isArray(raw)) return raw.join(", ");
-      return String(raw || "");
+      if (typeof raw === "string") return raw;
+      if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
+      return "";
     };
 
     try {
@@ -201,8 +204,8 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const handleSelectChapter = (index: number) => {
-    // Free user chỉ đọc được chương đầu tiên.
-    if (!isPremium && index > 0) {
+    // Free user chỉ đọc được chương đầu tiên / chương is_free_preview.
+    if (!canAccessStoryChapter(chapters[index], index, isPremium)) {
       setPremiumModalVisible(true);
       return;
     }
@@ -252,7 +255,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                       : fallbackSegments(line.chinese);
 
                     return (
-                      <div key={idx} className="space-y-2">
+                      <div key={line.chinese || `line-${idx}`} className="space-y-2">
                         {/* Chinese + Pinyin inline */}
                         <p className="leading-relaxed">
                           {words.map((w: { word: string; pinyin: string }, i: number) => (
@@ -283,34 +286,41 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
 
                 {selectedWord && (
+                  /* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
                   <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-                    onClick={() => setSelectedWord(null)}
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) {
+                        setSelectedWord(null);
+                      }
+                    }}
                   >
-                    <div
-                      role="dialog"
-                      aria-modal="true"
-                      aria-label={`Tra từ ${selectedWord.word}`}
-                      className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-zinc-900"
-                      onClick={(event) => event.stopPropagation()}
-                    >
+                    <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-zinc-900 cursor-default">
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-extrabold text-amber-700 dark:text-amber-500">
+                            <h4 className="text-2xl font-black text-amber-600 dark:text-amber-500">
                               {selectedWord.word}
-                            </span>
-                            <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-                              {isTranslating ? "Đang tải..." : selectedWord.pinyin}
-                            </span>
+                            </h4>
+                            {isTranslating ? (
+                              <span className="inline-block w-4 h-4 border-2 border-zinc-200 border-t-amber-600 rounded-full animate-spin"></span>
+                            ) : (
+                              <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-550">
+                                {selectedWord.pinyin}
+                              </span>
+                            )}
                           </div>
-                          <p className="mt-3 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                            {selectedWord.meaning}
-                          </p>
+                          <div className="mt-3">
+                            <h5 className="text-[10px] font-black uppercase tracking-wider text-zinc-400">
+                              Ý nghĩa
+                            </h5>
+                            <p className="mt-1 text-sm font-semibold text-zinc-700 dark:text-zinc-350 leading-relaxed">
+                              {selectedWord.meaning}
+                            </p>
+                          </div>
                         </div>
                         <button
                           type="button"
-                          aria-label="Đóng tra từ"
                           onClick={() => setSelectedWord(null)}
                           className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
                         >
@@ -324,6 +334,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                 {/* Chapter Navigation Buttons */}
                 <div className="flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800 pt-6">
                   <button
+                    type="button"
                     onClick={() => handleSelectChapter(selectedChapterIndex! - 1)}
                     disabled={selectedChapterIndex === 0}
                     className="px-4 py-2 text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-xl text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer"
@@ -331,6 +342,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                     &larr; Chương trước
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleSelectChapter(selectedChapterIndex! + 1)}
                     disabled={selectedChapterIndex === chapters.length - 1}
                     className="px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl disabled:opacity-40 cursor-pointer"
@@ -369,15 +381,16 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
               <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
                 {chapters.map((chap: any, idx: number) => {
                   const isActive = selectedChapterIndex === idx;
-                  const isLocked = !isPremium && idx > 0;
+                  const isLocked = !canAccessStoryChapter(chap, idx, isPremium);
                   return (
                     <button
+                      type="button"
                       key={chap.id}
                       onClick={() => handleSelectChapter(idx)}
                       className={`w-full text-left text-xs font-bold p-3 rounded-xl border transition-all cursor-pointer ${
                         isActive
-                          ? "bg-amber-500 border-amber-500 text-white shadow-xs"
-                          : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                           ? "bg-amber-500 border-amber-500 text-white shadow-xs"
+                           : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
                       }`}
                     >
                       <span className="flex items-center justify-between gap-2">

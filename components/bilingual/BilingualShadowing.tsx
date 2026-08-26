@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Volume2, Mic, Square, ChevronLeft, ChevronRight, RefreshCw, Play, Pause, Loader2 } from "lucide-react";
 
 interface BilingualShadowingProps {
@@ -51,6 +51,13 @@ export function BilingualShadowing({
     segmentedWords: [],
   };
 
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }, []);
+
   // Stop recording when component unmounts
   useEffect(() => {
     return () => {
@@ -83,7 +90,7 @@ export function BilingualShadowing({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRecording]);
+  }, [isRecording, stopRecording]);
 
   // Handle user audio playing state
   useEffect(() => {
@@ -150,12 +157,6 @@ export function BilingualShadowing({
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
 
   const toggleUserAudioPlayback = () => {
     if (userAudioRef.current) {

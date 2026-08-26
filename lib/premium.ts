@@ -24,6 +24,36 @@ export const FREE_NOTEBOOK_LIMIT = 1;
 export const PREMIUM_CACHE_KEY = "cla_premium_status";
 export const PREMIUM_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/** Danh sách lesson-id bài tập user Free đã mở (enforce FREE_EXERCISE_LIMIT bền qua phiên). */
+export const FREE_EXERCISE_OPENS_KEY = "cla_free_exercise_opens";
+
+/** Đọc danh sách bài tập user Free đã mở. */
+export function getFreeExerciseOpens(): string[] {
+  try {
+    const raw = window.localStorage.getItem(FREE_EXERCISE_OPENS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Ghi nhận 1 bài tập user Free đã mở (idempotent theo lessonId). */
+export function markExerciseOpened(lessonId: string | number): void {
+  try {
+    const opens = getFreeExerciseOpens();
+    const id = String(lessonId);
+    if (!opens.includes(id)) {
+      window.localStorage.setItem(
+        FREE_EXERCISE_OPENS_KEY,
+        JSON.stringify([...opens, id]),
+      );
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export interface AccountTypeInfo {
   id?: string | number | null;
   name?: string | null;

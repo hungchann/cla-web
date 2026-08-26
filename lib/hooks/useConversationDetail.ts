@@ -38,6 +38,17 @@ export function useConversationDetail(conversationId: string | null, overrideIte
   const [activeRecordingId, setActiveRecordingId] = useState<string | null>(null);
   const [premiumModalVisible, setPremiumModalVisible] = useState(false);
 
+  const handleSpeak = useCallback((text: string) => {
+    if (!text) {
+      return;
+    }
+    try {
+      speakChinese(text);
+    } catch (error) {
+      logger.error("Failed to play speech", error);
+    }
+  }, []);
+
   // ---  TỰ ĐỘNG HIỂN THỊ CÂU KẾ TIẾP & PHÁT AUDIO ---
   useEffect(() => {
     if (loading || items.length === 0) return;
@@ -65,7 +76,7 @@ export function useConversationDetail(conversationId: string | null, overrideIte
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [visibleCount, items, loading]);
+  }, [visibleCount, items, loading, handleSpeak]);
 
   useEffect(() => {
     const unsubscribe = audioRecordingService.subscribe((state) => {
@@ -224,16 +235,6 @@ export function useConversationDetail(conversationId: string | null, overrideIte
     setVisibleCount((prev) => Math.min(prev + 1, items.length));
   }, [hasMoreMessages, items.length]);
 
-  const handleSpeak = useCallback((text: string) => {
-    if (!text) {
-      return;
-    }
-    try {
-      speakChinese(text);
-    } catch (error) {
-      logger.error("Failed to play speech", error);
-    }
-  }, []);
 
   const updateMessageRecording = useCallback(
     (messageId: string, updates: Partial<NonNullable<ConversationMessage["recording"]>>) => {
