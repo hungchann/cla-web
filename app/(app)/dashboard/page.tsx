@@ -3,7 +3,6 @@ import {
     ArrowRight,
     BookOpen,
     BookText,
-    Facebook,
     Flame,
     GraduationCap,
     Headphones,
@@ -13,12 +12,27 @@ import {
     MapPin,
     Phone,
     Video,
-    Youtube,
 } from "lucide-react"
 
 import { PageHeader } from "@/components/PageHeader"
 import { Card } from "@/components/ui/card"
 import { BannersCarousel } from "@/components/BannersCarousel"
+
+function FacebookIcon({ className }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+            <path d="M13.5 21v-7h2.5l.5-3h-3V9.05c0-.87.24-1.55 1.6-1.55H16.6V4.85c-.29-.04-1.28-.13-2.43-.13-2.4 0-4.05 1.47-4.05 4.16V11H7.5v3H10v7h3.5Z" />
+        </svg>
+    )
+}
+
+function YoutubeIcon({ className }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+            <path d="M21.58 7.19a2.5 2.5 0 0 0-1.76-1.77C18.25 5 12 5 12 5s-6.25 0-7.82.42a2.5 2.5 0 0 0-1.76 1.77A26.2 26.2 0 0 0 2 12a26.2 26.2 0 0 0 .42 4.81 2.5 2.5 0 0 0 1.76 1.77C5.75 19 12 19 12 19s6.25 0 7.82-.42a2.5 2.5 0 0 0 1.76-1.77A26.2 26.2 0 0 0 22 12a26.2 26.2 0 0 0-.42-4.81ZM10 15V9l5.2 3L10 15Z" />
+        </svg>
+    )
+}
 
 const learningAreas = [
     {
@@ -79,8 +93,8 @@ const contactInfo = [
 ]
 
 const socialLinks = [
-    { icon: Facebook, label: "Facebook", href: "https://facebook.com" },
-    { icon: Youtube, label: "YouTube", href: "https://youtube.com" },
+    { icon: FacebookIcon, label: "Facebook", href: "https://facebook.com" },
+    { icon: YoutubeIcon, label: "YouTube", href: "https://youtube.com" },
 ]
 
 export default function DashboardPage() {
