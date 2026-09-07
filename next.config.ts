@@ -28,6 +28,16 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
       {
+        protocol: "https",
+        hostname: "sunchinese.vn",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.sunchinese.vn",
+        pathname: "/**",
+      },
+      {
         protocol: "http",
         hostname: "localhost",
       },

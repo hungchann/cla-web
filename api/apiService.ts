@@ -10,6 +10,7 @@ import {
   GET_VOCAB_EXAMPLES_QUERY,
 } from "@/api/graphql/documents";
 import {
+  API_URL,
   EXERCISE_COUNT_BY_LESSON_AND_TOPIC_FLOW_PATH,
   EXERCISE_COUNT_BY_TOPIC_FLOW_PATH,
   REGISTER_FLOW_PATH,
@@ -323,6 +324,77 @@ export async function logoutUser() {
     await tokenUtils.clearAllTokens();
   } catch (error) {
     logger.warn("Lỗi đăng xuất", error);
+    throw error;
+  }
+}
+
+/**
+ * Đọc token SSO từ URL fragment (#access_token=...) do patch openid.js của
+ * Directus trả về và lưu vào cookie/localStorage. Trả về false nếu fragment
+ * không chứa token (dùng kết quả để fallback sang exchange session cookie).
+ */
+export async function saveGoogleTokensFromFragment(hash: string) {
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const accessToken = params.get("access_token");
+  if (!accessToken) return false;
+
+  const refreshToken = params.get("refresh_token") ?? undefined;
+  const expiresRaw = params.get("expires");
+  const expires = expiresRaw != null && expiresRaw !== "" ? Number(expiresRaw) : null;
+
+  clearUserCache();
+  await tokenUtils.saveTokens(accessToken, refreshToken, undefined, expires);
+  const user = await getUserMe();
+  await tokenUtils.saveTokens(accessToken, refreshToken, user, expires);
+  return true;
+}
+
+/**
+ * Đổi session cookie từ callback Directus SSO (Google) thành cặp token.
+ * Dùng axios thuần + withCredentials để gửi session cookie cross-site;
+ * KHÔNG dùng apiInstance để tránh gắn Bearer token cũ vào request refresh.
+ */
+export async function exchangeGoogleSession() {
+  clearUserCache();
+  try {
+    const response = await axios.post(
+      `${API_URL}/auth/refresh`,
+      { mode: "json" },
+      {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        timeout: 30000,
+      },
+    );
+
+    const payload = response.data?.data;
+    if (!payload?.access_token) {
+      throw new Error("Phiên đăng nhập Google không hợp lệ hoặc đã hết hạn.");
+    }
+
+    await tokenUtils.saveTokens(
+      payload.access_token,
+      payload.refresh_token,
+      undefined,
+      payload.expires ?? null,
+    );
+
+    const user = await getUserMe();
+    await tokenUtils.saveTokens(
+      payload.access_token,
+      payload.refresh_token,
+      user,
+      payload.expires ?? null,
+    );
+    return user;
+  } catch (error) {
+    logger.warn(
+      "Google SSO: đổi session thất bại:",
+      isAxiosError(error) ? error.response?.data || error.message : error,
+    );
     throw error;
   }
 }

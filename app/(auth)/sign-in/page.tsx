@@ -7,6 +7,7 @@ import { loginUser } from "@/api/apiService";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Loader2, AlertCircle } from "lucide-react";
 import { SunChineseLogo } from "@/components/SunChineseLogo";
 
@@ -113,6 +114,16 @@ function SignInForm() {
                             )}
                         </Button>
                     </form>
+
+                    <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800" />
+                        <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                            Hoặc
+                        </span>
+                        <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800" />
+                    </div>
+
+                    <GoogleButton callbackPath={redirectTo} />
 
                     <div className="text-center text-xs text-zinc-400 font-bold pt-4 border-t border-zinc-100 dark:border-zinc-800">
                         Chưa có tài khoản?{" "}

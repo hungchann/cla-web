@@ -38,6 +38,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.rewrite(new URL("https://marutek.space/api/speech/transcribe"));
   }
 
+  // SSO callback — user đang giữa luồng đăng nhập Google (có thể chưa có token
+  // hoặc còn token cũ muốn đổi tài khoản) → luôn cho qua, không redirect.
+  if (pathname === "/auth/google/callback") {
+    return NextResponse.next();
+  }
+
   const accessToken = request.cookies.get("access_token")?.value;
   const hasToken = Boolean(accessToken);
 
