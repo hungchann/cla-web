@@ -65,6 +65,7 @@ export function VideoVocabStep({
                         src={videoSource}
                         controls
                         controlsList="nodownload"
+                        preload="metadata"
                         className="h-full w-full object-contain"
                         onTimeUpdate={() => {
                             if (videoRef.current) {

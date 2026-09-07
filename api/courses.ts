@@ -159,12 +159,15 @@ export const coursesApi = {
     const items = await fetchLessonItems(
       "lesson_vocab",
       lessonId,
-      "id,word,pinyin,meaning,time_start,time_end,gif_id,sort,status",
+      "id,word,pinyin,meaning,time_start,time_end,gif_id,sort,status,gifs.directus_files_id.id",
       "sort",
     );
     return items.map((v: any) => ({
       ...v,
       gif_url: assetUrl(v.gif_id),
+      gif_urls: (v.gifs || [])
+        .map((f: any) => assetUrl(f?.directus_files_id?.id))
+        .filter(Boolean),
     }));
   },
 
@@ -172,11 +175,28 @@ export const coursesApi = {
   async getLessonVideo(lessonId: string | number): Promise<LessonVideo | null> {
     const row = await fetchLessonSingle("lesson_video", lessonId, "id,video_file,video_file.filename_disk,srt_file,srt_file.filename_disk,video_cover,video_cover.filename_disk,status");
     if (!row) return null;
-    return {
+    const video: LessonVideo = {
       ...row,
       video_url: assetUrl(row.video_file),
       srt_url: assetUrl(row.srt_file),
     };
+    // Schema lesson_video chỉ lưu srt_file (file), không có trường text
+    // subtitle_content mà learn page đọc → tự fetch nội dung SRT về.
+    if (!video.subtitle_content && video.srt_url) {
+      try {
+        const res = await apiInstance.get<string>(video.srt_url, {
+          responseType: "text",
+          timeout: 15000,
+        });
+        if (typeof res.data === "string") video.subtitle_content = res.data;
+      } catch (error: any) {
+        logger.warn(
+          `[Courses API] getLessonVideo(${lessonId}) fetch SRT content failed:`,
+          error?.response?.status || error?.message || error,
+        );
+      }
+    }
+    return video;
   },
 
   /** Lý thuyết 1:1 của lesson (vocab_theory) — vocab_items M2M + notes + image. */
@@ -184,7 +204,7 @@ export const coursesApi = {
     const row = await fetchLessonSingle(
       "lesson_theory",
       lessonId,
-      "id,title,notes,content,image_id,image_id.filename_disk,status,vocab_display_map_id,vocab_items.id,vocab_items.sort,vocab_items.vocab_items_id.id,vocab_items.vocab_items_id.name,vocab_items.vocab_items_id.pinyin,vocab_items.vocab_items_id.note,vocab_items.vocab_items_id.gif_id"
+      "id,title,notes,content,image_id,image_id.filename_disk,status,vocab_display_map_id,vocab_items.id,vocab_items.sort,vocab_items.vocab_items_id.id,vocab_items.vocab_items_id.name,vocab_items.vocab_items_id.pinyin,vocab_items.vocab_items_id.note,vocab_items.vocab_items_id.gif_id,vocab_items.vocab_items_id.gifs.directus_files_id.id"
     );
     if (!row) return null;
     return {
@@ -268,21 +288,23 @@ export const coursesApi = {
 
   async getBanners(): Promise<Banner[]> {
     try {
-      const r = await apiInstance.get(`/items/banners?filter[status][_eq]=published&sort=sort&fields=id,image,image.filename_disk,link,sort,status`);
+      const r = await apiInstance.get(`/items/banners?filter[status][_neq]=archived&sort=sort&fields=id,image,image.filename_disk,link,sort,status`);
       const items: any[] = r.data?.data || [];
       return items.map((b) => {
         const img = b.image;
+        let imageUrl: string | undefined = undefined;
+        if (img) {
+          if (typeof img === "string") {
+            imageUrl = img.startsWith("http") ? img : `${API_URL}/assets/${img}`;
+          } else if (img.filename_disk) {
+            imageUrl = `${API_URL}/assets/${img.filename_disk}`;
+          } else if (img.id) {
+            imageUrl = `${API_URL}/assets/${img.id}`;
+          }
+        }
         return {
           ...b,
-          image_url: img
-            ? typeof img === "string"
-              ? `${API_URL}/assets/${img}`
-              : img.filename_disk
-              ? `${API_URL}/assets/${img.filename_disk}`
-              : img.id
-              ? `${API_URL}/assets/${img.id}`
-              : undefined
-            : undefined,
+          image_url: imageUrl,
         };
       });
     } catch (error: any) {

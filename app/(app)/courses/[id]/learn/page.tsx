@@ -198,6 +198,7 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                     time_end: v.time_end,
                     gif_id: typeof v.gif_id === "object" ? v.gif_id?.id : v.gif_id,
                     gif_url: v.gif_url,
+                    gif_urls: (v as any).gif_urls,
                     senses: (v as any).senses?.map((s: any) => ({
                         id: s.id,
                         pos_label: s.pos_label,
@@ -267,6 +268,7 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                         note: (v as any).note,
                         gif_id: typeof v.gif_id === "object" ? (v.gif_id as any)?.id : v.gif_id,
                         gif_url: v.gif_url,
+                        gif_urls: (v as any).gif_urls,
                         senses: (v as any).senses || [
                             {
                                 id: `fallback-${v.id}`,
@@ -287,6 +289,7 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                             note: v.note,
                             gif_id: v.gif_id,
                             gif_url: v.gif_url,
+                            gif_urls: (v as any).gif_urls,
                             senses: v.senses || [],
                         }))
                     );

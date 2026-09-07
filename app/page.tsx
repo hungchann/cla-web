@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SunChineseLogo } from "@/components/SunChineseLogo";
+import { BannersCarousel } from "@/components/BannersCarousel";
 
 export const metadata: Metadata = {
   title: "CLA – Chinese Learning App | Học Tiếng Trung Hiệu Quả",
@@ -157,6 +158,11 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Carousel / Banner quảng cáo */}
+        <section className="max-w-5xl mx-auto px-4 sm:px-8 pt-10">
+          <BannersCarousel />
         </section>
 
         {/* Features */}

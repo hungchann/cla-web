@@ -28,6 +28,8 @@ export interface LessonVideo {
   video_cover?: string | { id: string; filename_disk?: string } | null;
   video_url?: string;
   srt_url?: string;
+  /** Nội dung SRT dạng text — web tự fetch từ srt_file (schema chỉ lưu file). */
+  subtitle_content?: string;
   status?: string;
 }
 
@@ -102,6 +104,9 @@ export interface LessonVocab {
   time_end?: string;
   gif_id?: string | { id: string; filename_disk?: string } | null;
   gif_url?: string;
+  /** Nhiều GIF minh họa từ junction field `gifs` (M2M directus_files). */
+  gifs?: Array<{ directus_files_id?: { id?: string } | null }>;
+  gif_urls?: string[];
   sort?: number;
   status?: string;
 }

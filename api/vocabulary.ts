@@ -120,6 +120,15 @@ export const vocabularyApi = {
             ? `${API_URL}/assets/${gifId.id}`
             : undefined
           : undefined;
+        const gifUrls = (item.gifs || [])
+          .map((f: any) => {
+            const fid =
+              typeof f?.directus_files_id === "object"
+                ? f?.directus_files_id?.id
+                : f?.directus_files_id;
+            return fid ? `${API_URL}/assets/${fid}` : undefined;
+          })
+          .filter(Boolean);
 
         return {
           id: item.id,
@@ -128,6 +137,7 @@ export const vocabularyApi = {
           note: item.note || "",
           gif_id: typeof gifId === "object" ? gifId?.id : gifId,
           gif_url: gifUrl,
+          gif_urls: gifUrls.length > 0 ? gifUrls : undefined,
           senses: itemMeanings.map((m: any) => ({
             id: m.id,
             pos_label: m.pos_id?.label_vi || undefined,
@@ -177,7 +187,7 @@ export const vocabularyApi = {
 
       // Lấy junction items để lấy vocab items
       const itemsRes = await apiInstance.get(
-        `/items/vocab_display_map_vocab_items?filter[vocab_display_map_id][_eq]=${displayMapId}&fields=id,vocab_items_id.id,vocab_items_id.name,vocab_items_id.pinyin,vocab_items_id.note,vocab_items_id.gif_id`,
+        `/items/vocab_display_map_vocab_items?filter[vocab_display_map_id][_eq]=${displayMapId}&fields=id,vocab_items_id.id,vocab_items_id.name,vocab_items_id.pinyin,vocab_items_id.note,vocab_items_id.gif_id,vocab_items_id.gifs.directus_files_id.id`,
       );
       const rawItems: any[] = itemsRes.data?.data || [];
       const vocabItems = rawItems

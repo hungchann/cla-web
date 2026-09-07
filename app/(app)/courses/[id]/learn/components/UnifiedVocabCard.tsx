@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Volume2, Play, RefreshCw, Target } from "lucide-react";
 import { speakChinese } from "@/lib/utils/speech";
 import { FlashcardDeckPicker } from "./FlashcardDeckPicker";
+import { GifStrip } from "./GifStrip";
 import type { VocabItem } from "../types";
 
 interface UnifiedVocabCardProps {
@@ -130,14 +131,12 @@ export function UnifiedVocabCard({ vocab, isTimedActive }: UnifiedVocabCardProps
                     <Volume2 className="w-5 h-5" />
                 </button>
 
-                {vocab.gif_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={vocab.gif_url}
-                        alt={`Minh họa nét viết chữ ${vocab.word}`}
-                        className="w-14 h-14 rounded-xl border border-amber-200 bg-white object-contain p-1 shadow-xs shrink-0 dark:bg-zinc-800 dark:border-zinc-700"
-                    />
-                )}
+                <GifStrip
+                    urls={vocab.gif_urls}
+                    fallbackUrl={vocab.gif_url}
+                    word={vocab.word || ""}
+                    itemClassName="size-14"
+                />
 
                 <div>
                     <div className="flex items-center gap-2">

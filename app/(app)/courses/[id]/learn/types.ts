@@ -23,6 +23,8 @@ export type VocabItem = {
     senses?: VocabSense[];
     gif_id?: string | null;
     gif_url?: string | null;
+    /** Nhiều GIF minh họa (từ junction gif_files) — ưu tiên hơn gif_url. */
+    gif_urls?: string[];
 };
 
 export type SubtitleItem = {

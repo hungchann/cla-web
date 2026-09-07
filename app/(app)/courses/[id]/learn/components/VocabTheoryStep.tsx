@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Volume2, FileText } from "lucide-react";
 import DOMPurify from "dompurify";
 import { speakChinese } from "@/lib/utils/speech";
+import { GifStrip } from "./GifStrip";
 import type { LessonTheory } from "@/lib/types/course";
 import type { VocabItem } from "../types";
 
@@ -56,14 +57,12 @@ export function VocabTheoryStep({
                                         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-xs font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
                                             {itemIndex + 1}
                                         </span>
-                                        {item.gif_url && (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={item.gif_url}
-                                                alt={`Minh họa viết chữ ${item.word}`}
-                                                className="size-12 rounded-lg border border-amber-200 bg-white object-contain p-0.5 shadow-2xs dark:border-zinc-700 dark:bg-zinc-800"
-                                            />
-                                        )}
+                                        <GifStrip
+                                            urls={item.gif_urls}
+                                            fallbackUrl={item.gif_url}
+                                            word={item.word || ""}
+                                            itemClassName="size-12"
+                                        />
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <h4 className="text-xl font-black tracking-wide text-zinc-900 dark:text-white">
@@ -112,15 +111,13 @@ export function VocabTheoryStep({
                                 </div>
 
                                 {noteOpen && (item.note || item.gif_url) && (
-                                    <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-amber-100 bg-amber-50/60 p-4 text-sm font-semibold leading-relaxed text-zinc-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-zinc-300">
-                                        {item.gif_url && (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={item.gif_url}
-                                                alt={`Cách viết chữ ${item.word}`}
-                                                className="h-24 w-24 rounded-lg border border-amber-200 bg-white object-contain p-1 shadow-xs dark:border-zinc-700 dark:bg-zinc-800"
-                                            />
-                                        )}
+                                    <div className="mt-4 flex flex-col items-start gap-4 rounded-xl border border-amber-100 bg-amber-50/60 p-4 text-sm font-semibold leading-relaxed text-zinc-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-zinc-300 sm:flex-row sm:items-center">
+                                        <GifStrip
+                                            urls={item.gif_urls}
+                                            fallbackUrl={item.gif_url}
+                                            word={item.word || ""}
+                                            itemClassName="size-24"
+                                        />
                                         {item.note && <div className="flex-1 min-w-[200px]">{item.note}</div>}
                                     </div>
                                 )}

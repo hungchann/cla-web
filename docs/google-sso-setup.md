@@ -66,7 +66,7 @@ https://api.sunchinese.vn/auth/login/google/callback
 
 (khớp chính xác từng ký tự — Directus build từ `PUBLIC_URL`.)
 
-## 4. Gộp tài khoản theo email — TỰ ĐỘNG (đã patch)
+## 4. Gộp tài khoản theo email — TỰ ĐỘNG (đã patch) + GIỮ CẢ 2 CÁCH ĐĂNG NHẬP
 
 Directus mặc định chỉ match qua `external_identifier` và **từ chối** khi email trùng user
 password (`RECORD_NOT_UNIQUE`). Repo đã patch `patches/openid.js` (mount vào container) để
@@ -77,8 +77,21 @@ password (`RECORD_NOT_UNIQUE`). Repo đã patch `patches/openid.js` (mount vào 
 - Bảo vệ trong patch: bỏ qua tài khoản admin (`directus_roles.admin_access`), yêu cầu
   `email_verified` từ Google.
 - Log khi link: `[OpenID] Auto-linked existing user ...` trong `docker logs`.
-- ⚠️ Sau khi link, user KHÔNG còn đăng nhập password được (1 user = 1 provider).
 - ⚠️ Khi nâng cấp Directus: kiểm tra diff `patches/openid.js` với bản mới, cập nhật lại patch.
+
+### Dual login (password + Google cùng 1 tài khoản) — ĐÃ HOẠT ĐỘNG
+
+`patches/authentication.js` (dòng ~78) có escape hatch: cho phép login password qua provider
+`default` cho user đã gộp (`provider=google`) **nếu user còn password hash**:
+
+```
+if (user?.status !== 'active' ||
+    (user?.provider !== providerName && !(providerName === 'default' && user?.password)))
+```
+
+Đã verify end-to-end (07/09/2026): tạo user test → login password 200 → set
+`provider=google` → login password **vẫn 200** ✓. User Google tạo mới (không có password)
+vẫn bị chặn password login ✓ đúng kỳ vọng.
 
 ## 4b. Pin IP Google (VPS VN → Google flaky)
 
@@ -95,11 +108,15 @@ random fail (`ETIMEDOUT` trong log). Giải pháp:
 3. Khi SSO/mail đột nhiên lỗi `ETIMEDOUT`: xem `ip-pin-heal.log`; nếu heal không tự xử lý
    được, chạy tay: `bash /root/Directus/directus_education/google-ip-heal.sh`.
 
-## 5. `user_profiles` cho user Google mới
+## 5. `user_profiles` cho user Google mới — TỰ ĐỘNG (đã patch)
 
-User tạo bởi SSO **không có** row `user_profiles` (bypass luồng register Flow). Code web đã
-xử lý graceful (`getUserProfile()` trả `null`). Nếu cần profile ngay, tạo Directus Flow
-trigger `users.create` (filter `provider = google`) để auto-insert `user_profiles` rỗng.
+User tạo mới bởi SSO trước đây không có row `user_profiles` (bypass luồng register Flow) →
+flow premium trả rỗng (free, đúng mặc định) nhưng profile/HSK/targets bị null.
+
+**Đã patch** `patches/openid.js`: ngay sau khi tạo user qua SSO, tự tạo
+`user_profiles { user_id, notification_enabled: true }` (date_created tự fill bởi special
+`date-created`). Lỗi tạo profile được nuốt (warn log) để không hỏng login. Verify: đăng nhập
+Google bằng Gmail hoàn toàn mới → `user_profiles` xuất hiện ngay.
 
 ## 6. Checklist test (sau khi DNS + Google URI xong)
 

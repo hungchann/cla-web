@@ -385,6 +385,24 @@ function CheckoutView({
             />
           </div>
 
+          <div className="rounded-2xl border border-zinc-200/70 bg-zinc-50/60 p-4 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-400">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+              <p className="leading-relaxed">
+                Sau khi chuyển khoản thành công, quản trị viên sẽ xác nhận trong giờ hành chính và
+                kích hoạt gói Premium cho tài khoản của bạn. Mọi thắc mắc liên hệ fanpage{" "}
+                <a
+                  href="https://www.facebook.com/sunchineseapp"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-amber-600 underline hover:text-amber-700"
+                >
+                  Sun Chinese
+                </a>.
+              </p>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label className="text-xs font-bold text-zinc-500">
               Nội dung chuyển khoản (email đăng ký)
@@ -575,22 +593,6 @@ function PricingContent() {
           </div>
 
           {renderPlansList()}
-
-          <Card className="rounded-3xl bg-zinc-50/60 dark:bg-zinc-950/20">
-            <CardContent className="flex items-start gap-3 p-5 text-xs text-zinc-500 dark:text-zinc-400">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-              <p className="leading-relaxed">
-                Sau khi chuyển khoản thành công, quản trị viên sẽ xác nhận trong giờ hành chính và
-                kích hoạt gói Premium cho tài khoản của bạn. Mọi thắc mắc liên hệ fanpage{" "}
-                <a
-                  href="https://www.facebook.com/sunchineseapp"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-amber-600 underline"
-                >Sun Chinese</a>.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       )}
     </PageContainer>

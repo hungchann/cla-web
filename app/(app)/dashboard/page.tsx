@@ -87,13 +87,13 @@ const learningAreas = [
 ]
 
 const contactInfo = [
-    { icon: Phone, label: "Hotline", value: "1900 000 000" },
-    { icon: Mail, label: "Email", value: "support@sunChinese.vn" },
+    { icon: Phone, label: "Hotline", value: "098 571 09 18", href: "tel:0985710918" },
+    { icon: Mail, label: "Email", value: "sunchinesesongngu@gmail.com", href: "mailto:sunchinesesongngu@gmail.com" },
     { icon: MapPin, label: "Địa chỉ", value: "Hà Nội, Việt Nam" },
 ]
 
 const socialLinks = [
-    { icon: FacebookIcon, label: "Facebook", href: "https://facebook.com" },
+    { icon: FacebookIcon, label: "Facebook", href: "https://www.facebook.com/sunchineseapp" },
     { icon: YoutubeIcon, label: "YouTube", href: "https://youtube.com" },
 ]
 
@@ -149,7 +149,13 @@ export default function DashboardPage() {
                                     <li key={item.label} className="flex items-center gap-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400">
                                         <Icon className="size-4 shrink-0 text-amber-600 dark:text-amber-500" />
                                         <span className="font-bold text-zinc-500 dark:text-zinc-500">{item.label}:</span>
-                                        {item.value}
+                                        {item.href ? (
+                                            <a href={item.href} className="hover:text-amber-600 dark:hover:text-amber-500 hover:underline transition-colors">
+                                                {item.value}
+                                            </a>
+                                        ) : (
+                                            item.value
+                                        )}
                                     </li>
                                 )
                             })}
