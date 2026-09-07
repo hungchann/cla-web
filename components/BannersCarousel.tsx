@@ -35,7 +35,7 @@ export function BannersCarousel() {
         <Carousel autoPlay autoPlayInterval={5000} className="rounded-2xl border border-amber-950/10 shadow-sm overflow-hidden">
             {banners.map((banner, index) => {
                 const inner = banner.image_url ? (
-                    <div className="relative w-full aspect-[3/1] min-h-[160px] bg-zinc-100 dark:bg-zinc-800">
+                    <div className="relative w-full aspect-[9/4] min-h-[160px] bg-zinc-100 dark:bg-zinc-800">
                         <Image
                             src={banner.image_url}
                             alt="Quảng cáo khóa học"
@@ -47,7 +47,7 @@ export function BannersCarousel() {
                         />
                     </div>
                 ) : (
-                    <div className="flex w-full aspect-[3/1] min-h-[160px] items-center justify-center bg-amber-100 text-xs font-bold text-amber-700">
+                    <div className="flex w-full aspect-[9/4] min-h-[160px] items-center justify-center bg-amber-100 text-xs font-bold text-amber-700">
                         Chưa có ảnh banner
                     </div>
                 );
