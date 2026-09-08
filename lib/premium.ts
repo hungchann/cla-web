@@ -124,20 +124,6 @@ export function getAccountTypeName(data: unknown): string | null {
 }
 
 /**
- * Kiểm tra xem người dùng có quyền đọc/học bài học trong khóa học không.
- * - Paid User (isPremium=true): Toàn quyền 100%.
- * - Free / Guest User: Chỉ được xem các bài có cờ `is_free_preview = true`.
- */
-export function canAccessCourseLesson(
-  lesson?: { is_free_preview?: boolean | null } | null,
-  isPremium = false,
-): boolean {
-  if (isPremium) return true;
-  if (!lesson) return false;
-  return Boolean(lesson.is_free_preview);
-}
-
-/**
  * Kiểm tra quyền đọc chương sách/truyện.
  * - Paid User (isPremium=true): Toàn quyền đọc mọi chương.
  * - Free / Guest User: Đọc được chương 1 hoặc các chương có `is_free_preview = true`.

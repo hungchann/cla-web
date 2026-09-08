@@ -163,10 +163,14 @@ export const getAccountType = async () => {
 
     const item = data[0];
     const expiredTime = item?.expired_time;
+    const status = String(item?.status ?? "").toLowerCase();
+    // is_active = chưa hủy/đã hết hạn VÀ chưa too expired_time
     const isActive =
-      typeof expiredTime === "string" && expiredTime.length > 0
-        ? new Date(expiredTime).getTime() > Date.now()
-        : true;
+      status === "cancelled" || status === "expired"
+        ? false
+        : typeof expiredTime === "string" && expiredTime.length > 0
+          ? new Date(expiredTime).getTime() > Date.now()
+          : true;
 
     return {
       user_profiles: [

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -23,6 +23,7 @@ import {
   buildCheckoutUrl,
   createPayment,
   getAccountPlans,
+  getMyPayments,
   getVoucherByCode,
   isVoucherValid,
   applyVoucher,
@@ -30,8 +31,9 @@ import {
 } from "@/api/plans";
 import { clearReferrer, getReferrer, saveReferrer } from "@/lib/referral";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { usePremiumContext } from "@/lib/context/PremiumContext";
 import { buildVietQrUrl, formatVnd } from "@/lib/payment";
-import type { AccountPlan, Voucher } from "@/lib/types/plan";
+import type { AccountPlan, Voucher, PaymentRecord } from "@/lib/types/plan";
 import { cn } from "@/lib/utils";
 
 import { Badge } from "@/components/ui/badge";
@@ -442,6 +444,129 @@ function CheckoutView({
   );
 }
 
+function PaymentStatusBadge({ status }: { status: PaymentRecord["status"] }) {
+  const styles: Record<string, string> = {
+    verified: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+    paid: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+    pending: "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400",
+    cancelled: "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
+  };
+  const labels: Record<string, string> = {
+    verified: "Đã xác nhận",
+    paid: "Đã thanh toán",
+    pending: "Chờ xác nhận",
+    cancelled: "Đã hủy",
+  };
+  return (
+    <span
+      className={cn(
+        "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg",
+        styles[String(status) ?? "pending"],
+      )}
+    >
+      {labels[String(status)] ?? status}
+    </span>
+  );
+}
+
+/** Lịch sử thanh toán + "Làm mới Premium" (contract §4.5 — mở khóa ngay sau khi admin verify). */
+function PaymentHistoryCard() {
+  const premium = usePremiumContext();
+  const refreshPremium = premium?.refreshPremium;
+  const isPremium = premium?.isPremium ?? false;
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: payments, isLoading } = useQuery({
+    queryKey: ["my-payments"],
+    queryFn: getMyPayments,
+    enabled: !!refreshPremium,
+  });
+
+  const handleRefreshPremium = async () => {
+    if (!refreshPremium) return;
+    setIsRefreshing(true);
+    try {
+      await refreshPremium(true);
+      await queryClient.refetchQueries({ queryKey: ["my-payments"] });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  if (isLoading) {
+    return <Skeleton className="h-40 rounded-2xl" />;
+  }
+
+  return (
+    <Card className="rounded-3xl">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="flex items-center gap-2 text-base font-black">
+            <ShieldCheck className="size-4 text-amber-500" />
+            Lịch sử thanh toán
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefreshPremium}
+            disabled={isRefreshing}
+            className="h-8 gap-1.5 rounded-xl border border-amber-200 px-2.5 text-xs font-bold text-amber-700 hover:bg-amber-50 dark:border-amber-900/40 dark:text-amber-400 dark:hover:bg-amber-950/30 cursor-pointer disabled:opacity-60"
+          >
+            {isRefreshing ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+            Làm mới Premium
+          </Button>
+        </div>
+        <CardDescription className="text-xs">
+          Sau khi admin xác nhận thanh toán, bấm “Làm mới Premium” để mở khóa ngay — không cần chờ.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {(payments ?? []).length === 0 ? (
+          <p className="text-xs font-semibold text-zinc-400">
+            Bạn chưa có đơn thanh toán nào. Chọn gói phía dưới để bắt đầu.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {(payments ?? []).map((payment) => (
+              <li
+                key={String(payment.id)}
+                className="flex items-center justify-between gap-3 rounded-xl border border-zinc-100 dark:border-zinc-800 px-3 py-2"
+              >
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                    {formatVnd(payment.amount_vnd ?? 0)}
+                    {payment.discount_vnd ? (
+                      <span className="ml-1.5 font-semibold text-emerald-600">
+                        (giảm {formatVnd(payment.discount_vnd)})
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-semibold">
+                    {payment.date_created
+                      ? new Intl.DateTimeFormat("vi-VN", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        }).format(new Date(String(payment.date_created)))
+                      : ""}
+                  </span>
+                </div>
+                <PaymentStatusBadge status={payment.status} />
+              </li>
+            ))}
+          </ul>
+        )}
+        {isPremium && (
+          <p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            <ShieldCheck className="size-3.5" />
+            Tài khoản của bạn đang là Premium — tự động đồng bộ.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function PricingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -580,6 +705,9 @@ function PricingContent() {
               </CardContent>
             </Card>
           )}
+
+          {/* Lịch sử thanh toán + đồng bộ Premium (chỉ user đã đăng nhập) */}
+          {isAuthenticated && <PaymentHistoryCard />}
 
           <div>
             <h2 className="text-sm font-black uppercase tracking-wider text-zinc-400">
