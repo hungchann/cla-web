@@ -32,7 +32,7 @@ export function BannersCarousel() {
     if (banners.length === 0) return null;
 
     return (
-        <Carousel autoPlay autoPlayInterval={5000} className="rounded-2xl border border-amber-950/10 shadow-sm overflow-hidden">
+        <Carousel autoPlay autoPlayInterval={5000} className="mx-auto w-full max-w-3xl rounded-2xl border border-amber-950/10 shadow-sm overflow-hidden">
             {banners.map((banner, index) => {
                 const inner = banner.image_url ? (
                     <div className="relative w-full aspect-[9/4] min-h-[160px] bg-zinc-100 dark:bg-zinc-800">
