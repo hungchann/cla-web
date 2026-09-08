@@ -223,8 +223,10 @@ export const useDetailedVideoLogic = (
     );
     setNextQuestionId(firstUnanswered?.id ?? null);
 
-    // If there's already an active question, just keep pausing
+    // If there's already an active question, the video must stay paused
+    // (guard against the user manually pressing play while answering).
     if (activeQuestionRef.current) {
+      pausePlayback();
       return;
     }
 
@@ -247,6 +249,8 @@ export const useDetailedVideoLogic = (
       console.log(`[useDetailedVideoLogic] ACTIVATING Q${toActivate.id} at t=${t}s`);
       activeQuestionRef.current = toActivate;
       setActiveQuestion(toActivate);
+      // Quiz shown → stop the video immediately while answering.
+      pausePlayback();
     }
   }, [pausePlayback]);
 

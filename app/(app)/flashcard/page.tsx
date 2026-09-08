@@ -6,6 +6,7 @@ import { useVocabFlashcardData } from "@/lib/hooks/useVocabFlashcardData";
 import { FlashcardCard } from "@/components/flashcard/FlashcardC";
 import { FlashcardControls } from "@/components/flashcard/FlashcardControls";
 import { speakChinese } from "@/lib/utils/speech";
+import { buildQuizQuestion } from "@/lib/utils/quiz-generator";
 import { notebookApi } from "@/api/notebook";
 import { tokenUtils } from "@/lib/utils/tokenUtils";
 import Link from "next/link";
@@ -525,11 +526,12 @@ function FlashcardStudySession({
     }
   }, [isLoadingList, dataVocal]);
 
-  // Danh sách {word, meaning} dùng cho chế độ chọn đáp án
+  // Danh sách {word, meaning, pinyin} dùng cho chế độ chọn đáp án
   const quizWords = useMemo(() => {
     if (fallbackDataActive) {
       return MOCK_FLASHCARDS.map((m) => ({
         word: m.vocab_items_id.name,
+        pinyin: m.vocab_items_id.pinyin,
         meaning: m.vocab_items_id.senses[0]?.meaning_vi || "",
       }));
     }
@@ -538,6 +540,9 @@ function FlashcardStudySession({
         const vocab = item?.vocab_items_id;
         return {
           word: vocab?.name || "",
+          pinyin: vocab?.pinyin || "",
+          // Fallback note: ở thẻ suggest/notebook, nghĩa thường nằm trong `note`
+          // (generator sẽ tự lọc nếu note chỉ là nhãn từ loại như "Hình dung từ")
           meaning: vocab?.senses?.[0]?.meaning_vi || vocab?.note || "",
         };
       })
@@ -547,48 +552,19 @@ function FlashcardStudySession({
   const quizIndex = fallbackDataActive ? localIndex : currentIndex;
   const currentQuizWord = quizWords.length > 0 ? quizWords[quizIndex % quizWords.length] : null;
 
-  // Sinh 4 đáp án (1 đúng + 3 nhiễu) cho từ hiện tại — shuffle xác định theo từ để thuần khiết khi render
-  const quizOptions = useMemo(() => {
-    if (!currentQuizWord) return [];
-    const seededShuffle = (arr: string[], seed: string): string[] => {
-      const result = [...arr];
-      let h = 0;
-      for (const ch of seed) h = (h * 31 + (ch.codePointAt(0) ?? 0)) >>> 0;
-      for (let i = result.length - 1; i > 0; i--) {
-        h = (h * 1103515245 + 12345) >>> 0;
-        const j = h % (i + 1);
-        [result[i], result[j]] = [result[j], result[i]];
-      }
-      return result;
-    };
-
-    const distractors = quizWords
-      .filter((w) => w.word !== currentQuizWord.word)
-      .map((w) => w.word);
-    const fallbackPool = ["是", "好", "不", "这", "我", "你", "爱", "我们"];
-
-    const picked: string[] = [currentQuizWord.word];
-    for (const candidate of [...seededShuffle(distractors, currentQuizWord.word), ...fallbackPool]) {
-      if (picked.length >= 4) break;
-      if (!picked.includes(candidate)) picked.push(candidate);
-    }
-
-    return seededShuffle(picked, `${currentQuizWord.word}-options`)
-      .map((w, idx) => ({
-        key: ["A", "B", "C", "D"][idx],
-        word: w,
-        isCorrect: w === currentQuizWord.word,
-      }));
-  }, [currentQuizWord, quizWords]);
+  // Sinh câu hỏi + 4 đáp án tự động theo data từng thẻ (nghĩa/pinyin),
+  // bỏ qua nghĩa rác (loại từ/ghi chú) — không cần sửa backend
+  const quiz = useMemo(
+    () => (currentQuizWord ? buildQuizQuestion(currentQuizWord, quizWords) : null),
+    [currentQuizWord, quizWords]
+  );
 
   const handleQuizSelect = useCallback((optionKey: string) => {
-    if (quizSelected || !currentQuizWord) return;
-    const option = quizOptions.find((o) => o.key === optionKey);
-    if (!option) return;
+    if (quizSelected || !quiz?.hasAnswer) return;
+    if (!quiz.options.find((o) => o.key === optionKey)) return;
     setQuizSelected(optionKey);
-    speakChinese(option.word);
-    // Không tự submit — user bấm "Tiếp theo" để chuyển câu
-  }, [quizSelected, currentQuizWord, quizOptions]);
+    // Không phát âm khi chọn — quiz nghe-đọc câm, tránh lộ đáp án không cần thiết
+  }, [quizSelected, quiz]);
 
   // Lắng nghe phím tắt bàn phím
   useEffect(() => {
@@ -606,7 +582,7 @@ function FlashcardStudySession({
       } else if (studyMode === "quiz" && quizSelected) {
         // Quiz mode: sau khi chọn đáp án, mũi tên phải = Tiếp theo, mũi tên trái = Quay lại
         if (e.code === "ArrowRight") {
-          const isCorrect = quizOptions.find(o => o.key === quizSelected)?.isCorrect;
+          const isCorrect = quiz?.options.find(o => o.key === quizSelected)?.isCorrect;
           handleNextAction(isCorrect ? "mastered" : "learning");
         } else if (e.code === "ArrowLeft") {
           handlePrevAction();
@@ -642,7 +618,7 @@ function FlashcardStudySession({
     return () => {
       globalThis.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleFlipAction, handleNextAction, handlePrevAction, studyMode, currentQuizWord, quizSelected, handleQuizSelect]);
+  }, [handleFlipAction, handleNextAction, handlePrevAction, studyMode, currentQuizWord, quizSelected, handleQuizSelect, quiz]);
 
   const headerTitle = useMemo(() => {
     if (type === "system") return "Luyện tập từ vựng HSK";
@@ -791,22 +767,35 @@ function FlashcardStudySession({
       {studyMode === "quiz" ? (
         <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
           <div className="p-6 sm:p-8 flex flex-col justify-between min-h-[380px] gap-6">
-            {/* Question Header */}
+            {/* Question Header — nghe âm thanh, chọn chữ */}
             <div className="flex flex-col items-center text-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 Trắc nghiệm phản xạ từ vựng
               </span>
-              <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 mt-1">
-                Từ nào dưới đây có nghĩa là:
-              </p>
-              <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-500 tracking-tight max-w-xl">
-                &ldquo;{currentQuizWord?.meaning || "?"}&rdquo;
-              </div>
+              {quiz?.hasAnswer && currentQuizWord?.word ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => speakChinese(currentQuizWord.word)}
+                    aria-label="Phát lại âm thanh"
+                    className="mt-2 h-20 w-20 rounded-full border-2 border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 hover:scale-105 transition-all flex items-center justify-center cursor-pointer active:scale-95"
+                  >
+                    <Volume2 className="w-10 h-10" />
+                  </button>
+                  <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 mt-1">
+                    {quiz.prompt}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm font-semibold text-zinc-400 mt-2">
+                  Thẻ này chưa đủ dữ liệu để tạo câu hỏi — hãy học bằng flashcard.
+                </p>
+              )}
             </div>
 
             {/* 4 Options Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full max-w-2xl mx-auto my-auto">
-              {quizOptions.map((opt) => {
+              {(quiz?.hasAnswer ? quiz.options : []).map((opt) => {
                 const isSelected = quizSelected === opt.key;
                 let btnStyle =
                   "border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40 text-zinc-800 dark:text-zinc-200 hover:border-amber-300 hover:bg-amber-50/20 dark:hover:border-amber-700/50 hover:shadow-xs";
@@ -832,7 +821,7 @@ function FlashcardStudySession({
                         {opt.key}
                       </span>
                       <span className="text-zinc-900 dark:text-white font-extrabold text-xl sm:text-2xl tracking-wide">
-                        {opt.word}
+                        {opt.label}
                       </span>
                     </div>
                     {quizSelected && (
@@ -860,11 +849,11 @@ function FlashcardStudySession({
 
             {/* Chấm điểm khi đã chọn đáp án */}
             {quizSelected && (
-              <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${quizOptions.find(o => o.key === quizSelected)?.isCorrect
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${quiz?.options.find(o => o.key === quizSelected)?.isCorrect
                   ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
                   : "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
                 }`}>
-                {quizOptions.find(o => o.key === quizSelected)?.isCorrect ? "✓ Chính xác!" : "✗ Sai rồi"}
+                {quiz?.options.find(o => o.key === quizSelected)?.isCorrect ? "✓ Chính xác!" : "✗ Sai rồi"}
               </span>
             )}
 
@@ -872,7 +861,7 @@ function FlashcardStudySession({
               type="button"
               onClick={() => {
                 if (!quizSelected) return;
-                const isCorrect = quizOptions.find(o => o.key === quizSelected)?.isCorrect;
+                const isCorrect = quiz?.options.find(o => o.key === quizSelected)?.isCorrect;
                 handleNextAction(isCorrect ? "mastered" : "learning");
               }}
               disabled={!quizSelected}

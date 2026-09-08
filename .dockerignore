@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.github
+.agents
+.cursor
+scratch
+test-results
+tests
+docs
+*.log
+tsconfig.tsbuildinfo
+.env.local
+.env.test

@@ -94,15 +94,16 @@ export default function CourseDetailPage({
                             </p>
                         )}
                     </div>
-                    <div className="relative w-full md:w-[360px] lg:w-[400px] aspect-[16/7] bg-zinc-100 dark:bg-zinc-900 shrink-0 border-t md:border-t-0 md:border-l border-zinc-150 dark:border-zinc-800 overflow-hidden flex items-center justify-center">
+                    <div className="relative w-full md:w-[360px] lg:w-[400px] shrink-0 border-t md:border-t-0 md:border-l border-zinc-150 dark:border-zinc-800 overflow-hidden">
                         {course?.image_url ? (
                             <Image
                                 src={course.image_url}
                                 alt={courseTitle}
-                                fill
                                 priority
+                                width={1600}
+                                height={700}
                                 sizes="(max-width: 768px) 100vw, 400px"
-                                className="object-cover object-center"
+                                className="h-auto w-full object-contain"
                             />
                         ) : (
                             <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">
@@ -140,14 +141,15 @@ export default function CourseDetailPage({
                 {activeTab === "syllabus" && (
                     <section className="space-y-8">
                         <Card className="bg-white dark:bg-zinc-900 rounded-2xl border-zinc-200/60 dark:border-zinc-800 p-6 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-2xs">
-                            <div className="relative w-full md:w-72 aspect-[16/7] rounded-xl overflow-hidden shrink-0 border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 shadow-2xs">
+                            <div className="relative w-full md:w-72 rounded-xl overflow-hidden shrink-0 border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 shadow-2xs">
                                 {course?.image_url ? (
                                     <Image
                                         src={course.image_url}
                                         alt={courseTitle}
-                                        fill
+                                        width={1600}
+                                        height={700}
                                         sizes="(max-width: 768px) 100vw, 288px"
-                                        className="object-cover object-center"
+                                        className="h-auto w-full object-contain"
                                     />
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-zinc-400 text-sm font-bold">No image</div>
@@ -160,7 +162,7 @@ export default function CourseDetailPage({
                                     <br />
                                     Gồm {chapters.length} chương.
                                     <br />
-                                    Mỗi chương bao gồm các phần: video từ vựng, lý thuyết giải nghĩa từ vựng, bài tập từ vựng, video ngữ pháp, bài tập ngữ pháp, nghe chép chính tả, thực hành hội thoại, bài tập bổ sung.
+                                    Khóa học bao gồm video bài giảng trực quan giúp giải thích từ vựng, ngữ pháp một cách dễ hiểu; bài tập trắc nghiệm để củng cố kiến thức sau mỗi bài học; bài tập nghe chép chính tả nhằm nâng cao khả năng nghe và nhận diện tiếng Trung; cùng các bài thực hành hội thoại với AI, giúp người học luyện phản xạ giao tiếp và nhận được đánh giá, chấm điểm để cải thiện khả năng sử dụng ngôn ngữ.
                                 </p>
                             </div>
                         </Card>

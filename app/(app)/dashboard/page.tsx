@@ -18,21 +18,11 @@ import { PageHeader } from "@/components/PageHeader"
 import { Card } from "@/components/ui/card"
 import { BannersCarousel } from "@/components/BannersCarousel"
 
-function FacebookIcon({ className }: { className?: string }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-            <path d="M13.5 21v-7h2.5l.5-3h-3V9.05c0-.87.24-1.55 1.6-1.55H16.6V4.85c-.29-.04-1.28-.13-2.43-.13-2.4 0-4.05 1.47-4.05 4.16V11H7.5v3H10v7h3.5Z" />
-        </svg>
-    )
-}
-
-function YoutubeIcon({ className }: { className?: string }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-            <path d="M21.58 7.19a2.5 2.5 0 0 0-1.76-1.77C18.25 5 12 5 12 5s-6.25 0-7.82.42a2.5 2.5 0 0 0-1.76 1.77A26.2 26.2 0 0 0 2 12a26.2 26.2 0 0 0 .42 4.81 2.5 2.5 0 0 0 1.76 1.77C5.75 19 12 19 12 19s6.25 0 7.82-.42a2.5 2.5 0 0 0 1.76-1.77A26.2 26.2 0 0 0 22 12a26.2 26.2 0 0 0-.42-4.81ZM10 15V9l5.2 3L10 15Z" />
-        </svg>
-    )
-}
+import {
+    SiFacebook,
+    SiThreads,
+} from "@icons-pack/react-simple-icons";
+import { FaLinkedin } from "react-icons/fa";
 
 const learningAreas = [
     {
@@ -93,8 +83,10 @@ const contactInfo = [
 ]
 
 const socialLinks = [
-    { icon: FacebookIcon, label: "Facebook", href: "https://www.facebook.com/sunchineseapp" },
-    { icon: YoutubeIcon, label: "YouTube", href: "https://youtube.com" },
+    { icon: SiFacebook, label: "Facebook", href: "https://www.facebook.com/sunchineseapp" },
+    { icon: SiFacebook, label: "Group", href: "https://www.facebook.com/share/g/19dot7GExv/" },
+    { icon: SiThreads, label: "Threads", href: "https://www.threads.com/@sunchineseapp" },
+    { icon: FaLinkedin, label: "LinkedIn", href: "https://www.linkedin.com/company/sun-chinese-ti%E1%BA%BFng-trung-cho-ng%C6%B0%E1%BB%9Di-%C4%91i-l%C3%A0m/" },
 ]
 
 export default function DashboardPage() {
@@ -179,7 +171,7 @@ export default function DashboardPage() {
                                         aria-label={item.label}
                                         className="flex size-10 items-center justify-center rounded-xl border border-amber-950/10 bg-amber-500/10 text-amber-600 transition-all hover:-translate-y-0.5 hover:bg-amber-500 hover:text-white dark:border-zinc-800 dark:text-amber-500"
                                     >
-                                        <Icon className="size-5" />
+                                        <Icon className="size-5" color="currentColor" />
                                     </a>
                                 )
                             })}

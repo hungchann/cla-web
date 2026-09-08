@@ -13,6 +13,8 @@ import {
   ListFilter,
   Mic2,
   NotebookTabs,
+  PanelLeftClose,
+  PanelLeftOpen,
   SlidersHorizontal,
   Sparkles,
   Video,
@@ -29,6 +31,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { tokenUtils } from "@/lib/utils/tokenUtils"
 import { SunChineseLogo } from "@/components/SunChineseLogo"
@@ -43,6 +46,22 @@ import { Suspense } from "react"
 type RouteSidebar = {
   label: string
   groups: SidebarSubmenuGroup[]
+}
+
+/** Nút thu gọn/mở rộng sidebar — che chữ khi sidebar ở chế độ icon */
+function CollapseToggle() {
+  const { state, toggleSidebar } = useSidebar()
+  const collapsed = state === "collapsed"
+  return (
+    <SidebarMenuButton
+      onClick={toggleSidebar}
+      tooltip="Thu gọn / mở rộng menu"
+      className="rounded-xl text-zinc-500 hover:bg-sidebar-accent/50 hover:text-zinc-800 dark:hover:text-zinc-200"
+    >
+      {collapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
+      <span className="font-bold text-sm">Thu gọn menu</span>
+    </SidebarMenuButton>
+  )
 }
 
 const routeSidebars: Record<string, RouteSidebar> = {
@@ -468,7 +487,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar
-      collapsible="offcanvas"
+      collapsible="icon"
       className="app-submenu-sidebar border-r-0"
       {...props}
     >
@@ -488,6 +507,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarMenu className="px-2 pb-2">
+          <SidebarMenuItem>
+            <CollapseToggle />
+          </SidebarMenuItem>
+        </SidebarMenu>
         {courseId ? (
           <CourseNavMain courseId={decodeURIComponent(courseId)} />
         ) : pathname === "/grammar" || pathname.startsWith("/grammar/") ? (

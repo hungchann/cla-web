@@ -79,7 +79,7 @@ describe("useDetailedVideoLogic — quiz activation after sentence finishes (tim
     expect(result.current.activeQuestion?.id).toBe(101);
   });
 
-  it("activates the question WITHOUT pausing the video (video keeps playing)", async () => {
+  it("pauses the video when the question activates (video must stop while answering)", async () => {
     const videoEl = makeVideoElement(0);
     const videoRef = { current: videoEl };
 
@@ -97,8 +97,35 @@ describe("useDetailedVideoLogic — quiz activation after sentence finishes (tim
 
     await waitFor(() => expect(result.current.activeQuestion).not.toBeNull(), { timeout: 3000 });
 
-    // Video KHÔNG bị pause khi câu hỏi kích hoạt
-    expect(videoEl.pause).not.toHaveBeenCalled();
+    // Video PHẢI bị pause khi câu hỏi kích hoạt
+    expect(videoEl.pause).toHaveBeenCalled();
+    expect(videoEl.paused).toBe(true);
+  });
+
+  it("keeps the video paused while a question is open (user cannot play through the quiz)", async () => {
+    const videoEl = makeVideoElement(0);
+    const videoRef = { current: videoEl };
+
+    const { result } = renderHook(() =>
+      useDetailedVideoLogic(
+        { id: "v1", video_file: { filename_disk: "clip.mp4" } },
+        { videoRef, flowMode: "quiz" },
+      ),
+    );
+
+    await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
+
+    videoEl.currentTime = 11;
+    videoEl.paused = false;
+
+    await waitFor(() => expect(result.current.activeQuestion).not.toBeNull(), { timeout: 3000 });
+
+    // Người dùng nhấn play khi câu hỏi đang mở → hook phải pause lại
+    videoEl.currentTime = 12;
+    videoEl.paused = false;
+    videoEl.pause.mockClear();
+
+    await waitFor(() => expect(videoEl.pause).toHaveBeenCalled(), { timeout: 3000 });
   });
 
   it("does NOT activate a question BEFORE its time_end (sentence still playing)", async () => {
