@@ -1,11 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { PanelLeft, Sparkles } from "lucide-react"
+import { Crown, PanelLeft, Sparkles } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
+import { usePremiumContext } from "@/lib/context/PremiumContext"
 
 const primaryNavigation = [
   { title: "Khóa học", href: "/courses" },
@@ -25,6 +26,8 @@ function isActiveRoute(pathname: string, href: string) {
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar()
   const pathname = usePathname() ?? ""
+  const premium = usePremiumContext()
+  const isPremium = premium?.isPremium ?? false
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-amber-950/5 bg-background/90 backdrop-blur-xl">
@@ -64,16 +67,29 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-2 lg:flex-none">
-          <Button
-            asChild
-            size="sm"
-            className="h-10 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 text-sm font-black text-white shadow-sm shadow-amber-500/20 hover:from-amber-600 hover:to-orange-600"
-          >
-            <Link href="/pricing">
-              <Sparkles className="size-4" />
-              Nâng cấp Premium
-            </Link>
-          </Button>
+          {isPremium ? (
+            <Button
+              asChild
+              size="sm"
+              className="h-10 whitespace-nowrap rounded-xl border border-amber-300 bg-amber-100 px-4 text-sm font-black text-amber-700 shadow-sm hover:bg-amber-200 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:bg-amber-950"
+            >
+              <Link href="/pricing" aria-label="Xem gói Premium của bạn">
+                <Crown className="size-4" />
+                Premium
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              asChild
+              size="sm"
+              className="h-10 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 text-sm font-black text-white shadow-sm shadow-amber-500/20 hover:from-amber-600 hover:to-orange-600"
+            >
+              <Link href="/pricing">
+                <Sparkles className="size-4" />
+                Nâng cấp Premium
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>

@@ -32,6 +32,8 @@ import {
 import { clearReferrer, getReferrer, saveReferrer } from "@/lib/referral";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { usePremiumContext } from "@/lib/context/PremiumContext";
+import { getAccountTypeDisplayName, getAccountTypeName, getCanonicalAccountType, isPremiumAccountType } from "@/lib/premium";
+import { getAccountType } from "@/api/profile";
 import { buildVietQrUrl, formatVnd } from "@/lib/payment";
 import type { AccountPlan, Voucher, PaymentRecord } from "@/lib/types/plan";
 import { cn } from "@/lib/utils";
@@ -55,11 +57,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 function PlanCard({
   plan,
   featured = false,
+  current = false,
   onSelect,
   selectLabel,
 }: Readonly<{
   plan: AccountPlan;
   featured?: boolean;
+  /** true nếu đây là gói user đang sử dụng — hiện badge + khóa nút chọn. */
+  current?: boolean;
   onSelect?: () => void;
   selectLabel: string;
 }>) {
@@ -68,15 +73,23 @@ function PlanCard({
     <Card
       className={cn(
         "relative flex flex-col rounded-2xl border p-6 transition-all hover:-translate-y-1 hover:shadow-lg",
-        featured
-          ? "border-amber-400 bg-gradient-to-b from-amber-50 to-white shadow-md shadow-amber-500/10 dark:from-amber-950/30 dark:to-zinc-900"
-          : "border-zinc-200 dark:border-zinc-800",
+        current
+          ? "border-emerald-400 bg-gradient-to-b from-emerald-50 to-white shadow-md shadow-emerald-500/10 dark:from-emerald-950/30 dark:to-zinc-900"
+          : featured
+            ? "border-amber-400 bg-gradient-to-b from-amber-50 to-white shadow-md shadow-amber-500/10 dark:from-amber-950/30 dark:to-zinc-900"
+            : "border-zinc-200 dark:border-zinc-800",
       )}
     >
-      {featured && (
-        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white border-none px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm">
-          Phổ biến nhất
+      {current ? (
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white border-none px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm">
+          Đang sử dụng
         </Badge>
+      ) : (
+        featured && (
+          <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white border-none px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm">
+            Phổ biến nhất
+          </Badge>
+        )
       )}
 
       <CardHeader className="p-0 pb-4">
@@ -113,22 +126,29 @@ function PlanCard({
       </CardContent>
 
       <div className="mt-6">
-        <Button
-          asChild={!onSelect}
-          onClick={onSelect}
-          className={cn(
-            "w-full rounded-xl font-bold",
-            featured
-              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
-              : "border border-amber-200 bg-transparent text-amber-700 hover:bg-amber-50 dark:border-amber-900/40 dark:text-amber-500 dark:hover:bg-amber-950/20",
-          )}
-        >
-          {onSelect ? (
-            <span>{selectLabel}</span>
-          ) : (
-            <Link href={buildCheckoutUrl(plan)}>{selectLabel}</Link>
-          )}
-        </Button>
+        {current ? (
+          <Button disabled className="w-full rounded-xl font-bold border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <Check className="size-4" />
+            Đang sử dụng gói này
+          </Button>
+        ) : (
+          <Button
+            asChild={!onSelect}
+            onClick={onSelect}
+            className={cn(
+              "w-full rounded-xl font-bold",
+              featured
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
+                : "border border-amber-200 bg-transparent text-amber-700 hover:bg-amber-50 dark:border-amber-900/40 dark:text-amber-500 dark:hover:bg-amber-950/20",
+            )}
+          >
+            {onSelect ? (
+              <span>{selectLabel}</span>
+            ) : (
+              <Link href={buildCheckoutUrl(plan)}>{selectLabel}</Link>
+            )}
+          </Button>
+        )}
       </div>
     </Card>
   );
@@ -474,7 +494,12 @@ function PaymentHistoryCard() {
   const premium = usePremiumContext();
   const refreshPremium = premium?.refreshPremium;
   const isPremium = premium?.isPremium ?? false;
+  const accountTypeName = premium?.accountTypeName ?? null;
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshStatus, setRefreshStatus] = useState<{
+    kind: "success" | "info" | "error";
+    text: string;
+  } | null>(null);
   const queryClient = useQueryClient();
 
   const { data: payments, isLoading } = useQuery({
@@ -486,9 +511,41 @@ function PaymentHistoryCard() {
   const handleRefreshPremium = async () => {
     if (!refreshPremium) return;
     setIsRefreshing(true);
+    setRefreshStatus(null);
     try {
       await refreshPremium(true);
       await queryClient.refetchQueries({ queryKey: ["my-payments"] });
+      // Đọc lại trạng thái mới nhất để báo UI ngay (tránh user tưởng chưa update).
+      try {
+        const fresh = await getAccountType();
+        const freshName = getAccountTypeName(fresh);
+        const freshPremium = isPremiumAccountType(
+          freshName,
+          fresh?.user_profiles?.[0]?.is_active !== false,
+        );
+        if (freshPremium) {
+          setRefreshStatus({
+            kind: "success",
+            text: "Đã cập nhật thành công.",
+          });
+        } else {
+          setRefreshStatus({
+            kind: "info",
+            text: "Đã làm mới: vẫn là gói Miễn phí. Nếu admin vừa duyệt, kiểm tra lại loại gói/hạn dùng rồi bấm lại.",
+          });
+        }
+      } catch {
+        // Đã refresh context xong; không chặn UI nếu lần đọc xác minh lỗi.
+        setRefreshStatus({
+          kind: "info",
+          text: "Đã làm mới. Nếu trạng thái chưa đổi, hãy đợi vài giây rồi bấm lại.",
+        });
+      }
+    } catch {
+      setRefreshStatus({
+        kind: "error",
+        text: "Làm mới thất bại. Hãy kiểm tra mạng và thử lại.",
+      });
     } finally {
       setIsRefreshing(false);
     }
@@ -522,9 +579,41 @@ function PaymentHistoryCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+          <span>Gói hiện tại:</span>
+          <Badge
+            variant="secondary"
+            className={cn(
+              "rounded-lg px-2 py-0.5 text-[11px] font-black",
+              isPremium
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+                : "text-zinc-500 dark:text-zinc-400",
+            )}
+          >
+            {isPremium ? `Premium · ${getAccountTypeDisplayName(accountTypeName)}` : "Miễn phí"}
+          </Badge>
+        </div>
+        {refreshStatus && (
+          <p
+            role="status"
+            className={cn(
+              "mt-2 rounded-xl border px-3 py-2 text-xs font-bold",
+              refreshStatus.kind === "success" &&
+                "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
+              refreshStatus.kind === "error" &&
+                "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300",
+              refreshStatus.kind === "info" &&
+                "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300",
+            )}
+          >
+            {refreshStatus.text}
+          </p>
+        )}
         {(payments ?? []).length === 0 ? (
-          <p className="text-xs font-semibold text-zinc-400">
-            Bạn chưa có đơn thanh toán nào. Chọn gói phía dưới để bắt đầu.
+          <p className="mt-2 text-xs font-semibold text-zinc-400">
+            {isPremium
+              ? "Được kích hoạt thủ công nên không có đơn hiển thị."
+              : "Bạn chưa có đơn thanh toán nào. Chọn gói phía dưới để bắt đầu."}
           </p>
         ) : (
           <ul className="space-y-2">
@@ -556,12 +645,6 @@ function PaymentHistoryCard() {
             ))}
           </ul>
         )}
-        {isPremium && (
-          <p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-            <ShieldCheck className="size-3.5" />
-            Tài khoản của bạn đang là Premium — tự động đồng bộ.
-          </p>
-        )}
       </CardContent>
     </Card>
   );
@@ -571,6 +654,10 @@ function PricingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
+  const premiumCtx = usePremiumContext();
+  const isPremium = premiumCtx?.isPremium ?? false;
+  // Key gói đang dùng (canonical: yearly/lifetime/...) để đánh dấu thẻ gói tương ứng.
+  const currentPlanKey = getCanonicalAccountType(premiumCtx?.accountTypeName ?? null);
 
   const planParam = searchParams.get("plan")?.trim() || "";
   const refId = searchParams.get("ref")?.trim() || null;
@@ -651,6 +738,11 @@ function PricingContent() {
             key={plan.id}
             plan={plan}
             featured={featuredPlan ? String(featuredPlan.id) === String(plan.id) : false}
+            current={
+              isPremium &&
+              !!currentPlanKey &&
+              (plan.key ?? "").toLowerCase() === currentPlanKey
+            }
             onSelect={isAuthenticated ? () => handleSelect(plan) : undefined}
             selectLabel={isAuthenticated ? "Chọn gói này" : "Đăng nhập để nâng cấp"}
           />
@@ -714,9 +806,11 @@ function PricingContent() {
               Chọn gói phù hợp
             </h2>
             <p className="mt-1 text-xs text-zinc-400">
-              {isAuthenticated
-                ? "Chọn gói để chuyển sang bước thanh toán."
-                : "Đăng nhập để hoàn tất thanh toán."}
+              {!isAuthenticated
+                ? "Đăng nhập để hoàn tất thanh toán."
+                : isPremium
+                  ? "Bạn đã là Premium — chọn gói khác để gia hạn hoặc nâng cấp."
+                  : "Chọn gói để chuyển sang bước thanh toán."}
             </p>
           </div>
 

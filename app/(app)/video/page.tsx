@@ -42,7 +42,7 @@ const MOCK_VIDEOS = [
     title_trans: "5 phút học cách gọi món ăn bằng tiếng Trung",
     YouTube_URL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     date_created: "2026-06-16T15:30:00Z",
-    author: "CLA Team",
+    author: "Sunchinese Team",
     Video_Source: "Youtube",
   },
 ];
@@ -133,7 +133,7 @@ function VideoListPageContent() {
               thumbnail = getAssetUrl(video.image_cover.filename_disk);
             }
 
-            let authorName = "CLA Tutor";
+            let authorName = "Sunchinese Tutor";
             if (video.author && typeof video.author === "object" && video.author.name) {
               authorName = video.author.name;
             } else if (video.author_id && typeof video.author_id === "object" && video.author_id.name) {
@@ -156,7 +156,7 @@ function VideoListPageContent() {
                   {/* Thumbnail */}
                   <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
-                    
+
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={thumbnail}
@@ -200,7 +200,7 @@ function VideoListPageContent() {
                         {video.title_trans}
                       </p>
                     </div>
-                    
+
                     <div className="mt-5 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/80 pt-4">
                       <span className="text-xs text-zinc-400 dark:text-zinc-500 font-bold">
                         {video.date_created ? new Date(video.date_created).toLocaleDateString("vi-VN", {

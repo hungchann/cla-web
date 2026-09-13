@@ -1,4 +1,4 @@
-# API Reference — cla-web
+# API Reference — Sunchinese-web
 
 > Sơ đồ luồng dữ liệu tổng thể xem [`architecture.md`](./architecture.md).
 > File này liệt kê **endpoint cụ thể** dùng khi tích hợp/debug.
@@ -24,6 +24,7 @@ Client tại `api/authConfig.ts` — tự gắn Bearer token, retry lỗi mạng
 ## 2. GraphQL
 
 Client tại `api/graphql/client.ts`:
+
 - `graphqlRequest` → `POST /graphql` (nội dung học)
 - `graphqlRequestSystem` → `POST /graphql/system` (system mutation: `delete_users`, `auth_refresh`)
 

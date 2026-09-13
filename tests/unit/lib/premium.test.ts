@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   isPremiumAccountType,
+  getCanonicalAccountType,
+  getAccountTypeDisplayName,
   resolvePremiumFromAccountType,
   getAccountTypeName,
   FREE_EXERCISE_LIMIT,
@@ -29,8 +31,16 @@ describe("isPremiumAccountType", () => {
     expect(isPremiumAccountType("basic", true)).toBe(false);
   });
 
+  it("accepts Vietnamese display names (admin hay nhập tay trong Directus)", () => {
+    expect(isPremiumAccountType("Hàng năm", true)).toBe(true);
+    expect(isPremiumAccountType("hàng năm", true)).toBe(true);
+    expect(isPremiumAccountType("Vĩnh viễn", true)).toBe(true);
+    expect(isPremiumAccountType("Cơ bản", true)).toBe(false);
+  });
+
   it("returns false when subscription is inactive even if type is premium", () => {
     expect(isPremiumAccountType("Lifetime", false)).toBe(false);
+    expect(isPremiumAccountType("Hàng năm", false)).toBe(false);
   });
 
   it("returns false for null / empty / unknown types", () => {
@@ -112,6 +122,27 @@ describe("getAccountTypeName", () => {
   it("returns null when no profiles", () => {
     expect(getAccountTypeName({ user_profiles: [] })).toBeNull();
     expect(getAccountTypeName(null)).toBeNull();
+  });
+});
+
+describe("getCanonicalAccountType", () => {
+  it("maps display names to plan keys for current-plan matching", () => {
+    expect(getCanonicalAccountType("Yearly")).toBe("yearly");
+    expect(getCanonicalAccountType("Hàng năm")).toBe("yearly");
+    expect(getCanonicalAccountType("Vĩnh viễn")).toBe("lifetime");
+    expect(getCanonicalAccountType("Cơ bản")).toBe("free");
+    expect(getCanonicalAccountType("mystery-plan")).toBeNull();
+    expect(getCanonicalAccountType(null)).toBeNull();
+  });
+});
+
+describe("getAccountTypeDisplayName", () => {
+  it("maps raw types to Vietnamese display names", () => {
+    expect(getAccountTypeDisplayName("Yearly")).toBe("Hàng năm");
+    expect(getAccountTypeDisplayName("Hàng năm")).toBe("Hàng năm");
+    expect(getAccountTypeDisplayName("Lifetime")).toBe("Vĩnh viễn");
+    expect(getAccountTypeDisplayName("Free")).toBe("Miễn phí");
+    expect(getAccountTypeDisplayName(null)).toBe("Miễn phí");
   });
 });
 

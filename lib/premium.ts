@@ -7,6 +7,58 @@ export const PREMIUM_ACCOUNT_TYPE_NAMES = new Set(["premium", "lifetime", "yearl
 /** Tên gói chắc chắn KHÔNG phải premium. */
 export const FREE_ACCOUNT_TYPE_NAMES = new Set(["free", "standard", "basic"]);
 
+/**
+ * Chuẩn hóa tên gói: lowercase + trim + bỏ dấu tiếng Việt để chấp nhận
+ * giá trị hiển thị mà admin hay nhập trong Directus (vd: "Hàng năm" -> "hang nam").
+ */
+export function normalizeAccountTypeName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+/** Map alias (đã chuẩn hóa, không dấu) về canonical type. */
+const ACCOUNT_TYPE_ALIASES: Record<string, string> = {
+  premium: "premium",
+  lifetime: "lifetime",
+  "vinh vien": "lifetime",
+  yearly: "yearly",
+  "hang nam": "yearly",
+  nam: "yearly",
+  free: "free",
+  "co ban": "free",
+  standard: "free",
+  basic: "free",
+};
+
+/** Canonical type của tên gói (vd: "Hàng năm" -> "yearly"). Không rõ thì null. */
+export function getCanonicalAccountType(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const normalized = normalizeAccountTypeName(name);
+  return ACCOUNT_TYPE_ALIASES[normalized] ?? null;
+}
+
+/** Tên hiển thị tiếng Việt cho từng loại gói (dùng cho UI, tránh lộ raw "Yearly"). */
+const ACCOUNT_TYPE_DISPLAY_NAMES: Record<string, string> = {
+  premium: "Premium",
+  lifetime: "Vĩnh viễn",
+  yearly: "Hàng năm",
+  free: "Miễn phí",
+};
+
+/** Tên gói dạng hiển thị thân thiện (vd: "Yearly" -> "Hàng năm"). Không rõ thì giữ nguyên. */
+export function getAccountTypeDisplayName(name: string | null | undefined): string {
+  if (!name) return "Miễn phí";
+  const canonical = getCanonicalAccountType(name);
+  if (canonical && ACCOUNT_TYPE_DISPLAY_NAMES[canonical]) {
+    return ACCOUNT_TYPE_DISPLAY_NAMES[canonical];
+  }
+  return name.trim();
+}
+
 /** Giới hạn số bài tập miễn phí (mobile: completedExerciseCount >= 2 → khóa). */
 export const FREE_EXERCISE_LIMIT = 2;
 
@@ -66,6 +118,7 @@ export interface AccountTypeInfo {
  * - Nằm trong FREE set → false.
  * - Nằm trong PREMIUM set → true.
  * - Khác (không rõ) → mặc định không premium (an toàn, tránh cấp nhầm).
+ * Chấp nhận alias tiếng Việt không dấu (vd: "Hàng năm" -> yearly).
  */
 export function isPremiumAccountType(
   name: string | null | undefined,
@@ -73,9 +126,10 @@ export function isPremiumAccountType(
 ): boolean {
   if (!isActive) return false;
   if (!name) return false;
-  const normalized = name.toLowerCase().trim();
-  if (FREE_ACCOUNT_TYPE_NAMES.has(normalized)) return false;
-  return PREMIUM_ACCOUNT_TYPE_NAMES.has(normalized);
+  const canonical =
+    getCanonicalAccountType(name) ?? normalizeAccountTypeName(name);
+  if (FREE_ACCOUNT_TYPE_NAMES.has(canonical)) return false;
+  return PREMIUM_ACCOUNT_TYPE_NAMES.has(canonical);
 }
 
 /**

@@ -20,7 +20,7 @@ import { SunChineseLogo } from "@/components/SunChineseLogo";
 import { BannersCarousel } from "@/components/BannersCarousel";
 
 export const metadata: Metadata = {
-  title: "CLA – Chinese Learning App | Học Tiếng Trung Hiệu Quả",
+  title: "Sun Chinese | Học Tiếng Trung Hiệu Quả",
   description:
     "Nền tảng học tiếng Trung toàn diện: bài đọc song ngữ, flashcard SRS, video bài giảng, AI luyện nói và ngữ pháp có hệ thống.",
 };

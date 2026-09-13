@@ -1,4 +1,4 @@
-# Tài liệu dự án — cla-web
+# Tài liệu dự án — Sunchinese-web
 
 Web app học tiếng Trung (Next.js App Router) trên backend Directus (`https://marutek.space`).
 

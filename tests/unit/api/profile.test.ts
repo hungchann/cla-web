@@ -77,6 +77,21 @@ describe("getAccountType", () => {
     expect(result.user_profiles[0].is_active).toBe(false);
   });
 
+  it("falls back to status when expired_time is invalid (admin nhập tay)", async () => {
+    localStorage.setItem("user_data", JSON.stringify({ user_id: "u-123" }));
+    server.use(
+      http.get(`${API}${ACCOUNT_TYPE_FLOW_PATH}*`, () => {
+        return HttpResponse.json([
+          { id: 145, user_id: "u-123", expired_time: "NaN-NaN-NaNTNaN:NaN:NaN", type: "Hàng năm", status: "Active" },
+        ]);
+      }),
+    );
+
+    const result = await getAccountType();
+    expect(result.user_profiles[0].account_type_id).toEqual({ id: 145, name: "Hàng năm" });
+    expect(result.user_profiles[0].is_active).toBe(true);
+  });
+
   it("returns empty user_profiles when no subscription", async () => {
     localStorage.setItem("user_data", JSON.stringify({ user_id: "u-123" }));
     server.use(

@@ -1,4 +1,4 @@
-# Kiến trúc dữ liệu — cla-web
+# Kiến trúc dữ liệu — Sunchinese-web
 
 > Sơ đồ thuần **data movement**: dữ liệu chảy từ đâu → đâu, qua tầng nào.
 > Không mô tả logic nghiệp vụ (điều kiện rẽ nhánh) — xem `docs/premium-directus-contract.md` cho contract premium.
@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart LR
-    subgraph CLIENT["Trình duyệt — cla-web (Next.js App Router)"]
+    subgraph CLIENT["Trình duyệt — Sunchinese-web (Next.js App Router)"]
         PAGES["app/** (23 pages)"]
         APILAYER["api/* (16 module)"]
         SERVICES["services/* (transcribe, audio, subtitle)"]

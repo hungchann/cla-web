@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Volume2, PartyPopper, XCircle } from "lucide-react";
-import { speakChinese } from "@/lib/utils/speech";
+import { PartyPopper, XCircle } from "lucide-react";
 import { playAnswerFeedback } from "@/services/audioFeedback";
 import type { QuizExercise } from "../types";
 
@@ -84,14 +83,6 @@ export function QuizStep({
                         {currentQuiz.audio_url && (
                             <audio src={currentQuiz.audio_url} controls preload="none" className="h-9 max-w-44" />
                         )}
-                        <button
-                            type="button"
-                            onClick={() => speakChinese(currentQuiz.question || "")}
-                            className="w-10 h-10 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 cursor-pointer active:scale-90 transition-transform dark:bg-zinc-800 dark:border-zinc-700"
-                            title="Nghe câu hỏi"
-                        >
-                            <Volume2 className="w-5 h-5" />
-                        </button>
                     </div>
                 </div>
 

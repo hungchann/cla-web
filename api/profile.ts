@@ -164,12 +164,19 @@ export const getAccountType = async () => {
     const item = data[0];
     const expiredTime = item?.expired_time;
     const status = String(item?.status ?? "").toLowerCase();
-    // is_active = chưa hủy/đã hết hạn VÀ chưa too expired_time
+    // is_active = chưa hủy/đã hết hạn VÀ chưa tới expired_time.
+    // expired_time invalid (vd: admin nhập tay "NaN-...") thì fallback theo status
+    // để không khóa oan user vừa được duyệt tay; khi có ngày hợp lệ vẫn check hạn.
+    const expiredMs =
+      typeof expiredTime === "string" && expiredTime.length > 0
+        ? new Date(expiredTime).getTime()
+        : Number.NaN;
+    const hasValidExpiry = Number.isFinite(expiredMs);
     const isActive =
       status === "cancelled" || status === "expired"
         ? false
-        : typeof expiredTime === "string" && expiredTime.length > 0
-          ? new Date(expiredTime).getTime() > Date.now()
+        : hasValidExpiry
+          ? (expiredMs as number) > Date.now()
           : true;
 
     return {
