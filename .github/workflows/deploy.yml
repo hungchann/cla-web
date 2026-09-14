@@ -12,6 +12,12 @@ on:
     branches: [master]
   workflow_dispatch:
 
+# Chỉ một deploy chạy một lúc — nhiều deploy song song sẽ tranh container "cla-web"
+# trên VPS (docker rm -f / docker run đè nhau → Conflict).
+concurrency:
+  group: deploy-master
+  cancel-in-progress: false
+
 jobs:
   checks:
     name: Lint, Typecheck & Unit Tests
