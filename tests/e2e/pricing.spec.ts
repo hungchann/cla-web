@@ -76,7 +76,7 @@ test.describe("Pricing & checkout", () => {
     await expect(page.getByRole("heading", { name: "Nâng cấp Premium" })).toBeVisible();
     await expect(page.getByText("Premium Năm")).toBeVisible();
     await expect(page.getByText("Lịch sử thanh toán")).toBeVisible();
-    await expect(page.getByText("Đã kích hoạt").first()).toBeVisible();
+    await expect(page.getByText("Đã xác nhận").first()).toBeVisible();
   });
 
   test("guest selecting a plan is asked to sign in", async ({ page }) => {
