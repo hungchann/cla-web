@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { PremiumProvider, usePremiumContext } from "@/lib/context/PremiumContext";
+import { AUTH_CHANGE_EVENT } from "@/lib/utils/tokenUtils";
 import * as profileApi from "@/api/profile";
 
 vi.mock("@/api/profile", async (importOriginal) => {
@@ -24,6 +25,7 @@ describe("PremiumProvider", () => {
   beforeEach(() => {
     document.cookie = "";
     localStorage.clear();
+    vi.clearAllMocks();
     vi.mocked(profileApi.getAccountType).mockResolvedValue({ user_profiles: [] });
   });
 
@@ -98,5 +100,25 @@ describe("PremiumProvider", () => {
       await result.current?.refreshPremium(true);
     });
     expect(result.current?.isPremium).toBe(true);
+  });
+
+  it("re-syncs premium when auth state changes after mount (login)", async () => {
+    const { result } = renderProvider();
+    await waitFor(() => expect(result.current?.loading).toBe(false));
+    expect(result.current?.isPremium).toBe(false);
+    expect(profileApi.getAccountType).not.toHaveBeenCalled();
+
+    // Login: token/user được lưu và tokenUtils phát AUTH_CHANGE_EVENT.
+    loginAs("u-1");
+    vi.mocked(profileApi.getAccountType).mockResolvedValue({
+      user_profiles: [{ account_type_id: { id: 1, name: "Lifetime" }, is_active: true }],
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+    });
+
+    await waitFor(() => expect(result.current?.isPremium).toBe(true));
+    expect(profileApi.getAccountType).toHaveBeenCalled();
   });
 });

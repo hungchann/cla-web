@@ -2,6 +2,22 @@ import { logger } from "@/services/logger";
 
 export const ACCESS_TOKEN_EXPIRES_AT_KEY = "access_token_expires_at";
 
+/**
+ * Sự kiện phát ra mỗi khi token/user thay đổi (login, logout, refresh).
+ * Các provider phụ thuộc auth (vd PremiumProvider) lắng nghe để đồng bộ lại
+ * trạng thái mà không cần full page reload.
+ */
+export const AUTH_CHANGE_EVENT = "cla:auth-change";
+
+function notifyAuthChange() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+  } catch {
+    // ignore
+  }
+}
+
 /** Directus: `expires` có thể là ms (vd 900000) hoặc giây (vd 900). */
 export function expiresValueToAbsoluteMs(expires: number | undefined | null): number | null {
   if (expires == null || expires <= 0) return null;
@@ -131,6 +147,7 @@ export const tokenUtils = {
       if (globalThis.window !== undefined) {
         globalThis.window.localStorage.removeItem("user_data");
       }
+      notifyAuthChange();
     } catch (error) {
       logger.error("Error clearing tokens:", error);
     }
@@ -158,6 +175,8 @@ export const tokenUtils = {
       if (abs != null) {
         setCookie(ACCESS_TOKEN_EXPIRES_AT_KEY, String(abs), 7);
       }
+
+      notifyAuthChange();
     } catch (error) {
       logger.error("Error saving tokens:", error);
       throw error;

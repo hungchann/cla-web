@@ -16,7 +16,7 @@ import {
   PREMIUM_CACHE_KEY,
   PREMIUM_CACHE_TTL_MS,
 } from "@/lib/premium";
-import { tokenUtils } from "@/lib/utils/tokenUtils";
+import { AUTH_CHANGE_EVENT, tokenUtils } from "@/lib/utils/tokenUtils";
 import { logger } from "@/services/logger";
 
 interface PremiumContextValue {
@@ -121,6 +121,25 @@ export function PremiumProvider({ children }: Readonly<{ children: React.ReactNo
     })();
     return () => {
       cancelled = true;
+    };
+  }, [sync]);
+
+  // Token/user đổi (login, logout, refresh) → đồng bộ lại ngay.
+  // Provider nằm ở root layout nên không remount khi điều hướng client-side
+  // (vd login xong router.push); không có listener này sẽ giữ mãi trạng thái free.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    const handleAuthChange = () => {
+      setLoading(true);
+      void sync(true).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    };
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
     };
   }, [sync]);
 
