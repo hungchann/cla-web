@@ -1,0 +1,48 @@
+name: Deploy
+
+# Tự động deploy lên VPS khi push vào master (sau khi checks xanh).
+# Secrets cần có trong GitHub → Settings → Secrets and variables → Actions:
+#   VPS_HOST    — IP/hostname VPS (vd: 14.225.212.158)
+#   VPS_USER    — user SSH (vd: root)
+#   VPS_SSH_KEY — private key deploy (key publique đã gắn forced-command
+#                 /root/deploy-cla-web.sh trên VPS nên key này CHỈ chạy được script deploy)
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  checks:
+    name: Lint, Typecheck & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm test:unit
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: [checks]
+    steps:
+      - name: Run deploy script on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 30m
+          script: deploy # lệnh bị forced-command trên VPS bỏ qua, luôn chạy deploy-cla-web.sh master
