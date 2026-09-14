@@ -1,0 +1,7 @@
+# Shell scripts must stay LF — CRLF breaks bash on the VPS.
+*.sh text eol=lf
+
+# Windows scripts keep CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
