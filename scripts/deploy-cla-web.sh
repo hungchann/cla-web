@@ -24,3 +24,7 @@ docker rm -f cla-web 2>/dev/null || true
 docker run -d --name cla-web --restart unless-stopped -p 127.0.0.1:3020:3020 -e NODE_ENV=production cla-web:latest
 systemctl disable cla-web 2>/dev/null || true
 docker ps --filter name=cla-web
+# Dọn image cũ (dangling sau khi retag latest) + build cache — tránh đầy đĩa qua nhiều lần deploy.
+docker image prune -f >/dev/null 2>&1 || true
+docker builder prune -f >/dev/null 2>&1 || true
+df -h / | tail -1
