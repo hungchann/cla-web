@@ -194,3 +194,19 @@ const adminPolicy = await this.knex('directus_access')
 **Kiểm chứng admin-check:** role `user` → không có admin policy; role `Administrator` →
 có; user Google hiện hữu → 0 admin policy.
 
+### 9.1. Thông báo lỗi ở frontend (2026-09-14)
+
+Directus `openid.js` khi login lỗi redirect về callback kèm `?reason=<ErrorCode>`
+(vd `INVALID_PROVIDER`, `INVALID_CREDENTIALS`, `SERVICE_UNAVAILABLE`,
+`UNKNOWN_EXCEPTION`). Trước đây callback bỏ qua tham số này nên luôn hiện 1 câu chung
+gây hiểu nhầm ("…liên hệ hỗ trợ để liên kết tài khoản").
+
+Đã thêm `lib/googleAuthErrors.ts` (`googleAuthErrorMessage(reason)`) map `reason` →
+thông báo đúng nguyên nhân; `app/(auth)/auth/google/callback/page.tsx` đọc `?reason=` và
+hiển thị luôn (không thử `POST /auth/refresh` vô ích). Test: `tests/unit/lib/googleAuthErrors.test.ts`.
+
+> Lưu ý: khi lỗi, Directus cắt `?redirect=…` khỏi URL (`redirect.split('?')[0]`) nên đích
+> quay lại ban đầu bị mất; callback fallback về `/dashboard` (chỉ ở nhánh thành công) và
+> `/sign-in` khi lỗi.
+
+

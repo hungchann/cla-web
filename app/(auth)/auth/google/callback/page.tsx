@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { exchangeGoogleSession, saveGoogleTokensFromFragment } from "@/api/apiService";
+import { googleAuthErrorMessage } from "@/lib/googleAuthErrors";
 import { Loader2, AlertCircle } from "lucide-react";
 import { SunChineseLogo } from "@/components/SunChineseLogo";
 
@@ -12,6 +13,16 @@ function GoogleCallbackContent() {
     const searchParams = useSearchParams();
     const [error, setError] = useState<string | null>(null);
     const startedRef = useRef(false);
+    // Directus redirect về `?reason=<CODE>` khi login SSO lỗi (xem docs/google-sso-setup.md §9).
+    const reason = searchParams.get("reason");
+
+    const showError = useCallback(
+        (message: string) => {
+            setError(message);
+            setTimeout(() => router.replace("/sign-in"), 4000);
+        },
+        [router],
+    );
 
     useEffect(() => {
         if (startedRef.current) return;
@@ -19,6 +30,13 @@ function GoogleCallbackContent() {
 
         const run = async () => {
             try {
+                // Directus đã báo lỗi kèm mã lý do → hiển thị đúng nguyên nhân,
+                // không thử đổi session (sẽ chắc chắn 400).
+                if (reason) {
+                    showError(googleAuthErrorMessage(reason));
+                    return;
+                }
+
                 // Ưu tiên token trong URL fragment (mode json-redirect của patch openid.js)
                 const hash = window.location.hash;
                 let ok = false;
@@ -37,14 +55,11 @@ function GoogleCallbackContent() {
                 router.replace(target);
                 router.refresh();
             } catch {
-                setError(
-                    "Đăng nhập bằng Google thất bại. Nếu bạn đã có tài khoản với email này, vui lòng liên hệ hỗ trợ để liên kết tài khoản."
-                );
-                setTimeout(() => router.replace("/sign-in"), 4000);
+                showError(googleAuthErrorMessage(null));
             }
         };
         run();
-    }, [router, searchParams]);
+    }, [router, searchParams, reason, showError]);
 
     return (
         <div className="min-h-screen flex items-center justify-center p-8 bg-zinc-50/50 dark:bg-zinc-950">
