@@ -120,6 +120,14 @@ Chi tiết vận hành admin xem [`thanh-toan-voucher-affiliate.md`](./thanh-toa
    `source = revenuecat`, `provider_transaction_id = <revenuecat txn id>`.
 3. Web đọc trạng thái qua flow `ACCOUNT_TYPE_FLOW` (không cần đổi) → cả 2 app luôn hiển thị cùng trạng thái.
 
+> ⚠️ **Flow `RC Check Premium` (webhook RevenueCat) đã bị TẮT (status=inactive, 2026-09-14).**
+> Lý do: endpoint webhook public, không verify chữ ký — kiểm chứng thực tế cho thấy
+> request giả mạo có thể tự cấp Premium. Mobile KHÔNG phụ thuộc Flow này (chưa từng có
+> dòng `account_types` nào `source=revenuecat` trong DB) mà ghi Directus trực tiếp.
+> Nếu sau này muốn bật lại: cấu hình Authorization header trong RevenueCat dashboard
+> + nối bước `[sec] Verify RC Authorization` (đã tạo sẵn trong Flow) trước Parse,
+> secret đang lưu trong code bước đó.
+
 > RevenueCat KHÔNG lưu trạng thái premium. Nó chỉ xác nhận "đã thanh toán";
 > dữ liệu cuối cùng luôn nằm ở `account_types`.
 

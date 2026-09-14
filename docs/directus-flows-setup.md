@@ -71,7 +71,7 @@ module.exports = async function (data) {
 
   const payload = {
     user_id: userId,
-    type: plan.key, // yearly | lifetime
+    type: plan.key, // yearly | lifetime (lowercase — đúng contract §1)
     status: "active",
     source: "vietqr",
     plan_id: plan.id,
