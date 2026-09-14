@@ -142,6 +142,8 @@ Google bằng Gmail hoàn toàn mới → `user_profiles` xuất hiện ngay.
 | 400 `refresh token is required` | Cookie không được gửi: kiểm tra app có đang gọi đúng `api.sunchinese.vn` (không phải marutek.space), và Chrome cho phép cookie site này |
 | `INVALID_USER` / `RECORD_NOT_UNIQUE` | Email đã tồn tại chưa link — mục 4 |
 | 404 `/auth/login/google` | Directus chưa restart với env mới |
+| Login Google email mới fail + `SQLITE_ERROR: no such column: directus_roles.admin_access` | Patch `patches/openid.js` dùng schema cũ — xem mục 9 |
+| Callback báo lỗi rồi `/auth/refresh` 400 `refresh token is required` | Hệ quả của lỗi OpenID phía Directus: login dừng trước khi phát token → fragment rỗng → fallback session cookie cũng không có. Xem log `docker logs … | grep OpenID` để tìm nguyên nhân gốc |
 
 ## 8. File liên quan trong repo
 
@@ -152,3 +154,43 @@ Google bằng Gmail hoàn toàn mới → `user_profiles` xuất hiện ngay.
 | `api/apiService.ts` → `exchangeGoogleSession()` | POST `/auth/refresh` (mode json) + lưu token + user |
 | `proxy.ts` | Bỏ qua guard cho `/auth/google/callback` |
 | `.env.local` | `NEXT_PUBLIC_API_URL=https://api.sunchinese.vn` |
+
+## 9. Fix: auto-link theo email hỏng trên Directus 11 (2026-09-14)
+
+**Triệu chứng:** đăng nhập/đăng ký Google bằng email **chưa từng có** trong Directus
+luôn thất bại; email đã link Google từ trước vẫn vào được. Log Directus:
+
+```
+WARN: select ... left join directus_roles ... - SQLITE_ERROR: no such column: directus_roles.admin_access
+WARN: [OpenID] Unexpected error during OpenID login
+```
+
+**Nguyên nhân:** patch auto-link (mục 4) lọc "bỏ qua tài khoản admin" bằng cột
+`directus_roles.admin_access`. Directus 11 đã **bỏ cột này** — quyền admin chuyển sang
+`directus_policies.admin_access`, gán qua bảng `directus_access` (theo `role` hoặc `user`).
+Query ném `SQLITE_ERROR` với **mọi email chưa có `external_identifier`** (tức email mới),
+làm hỏng cả luồng đăng ký mới lẫn auto-link. Token không được phát → callback chỉ còn đường
+fallback `POST /auth/refresh` → 400 `refresh token is required`.
+
+**Đã sửa trong `patches/openid.js`:** bỏ join `directus_roles`, kiểm tra admin qua policy model:
+
+```js
+const adminPolicy = await this.knex('directus_access')
+  .join('directus_policies', 'directus_policies.id', 'directus_access.policy')
+  .whereRaw('directus_policies.admin_access = 1')
+  .andWhere(function () {
+    this.where('directus_access.user', existingUser.id);
+    if (existingUser.role) this.orWhere('directus_access.role', existingUser.role);
+  })
+  .first('directus_access.id');
+```
+
+- **Fail-closed**: nếu bước kiểm tra admin lỗi thì **không** auto-link (an toàn hơn link nhầm admin).
+- File backup trên VPS: `patches/openid.js.bak-YYYYMMDD-HHMM`.
+- Sau khi sửa phải `docker restart directus_education-directus-1` (file mount sẵn, nhưng code
+  đã nạp vào RAM).
+- ⚠️ Đây là file patch nằm **trên VPS**, không version trong repo `cla-web`.
+
+**Kiểm chứng admin-check:** role `user` → không có admin policy; role `Administrator` →
+có; user Google hiện hữu → 0 admin policy.
+
