@@ -366,7 +366,6 @@ export default function StoryDetailPage({ params }: Readonly<{ params: Promise<{
               <div className="space-y-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
                 <p><strong>Tác giả:</strong> {book.author || book.author_trans || "Khuyết danh"}</p>
                 {book.author_trans && <p><strong>Dịch giả:</strong> {book.author_trans}</p>}
-                <p><strong>Lượt đọc:</strong> {book.view_count || 0}</p>
                 <div className="border-t border-zinc-100 dark:border-zinc-800 pt-2 mt-2">
                   <p className="font-bold text-zinc-600 dark:text-zinc-300 mb-1">Tóm tắt:</p>
                   <p className="leading-relaxed">{book.summary || "Chưa có tóm tắt chi tiết."}</p>
