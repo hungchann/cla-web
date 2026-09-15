@@ -85,7 +85,7 @@ export function VideoPlayerSection({
         <h1 className="text-2xl font-extrabold text-zinc-950 dark:text-white">
           {title || "Video Bài Giảng"}
         </h1>
-        <p className="text-sm text-zinc-550 dark:text-zinc-400 font-semibold">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 font-semibold">
           {titleTrans || "Học tiếng Trung qua bài giảng video song ngữ"}
         </p>
       </div>

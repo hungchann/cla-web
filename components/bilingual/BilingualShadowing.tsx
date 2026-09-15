@@ -359,13 +359,13 @@ export function BilingualShadowing({
   };
 
   const getAccuracyBg = (score: number) => {
-    if (score >= 80) return "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-250/50 dark:border-emerald-900/30";
-    if (score >= 50) return "bg-amber-50/50 dark:bg-amber-950/20 border-amber-250/50 dark:border-amber-900/30";
-    return "bg-rose-50/50 dark:bg-rose-950/20 border-rose-250/50 dark:border-rose-900/30";
+    if (score >= 80) return "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/30";
+    if (score >= 50) return "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/30";
+    return "bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/30";
   };
 
   return (
-    <div className="border border-amber-500/35 dark:border-amber-500/20 rounded-2xl p-5 md:p-6 bg-white dark:bg-zinc-900 shadow-2xs space-y-6">
+    <div className="border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-5 md:p-6 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
       {/* Header bar with Navigation */}
       <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
         <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -377,7 +377,7 @@ export function BilingualShadowing({
             <button
               onClick={handlePrev}
               disabled={currentIndex === 0 || isRecording || isProcessing}
-              className="p-1.5 rounded-lg border border-zinc-205 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
               title="Câu trước"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -388,7 +388,7 @@ export function BilingualShadowing({
             <button
               onClick={handleNext}
               disabled={currentIndex === srtData.length - 1 || isRecording || isProcessing}
-              className="p-1.5 rounded-lg border border-zinc-205 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
               title="Câu tiếp theo"
             >
               <ChevronRight className="h-4 w-4" />
@@ -398,7 +398,7 @@ export function BilingualShadowing({
       </div>
 
       {/* Active Subtitle box */}
-      <div className="bg-zinc-50 dark:bg-zinc-950/60 p-4 md:p-5 rounded-2xl border border-zinc-150 dark:border-zinc-800/80 flex items-start justify-between gap-4">
+      <div className="bg-zinc-50 dark:bg-zinc-950/60 p-4 md:p-5 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start justify-between gap-4">
         <div className="space-y-3 flex-1 min-w-0">
           {/* Target Chinese characters with optional interactive words */}
           <div className="flex flex-wrap items-end gap-x-1.5 gap-y-2 text-lg md:text-xl font-semibold text-zinc-800 dark:text-zinc-100 leading-relaxed">
@@ -407,7 +407,7 @@ export function BilingualShadowing({
                 <span
                   key={wordIdx}
                   onClick={() => onSpeakWord(wItem.word)}
-                  className="cursor-pointer hover:text-amber-650 dark:hover:text-amber-500 transition-colors select-none"
+                  className="cursor-pointer hover:text-amber-600 dark:hover:text-amber-500 transition-colors select-none"
                   title="Click để nghe phát âm"
                 >
                   <ruby>
@@ -431,7 +431,7 @@ export function BilingualShadowing({
         <button
           onClick={() => onSpeakWord(defaultEntry.chinese)}
           disabled={isRecording || isProcessing}
-          className="w-10 h-10 border border-amber-250 dark:border-zinc-800 hover:bg-amber-100/50 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-500 cursor-pointer active:scale-95 transition-all shrink-0 bg-transparent"
+          className="w-10 h-10 border border-amber-200 dark:border-zinc-800 hover:bg-amber-100/50 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-500 cursor-pointer active:scale-95 transition-all shrink-0 bg-transparent"
           title="Nghe giọng đọc mẫu"
         >
           <Volume2 className="h-5 w-5" />
@@ -444,7 +444,7 @@ export function BilingualShadowing({
           <div className="flex flex-col items-center gap-3">
             <button
               onClick={stopRecording}
-              className="w-16 h-16 bg-rose-650 hover:bg-rose-700 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 animate-pulse transition-all cursor-pointer border-none"
+              className="w-16 h-16 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 animate-pulse transition-all cursor-pointer border-none"
               title="Dừng ghi âm"
             >
               <Square className="h-6 w-6 fill-current" />
@@ -466,12 +466,12 @@ export function BilingualShadowing({
           <div className="flex flex-col items-center gap-2">
             <button
               onClick={startRecording}
-              className="w-16 h-16 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer border-none"
+              className="w-16 h-16 bg-amber-500 hover:bg-amber-600 text-white rounded-full flex items-center justify-center shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer border-none"
               title="Bắt đầu ghi âm"
             >
               <Mic className="h-7 w-7" />
             </button>
-            <p className="text-[11px] font-bold text-zinc-450 dark:text-zinc-500">
+            <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500">
               Nhấn để bắt đầu ghi âm
             </p>
           </div>
@@ -495,7 +495,7 @@ export function BilingualShadowing({
           {comparisonResult && (
             <div className="space-y-2">
               <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 block">Chi tiết phát âm (so sánh từng chữ):</span>
-              <div className="flex flex-wrap gap-1.5 p-3 bg-white dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-900 rounded-xl leading-relaxed text-lg font-bold select-none">
+              <div className="flex flex-wrap gap-1.5 p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl leading-relaxed text-lg font-bold select-none">
                 {comparisonResult.highlightedText.map((char, index) => {
                   let charClass = "text-zinc-800 dark:text-zinc-200";
                   if (char.isCorrect) {
@@ -524,7 +524,7 @@ export function BilingualShadowing({
           {userText && (
             <div className="space-y-1">
               <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 block">Nhận diện được từ giọng nói:</span>
-              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 select-all bg-white/40 dark:bg-zinc-950/40 p-2.5 rounded-xl border border-zinc-150/50 dark:border-zinc-800/40">
+              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 select-all bg-white/40 dark:bg-zinc-950/40 p-2.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/40">
                 {userText}
               </p>
             </div>
@@ -532,7 +532,7 @@ export function BilingualShadowing({
 
           {/* Troubleshooting details */}
           {feedback?.details && feedback.details.length > 0 && (
-            <div className="text-xs font-semibold text-zinc-555 dark:text-zinc-400 space-y-1 pt-1">
+            <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 space-y-1 pt-1">
               {feedback.details.map((detail, index) => (
                 <div key={index} className="flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-zinc-400"></span>
@@ -547,7 +547,7 @@ export function BilingualShadowing({
             {userAudioUrl && (
               <button
                 onClick={toggleUserAudioPlayback}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white cursor-pointer active:scale-95 transition-all border-none"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 cursor-pointer active:scale-95 transition-all border border-zinc-200/60 dark:border-zinc-700/60"
               >
                 {isPlayingUserAudio ? (
                   <>

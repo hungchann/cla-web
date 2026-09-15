@@ -59,7 +59,7 @@ export function VideoQuizSection({
               } else if (isSelected) {
                 btnStyle = "bg-rose-500/10 border-rose-500 text-rose-700 dark:text-rose-400 ring-2 ring-rose-500/25";
               } else {
-                btnStyle = "bg-zinc-50/50 border-zinc-150 text-zinc-400 dark:bg-zinc-900/20 dark:border-zinc-800 dark:text-zinc-600 opacity-60";
+                btnStyle = "bg-zinc-50/50 border-zinc-200 text-zinc-400 dark:bg-zinc-900/20 dark:border-zinc-800 dark:text-zinc-600 opacity-60";
               }
             } else if (isSelected) {
               btnStyle = "bg-amber-50 border-amber-500 text-amber-900 dark:bg-amber-950/20 dark:border-amber-500 dark:text-amber-400 ring-2 ring-amber-500/25";
