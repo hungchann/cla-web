@@ -21,7 +21,6 @@ import { videoDataUsesYoutubePlayer, getYoutubeVideoIdFromVideoData } from "@/li
 import { speakChinese } from "@/lib/utils/speech";
 import { useSubtitleSync } from "@/lib/hooks/useSubtitleSync";
 import { timeToSeconds } from "@/lib/utils/subtitleUtils";
-import Link from "next/link";
 
 const MOCK_VIDEO_DETAIL = {
   id: "v1",
@@ -266,14 +265,8 @@ function SubtitlesContent({ params }: Readonly<{ params: Promise<{ id: string }>
 
       {/* Navigation Header */}
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4 w-full">
-        <BackButton href="/video" label="Danh sách video" />
+        <BackButton href={`/video/${id}`} label="Chọn kiểu xem" />
         <div className="flex items-center gap-3">
-          <Link
-            href={`/video/${id}/quiz`}
-            className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors"
-          >
-            Chuyển sang trắc nghiệm &rarr;
-          </Link>
           <PinyinToggle isOpen={isOpenPinyin} onChange={setIsOpenPinyin} />
         </div>
       </div>

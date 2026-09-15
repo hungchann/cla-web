@@ -195,8 +195,6 @@ const routeSidebars: Record<string, RouteSidebar> = {
         icon: Video,
         items: [
           { title: "Thư viện video", url: "/video" },
-          { title: "Bài tập từ vựng", url: "/video?type=vocabulary" },
-          { title: "Bài tập ngữ pháp", url: "/video?type=grammar" },
         ],
       },
     ],
@@ -438,6 +436,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
 
     if (pathname === "/video" || pathname.startsWith("/video/")) {
+      const videoId = pathname.match(/^\/video\/([^/?#]+)/)?.[1]
+      if (videoId && videoId !== "results") {
+        return [
+          {
+            title: "Video này",
+            icon: Video,
+            items: [
+              { title: "Phụ đề song ngữ", url: `/video/${videoId}/subtitles` },
+              { title: "Chọn từ", url: `/video/${videoId}/quiz` },
+              { title: "Shadowing", url: `/video/${videoId}/shadowing` },
+            ],
+          },
+          ...routeSidebar.groups,
+        ]
+      }
       return routeSidebar.groups.concat({
         title: "Thể loại",
         icon: ListFilter,

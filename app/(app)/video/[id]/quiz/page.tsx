@@ -17,7 +17,6 @@ import { VideoQuizPanel } from "@/components/video/VideoQuizPanel";
 import { videoDataUsesYoutubePlayer, getYoutubeVideoIdFromVideoData } from "@/lib/utils/youtubeVideo";
 import { speakChinese } from "@/lib/utils/speech";
 import { timeToSeconds } from "@/lib/utils/subtitleUtils";
-import Link from "next/link";
 
 const MOCK_VIDEO_DETAIL = {
   id: "v1",
@@ -229,13 +228,8 @@ function QuizContent({ params }: Readonly<{ params: Promise<{ id: string }> }>) 
 
       {/* Navigation Header */}
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4 w-full">
-        <BackButton href="/video" label="Danh sách video" />
-        <Link
-          href={`/video/${id}/subtitles`}
-          className="text-xs font-black text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors"
-        >
-          &larr; Chuyển sang phụ đề
-        </Link>
+        <BackButton href={`/video/${id}`} label="Chọn kiểu xem" />
+        <div />
       </div>
 
       {/* Main Content: Video + Quiz */}

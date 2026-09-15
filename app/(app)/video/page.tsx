@@ -196,7 +196,7 @@ function VideoListPageContent() {
                       <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors text-base tracking-tight">
                         {video.title}
                       </h3>
-                      <p className="text-sm font-semibold text-zinc-550 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                      <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                         {video.title_trans}
                       </p>
                     </div>
