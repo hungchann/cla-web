@@ -34,7 +34,7 @@ export function ExtraLessonStep({ lessonExtra, onBackToCourse }: ExtraLessonStep
                                         <path fillRule="evenodd" d="M3.75 18a.75.75 0 0 1 .75.75h15a.75.75 0 0 1 0 1.5H4.5A.75.75 0 0 1 3.75 18Z" clipRule="evenodd" />
                                     </svg>
                                 </div>
-                                <span className="text-xs font-bold text-gray-800 dark:text-zinc-200">Tải Bài tập</span>
+                                <span className="text-xs font-bold text-gray-800 dark:text-zinc-200">Tài liệu</span>
                             </a>
                         ) : (
                             <div className="text-xs text-zinc-400 italic">Chưa có file bài tập</div>
@@ -56,7 +56,7 @@ export function ExtraLessonStep({ lessonExtra, onBackToCourse }: ExtraLessonStep
                                         <path fillRule="evenodd" d="M3.75 18a.75.75 0 0 1 .75.75h15a.75.75 0 0 1 0 1.5H4.5A.75.75 0 0 1 3.75 18Z" clipRule="evenodd" />
                                     </svg>
                                 </div>
-                                <span className="text-xs font-bold text-gray-800 dark:text-zinc-200">Tải Đáp án</span>
+                                <span className="text-xs font-bold text-gray-800 dark:text-zinc-200">Tài liệu</span>
                             </a>
                         ) : (
                             <div className="text-xs text-zinc-400 italic">Chưa có file đáp án</div>
