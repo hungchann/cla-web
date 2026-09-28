@@ -22,7 +22,7 @@ import { BannersCarousel } from "@/components/BannersCarousel";
 export const metadata: Metadata = {
   title: "Sun Chinese | Học Tiếng Trung Hiệu Quả",
   description:
-    "Nền tảng học tiếng Trung toàn diện: bài đọc song ngữ, flashcard SRS, video bài giảng, AI luyện nói và ngữ pháp có hệ thống.",
+    "Học Tiếng Trung Cho Người Bận Rộn: bài đọc song ngữ, flashcard SRS, video bài giảng, AI luyện nói và ngữ pháp có hệ thống.",
 };
 
 const FEATURES = [

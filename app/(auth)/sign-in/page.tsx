@@ -141,7 +141,7 @@ function SignInForm() {
 
                 <div className="z-10 flex flex-col justify-center items-start space-y-4 my-auto max-w-md">
                     <h2 className="text-4xl font-extrabold tracking-tight text-white leading-tight">
-                        Nền tảng học tiếng Trung hiện đại
+                        Học Tiếng Trung Cho Người Bận Rộn
                     </h2>
                     <p className="text-sm text-amber-50 leading-relaxed font-semibold">
                         Tận hưởng lộ trình học toàn diện với các bài đọc song ngữ phong phú, hệ thống ôn luyện từ vựng bằng Flashcards khoa học, và đặc biệt là tính năng luyện phản xạ nói chấm điểm trực tiếp cùng Giáo viên AI.
