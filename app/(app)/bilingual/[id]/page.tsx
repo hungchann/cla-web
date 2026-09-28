@@ -13,7 +13,8 @@ import { getAssetUrl } from "@/lib/utils/assets";
 import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
 import { PinyinToggle } from "@/components/PinyinToggle";
-import { BookmarkPlus, Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { SaveToNotebook } from "@/components/notebook/SaveToNotebook";
 import { useSubtitleSync } from "@/lib/hooks/useSubtitleSync";
 import { timeToSeconds } from "@/lib/utils/subtitleUtils";
 import { usePremium } from "@/lib/hooks/usePremium";
@@ -466,7 +467,7 @@ export default function BilingualDetailPage({
                                 {isTranslating ? (
                                     <span className="inline-block w-4 h-4 border-2 border-zinc-200 border-t-amber-650 rounded-full animate-spin"></span>
                                 ) : (
-                                    <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
+                                    <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 font-mono">
                                         {selectedWord.pinyin}
                                     </span>
                                 )}
@@ -487,22 +488,15 @@ export default function BilingualDetailPage({
                                     Nghe lại
                                 </button>
                                 {selectedWord.id && (
-                                    <button
-                                        type="button"
-                                        onClick={async () => {
-                                            try {
-                                                await bilingualApi.getVocabularyById(selectedWord.id!);
-                                                alert("Đã lưu từ vựng vào sổ tay thành công!");
-                                            } catch (e) {
-                                                console.warn("Lưu từ vựng thất bại:", e);
-                                                alert("Lưu từ vựng thất bại hoặc từ đã được lưu!");
-                                            }
+                                    <SaveToNotebook
+                                        variant="popover"
+                                        label="Lưu vào sổ tay"
+                                        word={{
+                                            word: selectedWord.word,
+                                            pinyin: selectedWord.pinyin || "",
+                                            meaning: selectedWord.meaning || "",
                                         }}
-                                        className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-500 px-3 py-1.5 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors border-none cursor-pointer"
-                                    >
-                                        <BookmarkPlus className="h-3.5 w-3.5" />
-                                        Lưu vào sổ tay
-                                    </button>
+                                    />
                                 )}
                             </div>
                         </div>

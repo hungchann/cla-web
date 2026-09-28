@@ -58,7 +58,6 @@ export const useDetailedVideoLogic = (
     enableAutoSpeakSubtitle?: boolean;
     youtubePlayerRef?: RefObject<any>;
     setYoutubeIsPlaying?: (playing: boolean) => void;
-    fallbackExercises?: ExerciseItem[];
     flowMode?: "subtitles" | "quiz" | "both";
   },
 ) => {
@@ -362,22 +361,12 @@ export const useDetailedVideoLogic = (
 
         if (cancelled) return;
 
-        if (sorted.length === 0) {
-          if (Array.isArray(opts?.fallbackExercises) && opts!.fallbackExercises.length > 0) {
-            logger.debug("[useDetailedVideoLogic] Using fallback exercises.");
-            setExerciseData(opts!.fallbackExercises);
-          } else {
-            setExerciseData([]);
-          }
-          return;
-        }
-        setExerciseData(sorted);
+        // Video không có bài tập (vd: ca nhạc) → để rỗng, UI hiện empty state.
+        setExerciseData(sorted.length === 0 ? [] : sorted);
       } catch (err: any) {
         logger.error("[useDetailedVideoLogic] Exercise fetch error:", err.message);
         if (cancelled) return;
-        if (Array.isArray(opts?.fallbackExercises) && opts!.fallbackExercises.length > 0) {
-          setExerciseData(opts!.fallbackExercises);
-        } else if (err.message === "Unauthorized" || err.message === "Failed to fetch exercise") {
+        if (err.message === "Unauthorized" || err.message === "Failed to fetch exercise") {
           router.replace("/sign-in");
         } else {
           setExerciseData([]);

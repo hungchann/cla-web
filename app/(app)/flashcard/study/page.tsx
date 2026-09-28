@@ -6,6 +6,7 @@ import { speakChinese } from "@/lib/utils/speech";
 import { notebookApi } from "@/api/notebook";
 import { ArrowLeft } from "lucide-react";
 import { FlashcardControls } from "@/components/flashcard/FlashcardControls";
+import { SaveToNotebook } from "@/components/notebook/SaveToNotebook";
 
 // Helper to generate dynamic quiz options from vocabulary list
 function generateQuizOptions(currentWord: any, allWords: any[]) {
@@ -63,7 +64,10 @@ function generateQuizOptions(currentWord: any, allWords: any[]) {
 function StudyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const title = searchParams.get("notebook") || "Thanh Hà";
+  const titleParam = searchParams.get("notebook") || "";
+  const notebookIdParam = searchParams.get("notebookId") || "";
+  const [displayTitle, setDisplayTitle] = useState(titleParam);
+  const [matchedDeckId, setMatchedDeckId] = useState("");
 
   // Mode: "flashcard" | "quiz"
   const [mode, setMode] = useState<"flashcard" | "quiz">("flashcard");
@@ -78,12 +82,6 @@ function StudyContent() {
   const [quizSelected, setQuizSelected] = useState<string | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string | null>>({});
 
-  const mockWords = [
-    { word: "爱", pinyin: "ài", meaning: "Yêu" },
-    { word: "学习", pinyin: "xuéxí", meaning: "Học tập" },
-    { word: "漂亮", pinyin: "piàoliang", meaning: "Xinh đẹp" },
-  ];
-
   const [words, setWords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -93,56 +91,57 @@ function StudyContent() {
       try {
         // 1. Get user personal notebooks
         const personalDecks = await notebookApi.getPersonalNotebooks();
-        
-        // Find matching notebook by title search param
-        const matchedDeck = personalDecks.find(
-          (deck) => deck.title.toLowerCase() === title.toLowerCase()
-        ) || personalDecks[0];
-        
-        if (matchedDeck) {
-          // 2. Fetch list of vocab items inside the notebook
-          const response = await notebookApi.getListVocabByIdFlashcardDeck(matchedDeck.id);
-          const rawItems = Array.isArray(response) ? response : [];
-          
-          if (rawItems.length > 0) {
-            // Map raw database items to our study format
-            const mappedWords = rawItems.map((item: any) => {
-              const vocab = item.vocab_items_id;
-              return {
-                word: vocab?.name || "",
-                pinyin: vocab?.pinyin || "",
-                meaning: vocab?.note || vocab?.senses?.[0]?.meaning_vi || "Chưa có nghĩa",
-              };
-            }).filter(w => w.word !== "");
-            
-            if (mappedWords.length > 0) {
-              // Build the final list with generated quiz options
-              const finalWords = mappedWords.map((w) => ({
-                ...w,
-                options: generateQuizOptions(w, mappedWords),
-              }));
-              
-              setWords(finalWords);
-              setLoading(false);
-              return;
-            }
-          }
+
+        // Find matching notebook by id (preferred) or title search param
+        const matchedDeck = notebookIdParam
+          ? personalDecks.find((deck) => String(deck.id) === notebookIdParam)
+          : personalDecks.find(
+              (deck) => deck.title.toLowerCase() === titleParam.toLowerCase()
+            );
+
+        if (!matchedDeck) {
+          setDisplayTitle(titleParam || "Sổ tay từ vựng");
+          setMatchedDeckId("");
+          setWords([]);
+          return;
         }
+
+        setDisplayTitle(matchedDeck.title);
+        setMatchedDeckId(String(matchedDeck.id));
+
+        // 2. Fetch list of vocab items inside the notebook
+        const response = await notebookApi.getListVocabByIdFlashcardDeck(matchedDeck.id);
+        const rawItems = Array.isArray(response) ? response : [];
+
+        // Map raw database items to our study format
+        const mappedWords = rawItems
+          .map((item: any) => {
+            const vocab = item.vocab_items_id;
+            return {
+              word: vocab?.name || "",
+              pinyin: vocab?.pinyin || "",
+              meaning: vocab?.note || vocab?.senses?.[0]?.meaning_vi || "Chưa có nghĩa",
+            };
+          })
+          .filter((w) => w.word !== "");
+
+        // Build the final list with generated quiz options
+        const finalWords = mappedWords.map((w) => ({
+          ...w,
+          options: generateQuizOptions(w, mappedWords),
+        }));
+
+        setWords(finalWords);
       } catch (e) {
         console.error("Failed to load dynamic words from database:", e);
+        setWords([]);
+      } finally {
+        setLoading(false);
       }
-      
-      // Fallback to static mockWords if loading fails or no words found
-      const fallbackWords = mockWords.map((w) => ({
-        ...w,
-        options: generateQuizOptions(w, mockWords),
-      }));
-      setWords(fallbackWords);
-      setLoading(false);
     };
 
     loadNotebookWords();
-  }, [title]);
+  }, [titleParam, notebookIdParam]);
 
   const currentItem = words[currentIndex % Math.max(1, words.length)] || { word: "", pinyin: "", meaning: "", options: [] };
 
@@ -214,12 +213,34 @@ function StudyContent() {
     }
   }, [currentIndex, currentItem]);
 
-  const isSystemDeck = title.includes("HSK") || title.includes("TOCFL") || title === "Địa điểm" || title === "Thói quen";
+  const isSystemDeck = displayTitle.includes("HSK") || displayTitle.includes("TOCFL") || displayTitle === "Địa điểm" || displayTitle === "Thói quen";
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center py-20">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-600 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (words.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 py-20 px-6 text-center">
+        <p className="text-base font-bold text-zinc-600 dark:text-zinc-300">
+          Sổ tay &quot;{displayTitle}&quot; chưa có từ vựng nào.
+        </p>
+        <button
+          onClick={() => router.push("/flashcard/add")}
+          className="bg-[#f59e0b] hover:bg-amber-600 text-gray-950 font-black py-3 px-6 rounded-2xl text-sm uppercase tracking-wide cursor-pointer transition-all active:scale-[0.99]"
+        >
+          Thêm từ mới vào sổ tay
+        </button>
+        <button
+          onClick={() => router.push("/flashcard")}
+          className="text-xs font-black text-zinc-400 hover:text-amber-600 cursor-pointer bg-transparent border-none flex items-center gap-1 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Về sổ tay cá nhân
+        </button>
       </div>
     );
   }
@@ -230,7 +251,7 @@ function StudyContent() {
           
           {/* Header Title block */}
           <div className="bg-[#f59e0b] text-gray-950 font-black py-4 px-6 rounded-2xl text-center shadow-xs text-sm uppercase tracking-wide">
-            {title}
+            {displayTitle}
           </div>
 
           {/* Stats indicators and Mode Switcher */}
@@ -290,14 +311,19 @@ function StudyContent() {
           {/* Card Box container */}
           <div className="border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 bg-white dark:bg-zinc-900 shadow-sm relative flex flex-col justify-between min-h-[340px] transition-all">
             
-            {/* Plus icon for system decks */}
-            {isSystemDeck && (
-              <button
-                onClick={() => alert(`Đã thêm từ "${currentItem.word}" vào sổ tay cá nhân!`)}
-                className="absolute top-4 right-4 text-zinc-400 hover:text-amber-500 font-bold text-xl cursor-pointer z-10 p-2"
-              >
-                +
-              </button>
+            {/* Save-to-notebook for system decks */}
+            {isSystemDeck && currentItem.word && (
+              <div className="absolute top-4 right-4 z-10">
+                <SaveToNotebook
+                  variant="popover"
+                  label="Lưu vào sổ tay"
+                  word={{
+                    word: currentItem.word,
+                    pinyin: currentItem.pinyin || "",
+                    meaning: currentItem.meaning || "",
+                  }}
+                />
+              </div>
             )}
 
             {/* FLASHCARD MODE */}
@@ -438,7 +464,13 @@ function StudyContent() {
           {/* Add New Word Button */}
           {!isSystemDeck && (
             <button
-              onClick={() => router.push(`/flashcard/add?notebook=${encodeURIComponent(title)}`)}
+              onClick={() =>
+                router.push(
+                  matchedDeckId
+                    ? `/flashcard/add?notebookId=${encodeURIComponent(matchedDeckId)}`
+                    : `/flashcard/add?notebook=${encodeURIComponent(displayTitle)}`,
+                )
+              }
               className="w-full bg-[#f59e0b] hover:bg-amber-600 text-gray-950 font-black py-3.5 px-6 rounded-2xl text-center shadow-xs text-sm uppercase tracking-wide cursor-pointer transition-all active:scale-[0.99] flex items-center justify-center gap-2"
             >
               Thêm từ mới vào sổ tay

@@ -27,33 +27,6 @@ const MOCK_VIDEO_DETAIL = {
   srt_file: { filename_disk: "sample-sub.srt" },
 };
 
-const MOCK_EXERCISES = [
-  {
-    id: 101,
-    question: "Từ nào trong video có nghĩa là 'Học tập'?",
-    time_start: "00:00:04,000",
-    time_end: "00:00:08,000",
-    options: [
-      { id: 1, hanzi: "学习", pinyin: "Xuéxí", isCorrect: true },
-      { id: 2, hanzi: "漂亮", pinyin: "Piàoliang", isCorrect: false },
-      { id: 3, hanzi: "谢谢", pinyin: "Xièxie", isCorrect: false },
-      { id: 4, hanzi: "苹果", pinyin: "Píngguǒ", isCorrect: false },
-    ],
-  },
-  {
-    id: 102,
-    question: "Nghĩa của từ '胡同' (Hútòng) là gì?",
-    time_start: "00:00:12,000",
-    time_end: "00:00:16,000",
-    options: [
-      { id: 1, hanzi: "Ngõ hẻm", pinyin: "Ngõ hẻm ở Bắc Kinh", isCorrect: true },
-      { id: 2, hanzi: "Nhà cổ", pinyin: "Nhà cổ Tứ hợp viện", isCorrect: false },
-      { id: 3, hanzi: "Trà đạo", pinyin: "Văn hóa trà", isCorrect: false },
-      { id: 4, hanzi: "Đường lớn", pinyin: "Đại lộ", isCorrect: false },
-    ],
-  },
-];
-
 function QuizContent({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -86,7 +59,6 @@ function QuizContent({ params }: Readonly<{ params: Promise<{ id: string }> }>) 
     videoRef,
     enableAutoSpeakSubtitle: false,
     youtubePlayerRef,
-    fallbackExercises: MOCK_EXERCISES,
     flowMode: "quiz",
   });
 

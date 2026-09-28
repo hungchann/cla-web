@@ -19,6 +19,7 @@ vi.mock("@/api/notebook", async (importOriginal) => {
       ...actual.notebookApi,
       getPersonalNotebooks: vi.fn(),
       createVocabItemInPersonalDeck: vi.fn(),
+      createNoteBooks: vi.fn(),
     },
   };
 });
@@ -30,24 +31,27 @@ const DECKS = [
 
 describe("AddWordForm", () => {
   beforeEach(() => {
+    localStorage.clear();
     vi.mocked(notebookApi.notebookApi.getPersonalNotebooks).mockResolvedValue(DECKS);
     vi.mocked(notebookApi.notebookApi.createVocabItemInPersonalDeck).mockResolvedValue({ id: "x" });
+    vi.mocked(notebookApi.notebookApi.createNoteBooks).mockResolvedValue({ id: "deck-new", title: "Bộ mới" });
     vi.spyOn(window, "alert").mockImplementation(() => {});
   });
 
   afterEach(() => {
+    localStorage.clear();
     vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
-  it("loads personal decks into selector", async () => {
+  it("loads personal notebooks and preselects the first one", async () => {
     render(<AddWordForm />);
-    const select = await screen.findByRole("combobox");
-    expect(select).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /từ vựng hsk 1/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sổ tay riêng/i })).toBeInTheDocument();
     expect(notebookApi.notebookApi.getPersonalNotebooks).toHaveBeenCalled();
   });
 
-  it("shows empty deck warning when no decks", async () => {
+  it("shows empty deck warning when no notebooks", async () => {
     vi.mocked(notebookApi.notebookApi.getPersonalNotebooks).mockResolvedValue([]);
     render(<AddWordForm />);
     expect(
@@ -58,7 +62,7 @@ describe("AddWordForm", () => {
   it("autofills fields when searching a dictionary word", async () => {
     const user = userEvent.setup();
     render(<AddWordForm />);
-    await screen.findByRole("combobox");
+    await screen.findByRole("button", { name: /từ vựng hsk 1/i });
 
     await user.type(screen.getByPlaceholderText("Nhập từ chữ Hán cần thêm..."), "爱");
 
@@ -69,10 +73,10 @@ describe("AddWordForm", () => {
     expect(screen.getByDisplayValue("ài")).toBeInTheDocument();
   });
 
-  it("saves word to selected deck", async () => {
+  it("saves word to selected notebook", async () => {
     const user = userEvent.setup();
     render(<AddWordForm />);
-    await screen.findByRole("combobox");
+    await screen.findByRole("button", { name: /từ vựng hsk 1/i });
 
     await user.type(screen.getByPlaceholderText("Nhập từ chữ Hán cần thêm..."), "爱");
     await user.click(screen.getByRole("button", { name: /lưu vào sổ tay/i }));
@@ -92,29 +96,28 @@ describe("AddWordForm", () => {
     );
   });
 
-  it("disables save button when no decks available", async () => {
+  it("disables save button when no notebooks available", async () => {
     vi.mocked(notebookApi.notebookApi.getPersonalNotebooks).mockResolvedValue([]);
     render(<AddWordForm />);
-    // Chờ loading decks xong (render thông báo không có sổ tay)
     await screen.findByText((content) => content.includes("sổ tay nào"));
 
     const saveBtn = screen.getByRole("button", { name: /lưu vào sổ tay/i });
     expect(saveBtn).toBeDisabled();
   });
 
-  it("alerts when save fails", async () => {
+  it("shows error message when save fails", async () => {
     vi.mocked(notebookApi.notebookApi.createVocabItemInPersonalDeck).mockRejectedValue(
       new Error("boom"),
     );
     const user = userEvent.setup();
     render(<AddWordForm />);
-    await screen.findByRole("combobox");
+    await screen.findByRole("button", { name: /từ vựng hsk 1/i });
 
     await user.type(screen.getByPlaceholderText("Nhập từ chữ Hán cần thêm..."), "爱");
     await user.click(screen.getByRole("button", { name: /lưu vào sổ tay/i }));
 
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith("Không thể lưu từ vựng, vui lòng thử lại!");
-    });
+    expect(
+      await screen.findByText("Không thể lưu từ vựng, vui lòng thử lại!"),
+    ).toBeInTheDocument();
   });
 });

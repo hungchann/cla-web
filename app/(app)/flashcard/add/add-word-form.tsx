@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notebookApi } from "@/api/notebook";
-import Link from "next/link";
+import { useNotebookDecks } from "@/components/notebook/SaveToNotebook";
+import { Folder, Plus } from "lucide-react";
 
 // Mock Dictionary for autocomplete
 const DICTIONARY_DB: Record<string, {
@@ -63,45 +64,50 @@ export default function AddWordForm() {
   const [examplePinyin, setExamplePinyin] = useState("");
   const [exampleMeaning, setExampleMeaning] = useState("");
 
-  // Notebook selection states
-  const [decks, setDecks] = useState<any[]>([]);
+  // Notebook selection
+  const {
+    decks,
+    loading: loadingDecks,
+    creating,
+    createDeck,
+    message,
+    setMessage,
+    loadDecks,
+  } = useNotebookDecks();
   const [selectedDeckId, setSelectedDeckId] = useState("");
-  const [loadingDecks, setLoadingDecks] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const fetchNotebooks = async () => {
-      setLoadingDecks(true);
-      try {
-        const response = await notebookApi.getPersonalNotebooks();
-        const personalDecks = Array.isArray(response) ? response : [];
-        setDecks(personalDecks);
-
-        // Pre-select matching notebook from search parameters if specified
-        const paramNotebookId = searchParams.get("notebookId");
-        const paramNotebookTitle = searchParams.get("notebook");
-        
-        const matched = personalDecks.find(
-          (d) => d.id === paramNotebookId || d.title.toLowerCase() === paramNotebookTitle?.toLowerCase()
-        );
-        
-        if (matched) {
-          setSelectedDeckId(matched.id);
-        } else if (personalDecks.length > 0) {
-          setSelectedDeckId(personalDecks[0].id);
-        }
-      } catch (err) {
-        console.error("Failed to load personal notebooks:", err);
-      } finally {
-        setLoadingDecks(false);
-      }
+    let cancelled = false;
+    (async () => {
+      const loaded = await loadDecks();
+      if (cancelled || loaded.length === 0) return;
+      const paramNotebookId = searchParams.get("notebookId");
+      const paramNotebookTitle = searchParams.get("notebook");
+      const matched = loaded.find(
+        (d) => d.id === paramNotebookId || d.title.toLowerCase() === paramNotebookTitle?.toLowerCase(),
+      );
+      setSelectedDeckId((prev) => prev || matched?.id || loaded[0].id);
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchNotebooks();
-  }, [searchParams]);
+  }, [loadDecks, searchParams]);
+
+  const handleCreateDeck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const deck = await createDeck(newTitle);
+    if (!deck) return;
+    setNewTitle("");
+    setShowCreate(false);
+    setSelectedDeckId(deck.id);
+  };
 
   const handleSearchChange = (val: string) => {
     setSearchKey(val);
-    
+
     // Auto-fill logic based on dictionary
     const match = DICTIONARY_DB[val.trim()];
     if (match) {
@@ -126,6 +132,7 @@ export default function AddWordForm() {
       return;
     }
     setIsSaving(true);
+    setMessage(null);
     try {
       await notebookApi.createVocabItemInPersonalDeck(
         selectedDeckId,
@@ -137,10 +144,10 @@ export default function AddWordForm() {
       );
       const chosenDeck = decks.find((d) => d.id === selectedDeckId);
       alert(`Đã lưu từ vựng vào sổ tay "${chosenDeck?.title || "của bạn"}" thành công!`);
-      router.push(`/flashcard/study?notebook=${encodeURIComponent(chosenDeck?.title || "Thanh Hà")}`);
+      router.push(`/flashcard/study?notebook=${encodeURIComponent(chosenDeck?.title || "")}`);
     } catch (err) {
       console.error("Failed to create vocabulary item in notebook:", err);
-      alert("Không thể lưu từ vựng, vui lòng thử lại!");
+      setMessage({ type: "error", text: "Không thể lưu từ vựng, vui lòng thử lại!" });
     } finally {
       setIsSaving(false);
     }
@@ -160,30 +167,82 @@ export default function AddWordForm() {
               Thêm Từ Mới Vào Sổ Tay
             </div>
 
+            {message && (
+              <div className={`p-2.5 rounded-xl text-xs font-bold text-center ${
+                message.type === "success"
+                  ? "bg-emerald-500/10 text-emerald-600"
+                  : "bg-rose-500/10 text-rose-600"
+              }`}>
+                {message.text}
+              </div>
+            )}
+
             {/* Form grid */}
             <div className="space-y-4 text-xs font-bold text-gray-700">
               
-              {/* Select Notebook dropdown */}
+              {/* Select Notebook */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-500 uppercase tracking-wider text-[10px]">Chọn sổ tay từ vựng</label>
                 {loadingDecks ? (
                   <div className="text-xs text-zinc-400 font-semibold p-2 animate-pulse bg-zinc-50 rounded-xl">Đang tải danh sách sổ tay...</div>
                 ) : decks.length === 0 ? (
-                  <div className="text-xs text-rose-500 font-bold p-2 bg-rose-50 border border-rose-200 rounded-xl font-sans">
-                    Bạn chưa có sổ tay nào. Vui lòng quay lại <Link href="/flashcard" className="underline hover:text-rose-600">Trang chủ Flashcard</Link> để tạo mới sổ tay trước!
+                  <div className="text-xs text-zinc-500 font-semibold p-2 bg-zinc-50 border border-zinc-200 rounded-xl">
+                    Bạn chưa có sổ tay nào. Hãy tạo sổ tay mới bên dưới!
                   </div>
                 ) : (
-                  <select
-                    value={selectedDeckId}
-                    onChange={(e) => setSelectedDeckId(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-gray-800 dark:text-zinc-200"
-                  >
+                  <div className="flex flex-col gap-1.5">
                     {decks.map((deck) => (
-                      <option key={deck.id} value={deck.id}>
-                        {deck.title}
-                      </option>
+                      <button
+                        key={deck.id}
+                        type="button"
+                        onClick={() => setSelectedDeckId(deck.id)}
+                        className={`w-full text-left py-2.5 px-3 rounded-xl border font-bold text-xs transition-colors cursor-pointer flex items-center gap-2 ${
+                          selectedDeckId === deck.id
+                            ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                            : "border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-gray-700 dark:text-zinc-300 hover:border-amber-300"
+                        }`}
+                      >
+                        <Folder className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{deck.title}</span>
+                      </button>
                     ))}
-                  </select>
+                  </div>
+                )}
+
+                {showCreate ? (
+                  <form onSubmit={handleCreateDeck} className="flex gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      placeholder="Tên sổ tay mới..."
+                      disabled={creating}
+                      autoFocus
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-zinc-800 text-xs bg-white dark:bg-zinc-950 focus:border-amber-500 focus:outline-none dark:text-white"
+                    />
+                    <button
+                      type="submit"
+                      disabled={creating || !newTitle.trim()}
+                      className="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold disabled:opacity-50 cursor-pointer border-none"
+                    >
+                      {creating ? "..." : "Tạo"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreate(false)}
+                      className="px-3 py-2 rounded-xl border border-gray-200 dark:border-zinc-800 text-xs font-bold cursor-pointer bg-transparent text-zinc-500"
+                    >
+                      Hủy
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowCreate(true)}
+                    className="mt-1 py-2 border border-dashed border-amber-500/40 rounded-xl text-amber-600 dark:text-amber-500 hover:bg-amber-500/5 text-xs font-bold transition-colors cursor-pointer bg-transparent flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Tạo sổ tay mới
+                  </button>
                 )}
               </div>
 
@@ -298,7 +357,7 @@ export default function AddWordForm() {
               {/* Action Button */}
               <div className="pt-4">
                 <button
-                  disabled={isSaving || decks.length === 0}
+                  disabled={isSaving || !selectedDeckId}
                   onClick={handleSave}
                   className="w-full bg-[#f59e0b] hover:bg-amber-600 disabled:bg-zinc-300 disabled:text-zinc-550 disabled:cursor-not-allowed text-gray-950 font-black py-3.5 px-6 rounded-2xl text-center shadow-xs text-sm uppercase tracking-wide cursor-pointer transition-all active:scale-[0.99] flex items-center justify-center"
                 >

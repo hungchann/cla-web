@@ -148,7 +148,7 @@ describe("useDetailedVideoLogic — quiz activation after sentence finishes (tim
     expect(result.current.activeQuestion).toBeNull();
   });
 
-  it("uses fallback exercises and still activates when API returns empty", async () => {
+  it("keeps exercises empty and activates nothing when API returns none (vd: video ca nhạc)", async () => {
     vi.mocked(bilingualApi.bilingualApi.getExerciseById).mockResolvedValue({
       exercises: [],
     });
@@ -158,18 +158,18 @@ describe("useDetailedVideoLogic — quiz activation after sentence finishes (tim
     const { result } = renderHook(() =>
       useDetailedVideoLogic(
         { id: "v1", video_file: { filename_disk: "clip.mp4" } },
-        { videoRef, flowMode: "quiz", fallbackExercises: [...MOCK_EXERCISES] },
+        { videoRef, flowMode: "quiz" },
       ),
     );
 
     await waitFor(() => expect(result.current.exerciseData).not.toBeNull());
-    expect(result.current.exerciseData?.length).toBeGreaterThan(0);
+    expect(result.current.exerciseData).toEqual([]);
 
     videoEl.currentTime = 11;
     videoEl.paused = false;
 
-    await waitFor(() => expect(result.current.activeQuestion).not.toBeNull(), { timeout: 3000 });
-    expect(result.current.activeQuestion?.id).toBe(101);
+    await new Promise((r) => setTimeout(r, 700));
+    expect(result.current.activeQuestion).toBeNull();
   });
 
   it("activates question via onVideoTimeUpdate path (used by page timeupdate events)", async () => {

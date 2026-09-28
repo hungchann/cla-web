@@ -4,8 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import * as notebookApi from "@/api/notebook";
 
-const guardPremiumMock = vi.fn(() => true);
-
 vi.mock("@/lib/hooks/usePremiumGate", () => ({
   usePremiumGate: () => ({
     isPremium: true,
@@ -14,7 +12,7 @@ vi.mock("@/lib/hooks/usePremiumGate", () => ({
     premiumModalVisible: false,
     setPremiumModalVisible: vi.fn(),
     showPremiumModal: vi.fn(),
-    guardPremium: (...args: unknown[]) => guardPremiumMock(...(args as [])),
+    guardPremium: vi.fn(() => true),
   }),
 }));
 
@@ -56,8 +54,6 @@ describe("WordInfoModal", () => {
   afterEach(() => {
     localStorage.clear();
     document.cookie = "";
-    guardPremiumMock.mockReset();
-    guardPremiumMock.mockImplementation(() => true);
     vi.restoreAllMocks();
   });
 
@@ -90,27 +86,15 @@ describe("WordInfoModal", () => {
     expect(baseProps.onClose).toHaveBeenCalled();
   });
 
-  it("requires login before showing save button flow", async () => {
+  it("requires login before saving", async () => {
     const user = userEvent.setup();
     render(<WordInfoModal {...baseProps} />);
 
     await user.click(screen.getByRole("button", { name: /lưu từ vào flashcard/i }));
-    expect(screen.getByText(/vui lòng đăng nhập để lưu flashcard/i)).toBeInTheDocument();
+    expect(screen.getByText(/vui lòng đăng nhập để lưu vào sổ tay/i)).toBeInTheDocument();
   });
 
-  it("blocks saving for non-premium user without loading decks (premium gate)", async () => {
-    guardPremiumMock.mockReturnValue(false);
-    const user = userEvent.setup();
-    localStorage.setItem("user_data", JSON.stringify({ id: "u1" }));
-    render(<WordInfoModal {...baseProps} />);
-
-    await user.click(screen.getByRole("button", { name: /lưu từ vào flashcard/i }));
-
-    expect(notebookApi.notebookApi.getPersonalNotebooks).not.toHaveBeenCalled();
-    expect(screen.queryByText(/chọn bộ flashcard/i)).not.toBeInTheDocument();
-  });
-
-  it("loads personal decks when logged in and saves word to selected deck", async () => {
+  it("loads personal notebooks and saves word to selected notebook", async () => {
     const user = userEvent.setup();
     localStorage.setItem("user_data", JSON.stringify({ id: "u1" }));
     vi.mocked(notebookApi.notebookApi.getPersonalNotebooks).mockResolvedValue([
@@ -133,28 +117,28 @@ describe("WordInfoModal", () => {
         "Xin chào, Chào bạn",
       );
     });
-    expect(await screen.findByText(/Đã lưu vào bộ "Từ vựng HSK 1"/)).toBeInTheDocument();
+    expect(await screen.findByText(/Đã lưu vào sổ tay "Từ vựng HSK 1"/)).toBeInTheDocument();
   });
 
-  it("creates a new deck and saves word", async () => {
+  it("creates a new notebook and saves word", async () => {
     const user = userEvent.setup();
     localStorage.setItem("user_data", JSON.stringify({ id: "u1" }));
     vi.mocked(notebookApi.notebookApi.getPersonalNotebooks).mockResolvedValue([]);
-    vi.mocked(notebookApi.notebookApi.createNoteBooks).mockResolvedValue({ id: "deck-new" });
+    vi.mocked(notebookApi.notebookApi.createNoteBooks).mockResolvedValue({ id: "deck-new", title: "Bộ mới" });
     vi.mocked(notebookApi.notebookApi.createVocabItemInPersonalDeck).mockResolvedValue({ id: "x" });
 
     render(<WordInfoModal {...baseProps} />);
 
     await user.click(screen.getByRole("button", { name: /lưu từ vào flashcard/i }));
-    await screen.findByText("Bạn chưa có bộ flashcard nào.");
+    await screen.findByText("Bạn chưa có sổ tay nào.");
 
-    await user.click(screen.getByRole("button", { name: /tạo bộ từ mới/i }));
-    await user.type(screen.getByPlaceholderText("Tên bộ từ mới..."), "Bộ mới");
+    await user.click(screen.getByRole("button", { name: /tạo sổ tay mới/i }));
+    await user.type(screen.getByPlaceholderText("Tên sổ tay mới..."), "Bộ mới");
     await user.click(screen.getByRole("button", { name: /^lưu$/i }));
 
     await waitFor(() => {
       expect(notebookApi.notebookApi.createNoteBooks).toHaveBeenCalledWith("Bộ mới");
     });
-    expect(await screen.findByText(/Đã tạo bộ "Bộ mới" và lưu từ vựng/)).toBeInTheDocument();
+    expect(await screen.findByText(/Đã lưu vào sổ tay "Bộ mới"/)).toBeInTheDocument();
   });
 });

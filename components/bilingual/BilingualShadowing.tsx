@@ -413,7 +413,7 @@ export function BilingualShadowing({
                   <ruby>
                     {wItem.word}
                     {wItem.pinyin && (
-                      <rt className="text-[10px] text-zinc-400 font-bold select-none">
+                      <rt className="text-[10px] text-zinc-400 font-bold select-none font-mono">
                         {wItem.pinyin}
                       </rt>
                     )}

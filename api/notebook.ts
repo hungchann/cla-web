@@ -53,6 +53,7 @@ export const notebookApi = {
       } else {
         logger.error("Error creating flashcard deck item:", error);
       }
+      throw new Error("Failed to create notebook");
     }
   },
 

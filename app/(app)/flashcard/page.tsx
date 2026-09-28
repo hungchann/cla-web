@@ -517,14 +517,15 @@ function FlashcardStudySession({
     }
   }, [fallbackDataActive, flip]);
 
-  // Kích hoạt Mock Data khi API rỗng
+  // Chỉ dùng dữ liệu demo cho tab "Gợi ý học nhanh"; sổ tay cá nhân/hệ thống
+  // để trống thì hiện empty state, tuyệt đối không trộn từ mock vào.
   useEffect(() => {
-    if (!isLoadingList && dataVocal.length === 0) {
+    if (!isLoadingList && type === "suggest" && dataVocal.length === 0) {
       setFallbackDataActive(true);
     } else {
       setFallbackDataActive(false);
     }
-  }, [isLoadingList, dataVocal]);
+  }, [isLoadingList, dataVocal, type]);
 
   // Danh sách {word, meaning, pinyin} dùng cho chế độ chọn đáp án
   const quizWords = useMemo(() => {
@@ -631,6 +632,24 @@ function FlashcardStudySession({
       <div className="flex-1 flex items-center justify-center py-20">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-600 border-t-transparent"></div>
       </div>
+    );
+  }
+
+  if (dataVocal.length === 0 && !fallbackDataActive) {
+    return (
+      <PageContainer className="max-w-3xl space-y-6">
+        <BackButton href="/flashcard" label="Về danh sách sổ tay" />
+        <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+          <p className="text-base font-bold text-zinc-600 dark:text-zinc-300">
+            {type === "personal"
+              ? "Sổ tay này chưa có từ vựng nào."
+              : "Chủ đề này chưa có từ vựng nào."}
+          </p>
+          <Button asChild>
+            <Link href="/flashcard/add">Thêm từ mới vào sổ tay</Link>
+          </Button>
+        </div>
+      </PageContainer>
     );
   }
 

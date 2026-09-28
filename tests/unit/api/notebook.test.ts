@@ -50,13 +50,13 @@ describe("notebookApi", () => {
     expect(result).toEqual({ id: "deck-1", title: "Sổ tay" });
   });
 
-  it("createNoteBooks returns undefined on error (swallowed)", async () => {
+  it("createNoteBooks throws on error (no longer swallowed)", async () => {
     server.use(
       http.post(`${API}/graphql`, () => {
         return HttpResponse.json({ errors: [{ message: "boom" }] }, { status: 500 });
       }),
     );
-    expect(await notebookApi.createNoteBooks("X")).toBeUndefined();
+    await expect(notebookApi.createNoteBooks("X")).rejects.toThrow("Failed to create notebook");
   });
 
   it("getPersonalNotebooks returns user decks", async () => {
