@@ -64,6 +64,8 @@ export interface VideoSection {
     id: string;
     filename_disk: string;
   } | null;
+  /** Tier truy cập: `free` | `premium`. */
+  access_tier?: string | null;
 }
 
 type ExerciseItem = {

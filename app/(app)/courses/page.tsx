@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { Globe2, Map, Clock, Calendar, GraduationCap } from "lucide-react";
+import { Globe2, Map, Clock, Calendar, GraduationCap, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { PageContainer } from "@/components/PageContainer";
 import { coursesApi } from "@/api/courses";
 import { CourseItem } from "@/lib/types/course";
+import { usePremium } from "@/lib/hooks/usePremium";
+import { isCoursePremium } from "@/lib/premium";
 
 const featuredCourses = [
     {
@@ -84,6 +86,8 @@ function CoursesPageContent() {
 
     const [courses, setCourses] = useState<CourseItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const { isPremium, isLoading: premiumLoading } = usePremium();
+    const premiumLocked = !premiumLoading && !isPremium;
 
     useEffect(() => {
         let isMounted = true;
@@ -156,6 +160,11 @@ function CoursesPageContent() {
                                                 {course.level}
                                             </Badge>
                                         )}
+                                        {isCoursePremium(course) && premiumLocked && (
+                                            <Badge className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-zinc-900/80 text-amber-400 font-bold border-none px-2.5 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
+                                                <Lock className="w-3 h-3" /> VIP
+                                            </Badge>
+                                        )}
                                     </div>
                                     <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                                         <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors duration-200 text-base leading-snug tracking-tight">
@@ -207,6 +216,11 @@ function CoursesPageContent() {
                                         {course.level && (
                                             <Badge className="absolute top-3 left-3 rounded-full bg-amber-500 text-white font-bold hover:bg-amber-600 border-none px-3 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
                                                 {course.level}
+                                            </Badge>
+                                        )}
+                                        {isCoursePremium(course) && premiumLocked && (
+                                            <Badge className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-zinc-900/80 text-amber-400 font-bold border-none px-2.5 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
+                                                <Lock className="w-3 h-3" /> VIP
                                             </Badge>
                                         )}
                                     </div>

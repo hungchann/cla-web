@@ -9,11 +9,13 @@ import { bilingualApi } from "@/api/bilingual";
 import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
 import { usePremium } from "@/lib/hooks/usePremium";
+import { isPremiumTier } from "@/lib/premium";
 
 const MOCK_VIDEO_DETAIL = {
   id: "v1",
   title: "看动漫学汉语：常用口语表达",
   title_trans: "Học tiếng Trung qua hoạt hình: Các cụm từ khẩu ngữ thông dụng",
+  access_tier: "free",
 };
 
 const MODULES = [
@@ -75,7 +77,7 @@ function VideoDetailHubContent({ params }: Readonly<{ params: Promise<{ id: stri
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MODULES.map((module) => {
           const Icon = module.icon;
-          const locked = module.premium && premiumLocked;
+          const locked = (module.premium || isPremiumTier(video)) && premiumLocked;
           return (
             <Link
               key={module.key}

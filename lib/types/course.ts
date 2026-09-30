@@ -17,7 +17,8 @@ export interface CourseLesson {
   lesson_type: CourseLessonType;
   status?: string;
   sort?: number;
-  is_free_preview?: boolean;
+  /** Directus trả INT 0/1 — lesson học thử (free mở được). */
+  is_free_preview?: boolean | number;
 }
 
 export interface LessonVideo {
@@ -72,6 +73,8 @@ export interface CourseChapter {
   status?: string;
   sort?: number;
   description?: string;
+  /** Directus trả INT 0/1 — chương học thử (free mở được), thay cho tag text. */
+  is_free_preview?: boolean | number;
   lessons?: CourseLesson[];
 }
 

@@ -48,3 +48,8 @@ next-env.d.ts
 
 .log
 .next-dev.log
+
+# agent tooling (skills / plans — không commit)
+/.agents/
+/.hermes/
+/skills-lock.json

@@ -11,7 +11,7 @@ import { BackButton } from "@/components/BackButton";
 import { PageContainer } from "@/components/PageContainer";
 import { PremiumGate } from "@/components/PremiumGate";
 import { usePremiumGate } from "@/lib/hooks/usePremiumGate";
-import { canAccessStoryChapter } from "@/lib/premium";
+import { canAccessStoryChapter, isFreePreviewChapter, isPremiumTier } from "@/lib/premium";
 import { buildCheckoutUrl } from "@/api/plans";
 import { RubyText } from "@/components/RubyText";
 import { PinyinToggle } from "@/components/PinyinToggle";
@@ -203,9 +203,17 @@ export default function StoryDetailPage({ params }: Readonly<{ params: Promise<{
     );
   }
 
+  // Book `access_tier=premium` → free chỉ mở chương có is_free_preview; sách free giữ rule cũ.
+  const isChapterLocked = (chap: any, idx: number): boolean =>
+    isPremium
+      ? false
+      : isPremiumTier(book)
+        ? !isFreePreviewChapter(chap)
+        : !canAccessStoryChapter(chap, idx, false);
+
   const handleSelectChapter = (index: number) => {
     // Free user chỉ đọc được chương đầu tiên / chương is_free_preview.
-    if (!canAccessStoryChapter(chapters[index], index, isPremium)) {
+    if (isChapterLocked(chapters[index], index)) {
       setPremiumModalVisible(true);
       return;
     }
@@ -380,7 +388,7 @@ export default function StoryDetailPage({ params }: Readonly<{ params: Promise<{
               <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
                 {chapters.map((chap: any, idx: number) => {
                   const isActive = selectedChapterIndex === idx;
-                  const isLocked = !canAccessStoryChapter(chap, idx, isPremium);
+                  const isLocked = isChapterLocked(chap, idx);
                   return (
                     <button
                       type="button"

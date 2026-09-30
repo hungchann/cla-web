@@ -6,12 +6,13 @@ import { Lock } from "lucide-react";
 import { useConversationDetail } from "@/lib/hooks/useConversationDetail";
 import { coursesApi } from "@/api/courses";
 import { vocabularyApi } from "@/api/vocabulary";
-import { CourseLesson, CourseLessonType, LessonTheory, LessonVideo, LessonExtra } from "@/lib/types/course";
+import { CourseItem, CourseChapter, CourseLesson, CourseLessonType, LessonTheory, LessonVideo, LessonExtra } from "@/lib/types/course";
 import { WordInfoModal } from "@/components/video/WordInfoModal";
 import { PremiumGate } from "@/components/PremiumGate";
 import { usePremium } from "@/lib/hooks/usePremium";
 import {
   FREE_EXERCISE_LIMIT,
+  canAccessCourseLesson,
   getCompletedExerciseCount,
   incrementCompletedExerciseCount,
 } from "@/lib/premium";
@@ -53,6 +54,8 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
         (stepParam as CourseLessonType) || "video_vocab";
 
     const [courseTitle, setCourseTitle] = useState("Chi tiết khóa học");
+    const [course, setCourse] = useState<CourseItem | null>(null);
+    const [chapters, setChapters] = useState<CourseChapter[]>([]);
     const [currentLesson, setCurrentLesson] = useState<CourseLesson | null>(null);
 
     // Fetch course details
@@ -61,7 +64,10 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
         (async () => {
             try {
                 const c = await coursesApi.getCourseById(courseId);
-                if (isMounted && c?.title) setCourseTitle(c.title);
+                if (isMounted && c) {
+                    if (c.title) setCourseTitle(c.title);
+                    setCourse(c);
+                }
             } catch {
                 // ignore error
             }
@@ -78,26 +84,20 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
         const filterValidLessons = (lessons: CourseLesson[]) =>
             lessons.filter((l) => (l as any).is_published !== false);
 
-        const getFlatLessons = async () => {
-            const chapters = await coursesApi.getCourseChapters(courseId);
-            return filterValidLessons(chapters.flatMap((c) => c.lessons || []));
-        };
-
         const fetchLesson = async () => {
             try {
+                // 1 nguồn duy nhất: chapters (kèm tag "Học thử miễn phí" + is_free_preview từng lesson)
+                const chapters = await coursesApi.getCourseChapters(courseId);
+                if (!isMounted) return;
+                setChapters(chapters);
+                const flat = filterValidLessons(chapters.flatMap((c) => c.lessons || []));
+
                 if (lessonParam) {
-                    const lesson = await coursesApi.getCourseLessonById(lessonParam);
-                    if (!isMounted) return;
-                    if (lesson) {
-                        setCurrentLesson(lesson);
+                    const found = flat.find((l) => String(l.id) === String(lessonParam));
+                    if (found) {
+                        setCurrentLesson(found);
                         return;
                     }
-                }
-
-                const flat = await getFlatLessons();
-                if (!isMounted) return;
-
-                if (lessonParam) {
                     const fallback = flat[0] || null;
                     setCurrentLesson(fallback);
                     if (fallback) {
@@ -105,12 +105,13 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                             scroll: false,
                         });
                     }
-                } else {
-                    const target = stepParam
-                        ? (flat.find((l) => l.lesson_type === fallbackType) || flat[0] || null)
-                        : (flat[0] || null);
-                    setCurrentLesson(target);
+                    return;
                 }
+
+                const target = stepParam
+                    ? (flat.find((l) => l.lesson_type === fallbackType) || flat[0] || null)
+                    : (flat[0] || null);
+                setCurrentLesson(target);
             } catch {
                 if (isMounted) setCurrentLesson(null);
             }
@@ -521,6 +522,15 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
         !isPremium &&
         completedCount >= FREE_EXERCISE_LIMIT;
 
+    // Derived: bài hiện tại thuộc khóa học Premium nhưng user Free và không phải free-preview
+    // (đủ điều kiện mở: lesson is_free_preview, hoặc nằm trong chapter tag "Học thử miễn phí")
+    const currentChapter = chapters.find((c) => String(c.id) === String(currentLesson?.chapter_id));
+    const lessonLocked =
+        !premiumLoading &&
+        !!course &&
+        !!currentLesson &&
+        !canAccessCourseLesson(course, currentLesson, isPremium, currentChapter);
+
     // Render the main learn content based on lesson status, loading states, and active steps
     const renderMainContent = () => {
         if (!currentLesson) {
@@ -538,6 +548,37 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
                     >
                         Về khóa học
                     </Button>
+                </div>
+            );
+        }
+
+        if (lessonLocked) {
+            return (
+                <div className="max-w-2xl w-full mx-auto bg-white rounded-2xl border border-amber-200 p-12 text-center shadow-2xs dark:bg-zinc-900 dark:border-amber-900/40">
+                    <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
+                        <Lock className="size-6 text-white" />
+                    </div>
+                    <p className="mt-4 text-sm font-black text-zinc-900 dark:text-white">
+                        Bài học Premium
+                    </p>
+                    <p className="mt-2 text-xs font-semibold text-zinc-400 leading-relaxed">
+                        Bài học này thuộc khóa học Premium. Nâng cấp Premium để mở khóa toàn bộ bài học của khóa.
+                    </p>
+                    <div className="mt-6 flex items-center justify-center gap-3">
+                        <Button
+                            onClick={() => router.push("/pricing")}
+                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold"
+                        >
+                            Nâng cấp Premium
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => router.push(`/courses/${courseId}`)}
+                            className="text-xs font-bold"
+                        >
+                            Về khóa học
+                        </Button>
+                    </div>
                 </div>
             );
         }
@@ -676,12 +717,16 @@ function LearnRoomContent({ params }: { readonly params: { id: string } }) {
             <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col items-center">
                 {renderMainContent()}
 
-                {/* PremiumGate cho bài tập vượt hạn mức Free */}
+                {/* PremiumGate cho bài học/bài tập vượt quyền Free */}
                 <PremiumGate
-                    isOpen={exerciseBlocked && gateDismissedFor !== currentLessonId}
+                    isOpen={(lessonLocked || exerciseBlocked) && gateDismissedFor !== currentLessonId}
                     onClose={() => setGateDismissedFor(currentLessonId)}
-                    feature="bài tập luyện tập"
-                    description={`Gói Free chỉ gồm ${FREE_EXERCISE_LIMIT} bài tập thử nghiệm. Nâng cấp Premium để mở khóa toàn bộ bài tập, nghe chép chính tả và luyện hội thoại không giới hạn.`}
+                    feature={lessonLocked ? "bài học của khóa học Premium" : "bài tập luyện tập"}
+                    description={
+                        lessonLocked
+                            ? "Bài học này thuộc khóa học Premium. Nâng cấp Premium để mở khóa toàn bộ bài học của khóa."
+                            : `Gói Free chỉ gồm ${FREE_EXERCISE_LIMIT} bài tập thử nghiệm. Nâng cấp Premium để mở khóa toàn bộ bài tập, nghe chép chính tả và luyện hội thoại không giới hạn.`
+                    }
                 />
 
                 {/* WordInfoModal for translations and flashcard saves */}

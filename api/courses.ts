@@ -38,7 +38,7 @@ function normalizeCourse(raw: any): CourseItem {
 
 async function fetchChaptersByCourse(courseId: string | number): Promise<any[]> {
   try {
-    const r = await apiInstance.get(`/items/course_chapters?filter[course_id][_eq]=${courseId}&filter[status][_eq]=published&sort=sort&fields=id,status,sort,title,title_trans,tag,description,course_id`);
+    const r = await apiInstance.get(`/items/course_chapters?filter[course_id][_eq]=${courseId}&filter[status][_eq]=published&sort=sort&fields=id,status,sort,title,title_trans,tag,description,course_id,is_free_preview`);
     return r.data?.data || [];
   } catch (error: any) {
     logger.warn(`[Courses API] fetchChaptersByCourse(${courseId}) failed`, error?.response?.status || error);
@@ -101,6 +101,7 @@ export const coursesApi = {
           title: c.title,
           title_trans: c.title_trans,
           tag: c.tag,
+          is_free_preview: c.is_free_preview,
           description: c.description,
           lessons: lessonMap[String(c.id)] || [],
         }));
@@ -134,6 +135,7 @@ export const coursesApi = {
         title: c.title,
         title_trans: c.title_trans,
         tag: c.tag,
+        is_free_preview: c.is_free_preview,
         description: c.description,
         lessons: lessonMap[String(c.id)] || [],
       }));

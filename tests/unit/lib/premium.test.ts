@@ -5,6 +5,11 @@ import {
   getAccountTypeDisplayName,
   resolvePremiumFromAccountType,
   getAccountTypeName,
+  isCoursePremium,
+  isPremiumTier,
+  isTierLocked,
+  canAccessCourseLesson,
+  isFreePreviewChapter,
   FREE_EXERCISE_LIMIT,
   FREE_NOTEBOOK_LIMIT,
   getCompletedExerciseCount,
@@ -150,6 +155,103 @@ describe("free limits", () => {
   it("free users get exactly 2 exercises and 1 notebook", () => {
     expect(FREE_EXERCISE_LIMIT).toBe(2);
     expect(FREE_NOTEBOOK_LIMIT).toBe(1);
+  });
+});
+
+describe("isCoursePremium", () => {
+  it("is true only for the premium tier (case-insensitive)", () => {
+    expect(isCoursePremium({ access_tier: "premium" })).toBe(true);
+    expect(isCoursePremium({ access_tier: " PREMIUM " })).toBe(true);
+  });
+
+  it("treats registered/free/empty/unknown tiers as NOT premium", () => {
+    expect(isCoursePremium({ access_tier: "registered" })).toBe(false);
+    expect(isCoursePremium({ access_tier: "free" })).toBe(false);
+    expect(isCoursePremium({ access_tier: "" })).toBe(false);
+    expect(isCoursePremium({ access_tier: null })).toBe(false);
+    expect(isCoursePremium({})).toBe(false);
+    expect(isCoursePremium(null)).toBe(false);
+    expect(isCoursePremium(undefined)).toBe(false);
+  });
+});
+
+describe("canAccessCourseLesson", () => {
+  const premiumCourse = { access_tier: "premium" };
+  const freeCourse = { access_tier: "free" };
+
+  it("premium user can open any lesson in any course", () => {
+    expect(canAccessCourseLesson(premiumCourse, { is_free_preview: false }, true)).toBe(true);
+    expect(canAccessCourseLesson(freeCourse, { is_free_preview: false }, true)).toBe(true);
+  });
+
+  it("free user can open every lesson of a free course", () => {
+    expect(canAccessCourseLesson(freeCourse, { is_free_preview: false }, false)).toBe(true);
+    expect(canAccessCourseLesson(null, { is_free_preview: false }, false)).toBe(true);
+  });
+
+  it("free user only opens free-preview lessons of a premium course", () => {
+    expect(canAccessCourseLesson(premiumCourse, { is_free_preview: true }, false)).toBe(true);
+    expect(canAccessCourseLesson(premiumCourse, { is_free_preview: false }, false)).toBe(false);
+    expect(canAccessCourseLesson(premiumCourse, {}, false)).toBe(false);
+    expect(canAccessCourseLesson(premiumCourse, null, false)).toBe(false);
+  });
+
+  it("treats Directus INT 0/1 as boolean (is_free_preview: 1)", () => {
+    expect(canAccessCourseLesson(premiumCourse, { is_free_preview: 1 }, false)).toBe(true);
+    expect(canAccessCourseLesson(premiumCourse, { is_free_preview: 0 }, false)).toBe(false);
+  });
+
+  it("opens lessons inside a chapter tagged as free trial", () => {
+    const trialChapter = { tag: "Học thử miễn phí" };
+    expect(canAccessCourseLesson(premiumCourse, { is_free_preview: 0 }, false, trialChapter)).toBe(true);
+    expect(canAccessCourseLesson(premiumCourse, {}, false, trialChapter)).toBe(true);
+    expect(canAccessCourseLesson(premiumCourse, {}, false, { tag: "" })).toBe(false);
+  });
+
+  it("opens lessons inside a chapter with is_free_preview = 1", () => {
+    expect(canAccessCourseLesson(premiumCourse, {}, false, { is_free_preview: 1 })).toBe(true);
+    expect(canAccessCourseLesson(premiumCourse, {}, false, { is_free_preview: 0 })).toBe(false);
+  });
+});
+
+describe("isTierLocked (cổng chung mọi loại content)", () => {
+  it("locks a premium item for free users only", () => {
+    expect(isTierLocked({ access_tier: "premium" }, false)).toBe(true);
+    expect(isTierLocked({ access_tier: "premium" }, true)).toBe(false);
+  });
+
+  it("never locks free/empty items", () => {
+    expect(isTierLocked({ access_tier: "free" }, false)).toBe(false);
+    expect(isTierLocked({}, false)).toBe(false);
+    expect(isTierLocked(null, false)).toBe(false);
+    expect(isTierLocked(undefined, false)).toBe(false);
+  });
+
+  it("works for any content type (video / Sections / book)", () => {
+    expect(isPremiumTier({ access_tier: "premium" })).toBe(true);
+    expect(isTierLocked({ access_tier: "registered" }, false)).toBe(false);
+  });
+});
+
+describe("isFreePreviewChapter", () => {
+  it("matches Vietnamese diacritic tags case-insensitively", () => {
+    expect(isFreePreviewChapter({ tag: "Học thử miễn phí" })).toBe(true);
+    expect(isFreePreviewChapter({ tag: "Học thử" })).toBe(true);
+    expect(isFreePreviewChapter({ tag: "miễn phí" })).toBe(true);
+    expect(isFreePreviewChapter({ tag: "Free trial" })).toBe(true);
+  });
+
+  it("matches chapter is_free_preview (Directus INT 0/1)", () => {
+    expect(isFreePreviewChapter({ is_free_preview: true })).toBe(true);
+    expect(isFreePreviewChapter({ is_free_preview: 1 })).toBe(true);
+    expect(isFreePreviewChapter({ is_free_preview: 0, tag: null })).toBe(false);
+  });
+
+  it("rejects unrelated / empty", () => {
+    expect(isFreePreviewChapter({ tag: "" })).toBe(false);
+    expect(isFreePreviewChapter({})).toBe(false);
+    expect(isFreePreviewChapter(null)).toBe(false);
+    expect(isFreePreviewChapter({ tag: "Khóa học nâng cao" })).toBe(false);
   });
 });
 

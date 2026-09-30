@@ -3,13 +3,16 @@
 import Image from "next/image";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { PremiumGate } from "@/components/PremiumGate";
 import { coursesApi } from "@/api/courses";
+import { usePremium } from "@/lib/hooks/usePremium";
+import { canAccessCourseLesson } from "@/lib/premium";
 import { CourseItem, CourseChapter, CourseLesson } from "@/lib/types/course";
 
 const defaultSyllabusLessons = [
@@ -44,6 +47,8 @@ export default function CourseDetailPage({
 
     const [course, setCourse] = useState<CourseItem | null>(null);
     const [chapters, setChapters] = useState<CourseChapter[]>(defaultSyllabusLessons);
+    const { isPremium } = usePremium();
+    const [gateOpen, setGateOpen] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -69,8 +74,24 @@ export default function CourseDetailPage({
         router.push(`/courses/${id}/learn?lesson=${subtopicId}`);
     };
 
-    const handleLessonClick = (sub: CourseLesson) => {
+    // Free user không mở được lesson premium → mở PremiumGate thay vì điều hướng.
+    const guardLesson = (sub?: CourseLesson, chapter?: CourseChapter): boolean => {
+        if (sub && !canAccessCourseLesson(course, sub, isPremium, chapter)) {
+            setGateOpen(true);
+            return false;
+        }
+        return true;
+    };
+
+    const handleLessonClick = (sub: CourseLesson, chapter?: CourseChapter) => {
+        if (!guardLesson(sub, chapter)) return;
         handleSubtopicClick(sub.id);
+    };
+
+    const handleStartFirstLesson = () => {
+        const first = chapters[0]?.lessons?.[0];
+        if (!guardLesson(first, chapters[0])) return;
+        handleSubtopicClick(first?.id || 1);
     };
 
     const courseTitle = course?.title || "Khóa học Tiếng Trung";
@@ -176,7 +197,7 @@ export default function CourseDetailPage({
                                 <Progress value={0} className="h-2.5 bg-amber-200/60 dark:bg-amber-950" />
                             </div>
                             <Button
-                                onClick={() => handleSubtopicClick(chapters[0]?.lessons?.[0]?.id || 1)}
+                                onClick={handleStartFirstLesson}
                                 className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer text-sm w-full md:w-auto justify-center active:scale-95"
                             >
                                 Bắt đầu học bài 1 <ArrowRight className="w-4 h-4" />
@@ -223,21 +244,30 @@ export default function CourseDetailPage({
 
                                         {isExpanded && chapter.lessons && chapter.lessons.length > 0 && (
                                             <div className="border-t border-zinc-100 dark:border-zinc-800/60 divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/30 dark:bg-zinc-950/20">
-                                                {chapter.lessons.map((sub) => (
-                                                    <button
-                                                        type="button"
-                                                        key={sub.id}
-                                                        onClick={() => handleLessonClick(sub)}
-                                                        className="w-full py-3.5 px-6 pl-12 text-left flex items-center justify-between hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors group cursor-pointer"
-                                                    >
-                                                        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                                                            {sub.title}
-                                                        </span>
-                                                        <span className="text-xs font-bold text-amber-600 dark:text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                                                            Vào học <ChevronRight className="w-3.5 h-3.5" />
-                                                        </span>
-                                                    </button>
-                                                ))}
+                                                {chapter.lessons.map((sub) => {
+                                                    const locked = !canAccessCourseLesson(course, sub, isPremium, chapter);
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            key={sub.id}
+                                                            onClick={() => handleLessonClick(sub, chapter)}
+                                                            className="w-full py-3.5 px-6 pl-12 text-left flex items-center justify-between hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors group cursor-pointer"
+                                                        >
+                                                            <span className={`text-sm font-bold group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors ${locked ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-700 dark:text-zinc-300"}`}>
+                                                                {sub.title}
+                                                            </span>
+                                                            {locked ? (
+                                                                <span className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-500 shrink-0">
+                                                                    <Lock className="w-3.5 h-3.5" /> Premium
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs font-bold text-amber-600 dark:text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                                                    Vào học <ChevronRight className="w-3.5 h-3.5" />
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -256,6 +286,12 @@ export default function CourseDetailPage({
                     </Card>
                 )}
             </main>
+            <PremiumGate
+                isOpen={gateOpen}
+                onClose={() => setGateOpen(false)}
+                feature="bài học của khóa học Premium"
+                upgradeUrl={`/pricing?ref=course-${id}`}
+            />
         </div>
     );
 }

@@ -278,6 +278,7 @@ export const GET_BOOK_LIBRARY_BY_ID_QUERY = gqlTag`
       author_trans
       summary
       view_count
+      access_tier
       image {
         filename_disk
       }
@@ -293,6 +294,7 @@ export const GET_BOOK_LIBRARY_BY_ID_QUERY = gqlTag`
         content
         book_content
         sort_id
+        is_free_preview
         date_created
         date_updated
         image_cover {
@@ -733,6 +735,7 @@ export const GET_SECTION_BY_ID_QUERY = gqlTag`
         filename_download
       }
       level
+      access_tier
       genre_id {
         genre_of_section_id {
           id
@@ -769,6 +772,7 @@ export const GET_VIDEO_SECTIONS_QUERY = gqlTag`
       title
       title_trans
       YouTube_URL
+      access_tier
       genre_id {
         id
         title

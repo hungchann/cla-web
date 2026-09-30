@@ -18,6 +18,7 @@ import { SaveToNotebook } from "@/components/notebook/SaveToNotebook";
 import { useSubtitleSync } from "@/lib/hooks/useSubtitleSync";
 import { timeToSeconds } from "@/lib/utils/subtitleUtils";
 import { usePremium } from "@/lib/hooks/usePremium";
+import { isPremiumTier } from "@/lib/premium";
 import { PremiumGate } from "@/components/PremiumGate";
 import { BilingualContent } from "@/components/bilingual/BilingualContent";
 import { BilingualVocab } from "@/components/bilingual/BilingualVocab";
@@ -114,8 +115,15 @@ export default function BilingualDetailPage({
     // 4 tab phụ (Từ vựng / Ngữ pháp / Shadowing / Bài tập) cần Premium ---
     const { isPremium } = usePremium();
     const [gateOpen, setGateOpen] = useState(false);
+    const itemPremium = isPremiumTier(item);
+
+    // Item `access_tier=premium` → mở gate ngay cho free user (đồng nhất course/video).
+    useEffect(() => {
+        if (!isPremium && itemPremium) setGateOpen(true);
+    }, [isPremium, itemPremium]);
+
     const handleTabPress = (tabId: string) => {
-        if (PREMIUM_BILINGUAL_TABS.has(tabId) && !isPremium) {
+        if (!isPremium && (PREMIUM_BILINGUAL_TABS.has(tabId) || itemPremium)) {
             setGateOpen(true);
             return;
         }

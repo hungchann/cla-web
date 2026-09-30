@@ -177,20 +177,92 @@ export function getAccountTypeName(data: unknown): string | null {
   return typeof v === "string" ? v : null;
 }
 
+export type AccessTier = "free" | "premium";
+
+/**
+ * Chuẩn hoá field `access_tier` về `free | premium`.
+ * Chỉ `premium` là trả tiền. `registered` (đã bỏ theo contract), rỗng, và giá trị
+ * lạ → `free` (mặc định an toàn: không khoá nhầm nội dung chưa tick).
+ * Chấp nhận admin nhập hoa/thường/thừa dấu cách.
+ */
+export function normalizeAccessTier(value: unknown): AccessTier {
+  return normalizeAccountTypeName(typeof value === "string" ? value : "") === "premium"
+    ? "premium"
+    : "free";
+}
+
+/** Item content có phải trả tiền không (theo field `access_tier`). */
+export function isPremiumTier(item?: { access_tier?: string | null } | null): boolean {
+  return normalizeAccessTier(item?.access_tier) === "premium";
+}
+
+/**
+ * Cổng chung mọi loại content: item `access_tier=premium` bị khoá với user Free.
+ * Dùng để áp 1 lớp gate đồng nhất lên course / video / bài đọc / truyện.
+ */
+export function isTierLocked(
+  item: { access_tier?: string | null } | null | undefined,
+  isPremium: boolean,
+): boolean {
+  return !isPremium && isPremiumTier(item);
+}
+
+/** @deprecated dùng `isPremiumTier` — giữ tên cũ để không phá call site. */
+export const isCoursePremium = isPremiumTier;
+
+/**
+ * Tag chương "Học thử miễn phí" — legacy/fallback. Ưu tiên `is_free_preview`.
+ * Normalize bỏ dấu để chấp nhận "Học thử", "học thử miễn phí"...
+ */
+export function isFreePreviewTag(tag?: string | null): boolean {
+  const t = normalizeAccountTypeName(tag ?? "");
+  return t.includes("hoc thu") || t.includes("mien phi") || t.includes("free");
+}
+
+/**
+ * Chương học thử (dùng chung course_chapters + book_chapters):
+ * `is_free_preview` (Directus trả INT 0/1) HOẶC tag "Học thử miễn phí".
+ */
+export function isFreePreviewChapter(
+  chapter?: { tag?: string | null; is_free_preview?: boolean | number | null } | null,
+): boolean {
+  if (!chapter) return false;
+  return Boolean(chapter.is_free_preview) || isFreePreviewTag(chapter.tag);
+}
+
 /**
  * Kiểm tra quyền đọc chương sách/truyện.
  * - Paid User (isPremium=true): Toàn quyền đọc mọi chương.
- * - Free / Guest User: Đọc được chương 1 hoặc các chương có `is_free_preview = true`.
+ * - Free / Guest User: chương `is_free_preview` / tag học thử, hoặc chương đầu.
  */
 export function canAccessStoryChapter(
-  chapter?: { sort_id?: string | number | null; is_free_preview?: boolean | null } | null,
+  chapter?: { sort_id?: string | number | null; is_free_preview?: boolean | number | null; tag?: string | null } | null,
   chapterIndex = 0,
   isPremium = false,
 ): boolean {
   if (isPremium) return true;
   if (!chapter) return chapterIndex === 0;
-  if (chapter.is_free_preview) return true;
+  if (isFreePreviewChapter(chapter)) return true;
   const sort = Number(chapter.sort_id);
   return sort === 1 || chapterIndex === 0;
+}
+
+/**
+ * Kiểm tra quyền mở 1 lesson trong khóa học.
+ * - Premium user: toàn quyền.
+ * - Course free (`access_tier` free/rỗng): mọi lesson mở.
+ * - Course premium: Free chỉ mở lesson có `is_free_preview` (INT 0/1) hoặc
+ *   thuộc chương học thử (is_free_preview của chương / tag "Học thử miễn phí").
+ */
+export function canAccessCourseLesson(
+  course: { access_tier?: string | null } | null,
+  lesson?: { is_free_preview?: boolean | number | null } | null,
+  isPremium = false,
+  chapter?: { tag?: string | null; is_free_preview?: boolean | number | null } | null,
+): boolean {
+  if (isPremium) return true;
+  if (!isPremiumTier(course)) return true;
+  if (Boolean(lesson?.is_free_preview)) return true;
+  return isFreePreviewChapter(chapter);
 }
 

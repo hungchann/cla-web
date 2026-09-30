@@ -184,10 +184,12 @@ Client ưu tiên `upgrade_url` của nội dung đang xem → fallback `account_
 
 | Tính năng | Rule | Điểm wire trong code |
 | :-- | :-- | :-- |
+| **Chung (mọi nội dung)** | Item `access_tier = premium` → **khoá với Free** (course, video, Sections, book_library). Chỉ `premium` là trả tiền; `free`/rỗng/`registered`/giá trị lạ → mở (an toàn, không khoá nhầm). | `isPremiumTier` / `isTierLocked` — `lib/premium.ts` |
 | Bài tập | Free hoàn thành tối đa **2** bài (`FREE_EXERCISE_LIMIT`) — **đếm khi HOÀN THÀNH bài** (câu cuối quiz / hết câu dictation), mở-không-làm không tốn lượt; Conversation chỉ gate lúc vào, không tính quota | `courses/[id]/learn/page.tsx` + `QuizStep`/`DictationStep` `onComplete` |
-| Truyện/Sách | chương 1 free, chương > 1 khóa | `stories/[id]/page.tsx` (`canAccessStoryChapter`) |
-| Video chi tiết (vocab + shadowing) | gate toàn màn hình khi mount | `video/[id]` + quiz + subtitles |
-| Bài đọc song ngữ | Nội dung đọc **FREE mọi level**; 4 tab phụ (Từ vựng / Ngữ pháp / Shadowing / Bài tập) cần Premium — mirror mobile | `bilingual/[id]` (`PREMIUM_BILINGUAL_TABS`) |
+| Khóa học | Course `access_tier=premium` → Free chỉ mở lesson `is_free_preview` (**INT 0/1**) hoặc thuộc chapter học thử (`chapter.is_free_preview` hoặc tag "Học thử miễn phí"); course free → mở toàn bộ | `courses/page.tsx` + `courses/[id]/page.tsx` + `courses/[id]/learn/page.tsx` (`isPremiumTier` / `canAccessCourseLesson` / `isFreePreviewChapter`) |
+| Truyện/Sách | Book `access_tier=premium` → Free chỉ mở chương `is_free_preview`; book free → chương 1 free, chương sau khoá | `stories/[id]/page.tsx` (`isChapterLocked`) |
+| Video chi tiết | Module quiz/shadowing + item `video_section.access_tier=premium` đều khoá; trang con gate toàn màn hình khi mount | `video/[id]` + `{quiz,subtitles,shadowing}` (`isPremiumTier`) |
+| Bài đọc song ngữ | Đọc FREE mọi level; 4 tab phụ (Từ vựng / Ngữ pháp / Shadowing / Bài tập) cần Premium; item `Sections.access_tier=premium` → khoá cả bài | `bilingual/[id]` (`PREMIUM_BILINGUAL_TABS` + `isPremiumTier`) |
 | AI luyện nói | chặn xem kết quả/chấm điểm = Premium | `speaking/page.tsx` |
 | Sổ tay từ vựng | Free ≤ **1** (`FREE_NOTEBOOK_LIMIT`) | `flashcard/page.tsx` |
 | Tra từ → lưu sổ tay | cần Premium | `WordInfoModal` (`guardPremium`) |
@@ -242,7 +244,8 @@ Thực hiện thủ công theo các bước dưới (không dùng script).
 - [ ] Flip `payments.status=verified` → Flow tự cập nhật `account_types`.
 - [ ] Tạo `user_vouchers` → `vouchers.used_count` tự tăng.
 - [ ] User free: video gate khi mount; sách chương 2+ khóa; bài đọc HSK 4–6 khóa;
-      speaking ẩn chấm điểm; flashcard ≤ 1 sổ tay; bài tập ≤ 2 bài.
+      speaking ẩn chấm điểm; flashcard ≤ 1 sổ tay; bài tập ≤ 2 bài; khóa học premium
+      chỉ mở lesson `is_free_preview`.
 - [ ] User có `account_types.type=yearly, status=active` → `is_premium=true`, không còn gate.
 
 **Lỗi hay gặp:**
