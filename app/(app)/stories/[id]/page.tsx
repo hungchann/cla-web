@@ -272,12 +272,11 @@ export default function StoryDetailPage({ params }: Readonly<{ params: Promise<{
                               word={w.word}
                               pinyin={isOpenPinyin ? w.pinyin : undefined}
                               fontSize={24}
-                              pinyinSize={13}
+                              pinyinSize={11}
                               onPress={(event) => {
                                 event.stopPropagation();
                                 handleWordPress(w.word);
                               }}
-                              containerClassName="mr-0.5"
                             />
                           ))}
                         </p>

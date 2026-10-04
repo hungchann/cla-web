@@ -13,17 +13,17 @@ describe("VideoDetailedVocabExercise", () => {
 
   it("renders all 4 options", () => {
     render(<VideoDetailedVocabExercise />);
-    expect(screen.getByText("老的")).toBeInTheDocument();
-    expect(screen.getByText("丰富")).toBeInTheDocument();
-    expect(screen.getByText("苹果")).toBeInTheDocument();
-    expect(screen.getByText("青春 của")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /老.*的/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /丰.*富/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /苹.*果/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /青春/ })).toBeInTheDocument();
   });
 
   it("selects an option when clicked", async () => {
     const user = userEvent.setup();
     render(<VideoDetailedVocabExercise />);
 
-    const option = screen.getByRole("button", { name: /丰富/ });
+    const option = screen.getByRole("button", { name: /丰.*富/ });
     await user.click(option);
 
     // Style thay đổi khi selected (backgroundColor = primary #d97706)
@@ -34,8 +34,8 @@ describe("VideoDetailedVocabExercise", () => {
     const user = userEvent.setup();
     render(<VideoDetailedVocabExercise />);
 
-    const first = screen.getByRole("button", { name: /老的/ });
-    const second = screen.getByRole("button", { name: /苹果/ });
+    const first = screen.getByRole("button", { name: /老.*的/ });
+    const second = screen.getByRole("button", { name: /苹.*果/ });
 
     await user.click(first);
     expect(first).toHaveStyle({ backgroundColor: "#d97706" });

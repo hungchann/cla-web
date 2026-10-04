@@ -106,9 +106,16 @@ export default function CourseDetailPage({
                     <div className="absolute right-0 top-0 -mr-16 -mt-16 w-44 h-44 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
 
                     <div className="p-6 md:p-8 flex-1 space-y-4 z-10">
-                        <h1 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white leading-snug">
-                            {courseTitle}
-                        </h1>
+                        <div className="space-y-1">
+                            <h1 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white leading-snug">
+                                {courseTitle}
+                            </h1>
+                            {course?.title_trans && (
+                                <p className="text-sm md:text-base font-bold text-zinc-500 dark:text-zinc-400 leading-snug">
+                                    {course.title_trans}
+                                </p>
+                            )}
+                        </div>
                         {course?.description && (
                             <p className="text-sm md:text-base text-zinc-700 dark:text-zinc-300 font-semibold leading-relaxed">
                                 {course.description}

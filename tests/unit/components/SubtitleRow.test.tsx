@@ -33,10 +33,11 @@ describe("SubtitleRow", () => {
 
   it("shows pinyin only when isOpenPinyin", () => {
     const { rerender } = render(<SubtitleRow {...baseProps} />);
-    expect(screen.queryByText("nǐ hǎo")).not.toBeInTheDocument();
+    expect(screen.queryByText("nǐ")).not.toBeInTheDocument();
 
     rerender(<SubtitleRow {...baseProps} isOpenPinyin />);
-    expect(screen.getByText("nǐ hǎo")).toBeInTheDocument();
+    expect(screen.getByText("nǐ")).toBeInTheDocument();
+    expect(screen.getByText("hǎo")).toBeInTheDocument();
   });
 
   it("calls onReplay when row clicked", async () => {

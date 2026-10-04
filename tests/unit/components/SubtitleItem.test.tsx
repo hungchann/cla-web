@@ -32,12 +32,13 @@ describe("SubtitleItem", () => {
 
   it("hides pinyin when isOpenPinyin is false", () => {
     render(<SubtitleItem {...baseProps} isOpenPinyin={false} />);
-    expect(screen.queryByText("nǐ hǎo")).not.toBeInTheDocument();
+    expect(screen.queryByText("nǐ")).not.toBeInTheDocument();
   });
 
   it("shows pinyin when isOpenPinyin is true", () => {
     render(<SubtitleItem {...baseProps} isOpenPinyin />);
-    expect(screen.getByText("nǐ hǎo")).toBeInTheDocument();
+    expect(screen.getByText("nǐ")).toBeInTheDocument();
+    expect(screen.getByText("hǎo")).toBeInTheDocument();
   });
 
   it("calls onReplayPress on click", async () => {

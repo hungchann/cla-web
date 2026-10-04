@@ -50,6 +50,7 @@ describe("HighlightedText", () => {
         segmentedWords={[{ word: "你好", pinyin: "nǐ hǎo" }]}
       />,
     );
-    expect(screen.getByText("nǐ hǎo")).toBeInTheDocument();
+    expect(screen.getByText("nǐ")).toBeInTheDocument();
+    expect(screen.getByText("hǎo")).toBeInTheDocument();
   });
 });

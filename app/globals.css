@@ -93,7 +93,7 @@
   --radius-sm: calc(var(--radius) - 4px);
 
   --font-sans: var(--font-nunito);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: "Geist Mono", Consolas, Menlo, "DejaVu Sans Mono", "Liberation Mono", ui-monospace, monospace;
 }
 
 body {

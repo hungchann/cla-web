@@ -1,4 +1,5 @@
 import React from "react";
+import { splitPinyinSyllables } from "@/lib/utils/pinyinSplit";
 
 interface RubyTextProps {
   word: React.ReactNode;
@@ -25,7 +26,11 @@ export const RubyText = ({
   containerClassName = "",
   onPress,
 }: RubyTextProps) => {
-  const content = (
+  const showPinyin = Boolean(pinyin) && /\p{Script=Latin}/u.test(pinyin as string);
+  const chars = typeof word === "string" ? Array.from(word) : null;
+  const syllables = showPinyin && chars ? splitPinyinSyllables(pinyin as string, chars.length) : null;
+
+  const renderRuby = (text: React.ReactNode, syl?: string) => (
     <ruby
       className={`ruby-container select-text ${className}`}
       style={{
@@ -35,8 +40,8 @@ export const RubyText = ({
         lineHeight: "1.2",
       }}
     >
-      {word}
-      {pinyin ? (
+      {text}
+      {syl ? (
         <rt
           className="ruby-pinyin select-none text-amber-600"
           style={{
@@ -45,11 +50,18 @@ export const RubyText = ({
             lineHeight: "1.2",
           }}
         >
-          {pinyin}
+          {syl}
         </rt>
       ) : null}
     </ruby>
   );
+
+  const content =
+    syllables && chars
+      ? syllables.map((syl, i) => (
+          <React.Fragment key={`${i}-${syl}`}>{renderRuby(chars[i], syl)}</React.Fragment>
+        ))
+      : renderRuby(word, showPinyin ? pinyin : undefined);
 
   if (onPress) {
     return (
